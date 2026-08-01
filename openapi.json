@@ -1,0 +1,49 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lifeline Control Plane API",
+    "version": "0.1.0",
+    "description": "First evidence-driven project workflow vertical slice."
+  },
+  "servers": [{ "url": "http://localhost:3000" }],
+  "paths": {
+    "/api/health": { "get": { "summary": "Health check", "responses": { "200": { "description": "Healthy" } } } },
+    "/api/dashboard": { "get": { "summary": "Portfolio dashboard", "responses": { "200": { "description": "Dashboard snapshot" } } } },
+    "/api/projects": {
+      "get": { "summary": "List projects", "responses": { "200": { "description": "Project collection" } } },
+      "post": { "summary": "Create project", "responses": { "201": { "description": "Created project" }, "422": { "description": "Invalid project" } } }
+    },
+    "/api/work-items": {
+      "get": { "summary": "List work items", "responses": { "200": { "description": "Work item collection" } } },
+      "post": { "summary": "Create planned work item", "responses": { "201": { "description": "Created work item" }, "422": { "description": "Invalid execution contract" } } }
+    },
+    "/api/work-items/{workItemId}/ready": {
+      "post": {
+        "summary": "Validate execution contract and mark ready",
+        "parameters": [{ "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Ready work item" }, "422": { "description": "Contract validation failed" } }
+      }
+    },
+    "/api/work-items/{workItemId}/queue": {
+      "post": {
+        "summary": "Queue durable mock workflow",
+        "parameters": [{ "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "202": { "description": "Queued run" } }
+      }
+    },
+    "/api/runs/{runId}": {
+      "get": {
+        "summary": "Get run, events, and evidence",
+        "parameters": [{ "in": "path", "name": "runId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Run details" } }
+      }
+    },
+    "/api/runs/{runId}/stream": {
+      "get": {
+        "summary": "Stream run events over Server-Sent Events",
+        "parameters": [{ "in": "path", "name": "runId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "text/event-stream" } }
+      }
+    }
+  }
+}

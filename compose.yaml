@@ -1,0 +1,14 @@
+services:
+  lifeline:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      LIFELINE_SEED_DEMO: "1"
+      MOCK_STEP_DELAY_MS: "250"
+    volumes:
+      - lifeline-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  lifeline-data:
