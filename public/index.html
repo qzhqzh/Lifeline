@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Lifeline AI project operations control plane" />
+    <title>Lifeline Control Plane</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">AI PROJECT OPERATIONS</p>
+        <h1>Lifeline</h1>
+      </div>
+      <div class="health" id="health">正在连接控制平面…</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">FIRST VERTICAL SLICE</p>
+          <h2>以证据而不是主观百分比推进项目</h2>
+          <p>
+            创建工作包，校验执行契约，运行可恢复的 Mock Executor，并实时回放持久化事件与验收证据。
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button class="primary" id="seedDemo">创建演示项目</button>
+          <button class="secondary" id="refresh">刷新状态</button>
+        </div>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <section class="grid">
+        <article class="panel span-7">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">PORTFOLIO</p>
+              <h3>项目指挥中心</h3>
+            </div>
+          </div>
+          <div id="projects" class="projects"></div>
+        </article>
+
+        <article class="panel span-5">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">NEW WORK</p>
+              <h3>创建工作包</h3>
+            </div>
+          </div>
+          <form id="workItemForm" class="form-stack">
+            <label>
+              项目
+              <select id="projectId" required></select>
+            </label>
+            <label>
+              标题
+              <input id="title" required minlength="3" value="验证首个执行闭环" />
+            </label>
+            <label>
+              目标
+              <textarea id="objective" required>通过状态校验、持久执行、证据写入与事件回放完成首个可验证工作包。</textarea>
+            </label>
+            <label>
+              验收标准（每行一条）
+              <textarea id="criteria" required>工作包状态最终为 VERIFIED
+运行事件可以完整回放
+项目进度由证据自动计算</textarea>
+            </label>
+            <label>
+              测试命令（每行一条）
+              <textarea id="commands" required>npm test</textarea>
+            </label>
+            <button class="primary" type="submit">创建工作包</button>
+          </form>
+        </article>
+
+        <article class="panel span-7">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">PIPELINE</p>
+              <h3>工作包流水线</h3>
+            </div>
+          </div>
+          <div id="workItems" class="work-items"></div>
+        </article>
+
+        <article class="panel span-5 replay-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">RUN REPLAY</p>
+              <h3>执行回放</h3>
+            </div>
+            <span id="runStatus" class="status neutral">等待运行</span>
+          </div>
+          <ol id="timeline" class="timeline">
+            <li class="empty">启动工作包后，事件会在这里实时出现。</li>
+          </ol>
+        </article>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
