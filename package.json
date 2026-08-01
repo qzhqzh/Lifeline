@@ -1,0 +1,16 @@
+{
+  "name": "lifeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Evidence-driven AI project operations control plane MVP",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "LIFELINE_SEED_DEMO=1 node --watch src/server.js",
+    "test": "node --test",
+    "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/service.js && node --check src/server.js && node --test"
+  }
+}
