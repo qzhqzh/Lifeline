@@ -9,13 +9,91 @@
   "paths": {
     "/api/health": { "get": { "summary": "Health check", "responses": { "200": { "description": "Healthy" } } } },
     "/api/dashboard": { "get": { "summary": "Portfolio dashboard", "responses": { "200": { "description": "Dashboard snapshot" } } } },
+    "/api/bootstrap/portfolio-v2": {
+      "get": {
+        "summary": "Get the current user's Portfolio V2 bootstrap capability",
+        "responses": { "200": { "description": "Bootstrap availability and existing receipt metadata" } }
+      },
+      "post": {
+        "summary": "Apply the Portfolio V2 template once for the current user",
+        "parameters": [{ "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }],
+        "responses": {
+          "200": { "description": "Previously applied receipt" },
+          "201": { "description": "Portfolio created or migrated and receipt persisted" },
+          "422": { "description": "Invalid idempotency key" }
+        }
+      }
+    },
     "/api/projects": {
       "get": { "summary": "List projects", "responses": { "200": { "description": "Project collection" } } },
       "post": { "summary": "Create project", "responses": { "201": { "description": "Created project" }, "422": { "description": "Invalid project" } } }
     },
+    "/api/phases": {
+      "post": {
+        "summary": "Create a Phase from the web UI with human provenance",
+        "parameters": [{ "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }],
+        "responses": { "201": { "description": "Created Phase" }, "422": { "description": "Invalid Phase" } }
+      }
+    },
+    "/api/phases/{phaseId}": {
+      "patch": {
+        "summary": "Update a Phase title or goal with schedule-version concurrency control",
+        "parameters": [
+          { "in": "path", "name": "phaseId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "responses": {
+          "200": { "description": "Updated Phase" },
+          "409": { "description": "scheduleVersion conflict" },
+          "422": { "description": "Phase is locked or invalid" }
+        }
+      }
+    },
+    "/api/projects/{projectId}/schedule": {
+      "get": {
+        "summary": "Get the Phase to Task schedule for one project",
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Ordered project schedule and current scheduleVersion" }, "404": { "description": "Project not found" } }
+      },
+      "patch": {
+        "summary": "Reorder all movable tasks inside one Phase",
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "responses": {
+          "200": { "description": "Updated project schedule" },
+          "409": { "description": "scheduleVersion conflict" },
+          "422": { "description": "Invalid or incomplete task order" }
+        }
+      }
+    },
     "/api/work-items": {
       "get": { "summary": "List work items", "responses": { "200": { "description": "Work item collection" } } },
-      "post": { "summary": "Create planned work item", "responses": { "201": { "description": "Created work item" }, "422": { "description": "Invalid execution contract" } } }
+      "post": { "summary": "Create planned work item with persistent human or Agent provenance", "responses": { "201": { "description": "Created work item" }, "422": { "description": "Invalid execution contract" } } }
+    },
+    "/api/work-items/{workItemId}": {
+      "get": {
+        "summary": "Get one work item",
+        "parameters": [{ "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Work item" }, "404": { "description": "Work item not found" } }
+      },
+      "patch": {
+        "summary": "Edit an unfinished work item contract",
+        "parameters": [
+          { "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "responses": { "200": { "description": "Updated work item" }, "409": { "description": "scheduleVersion conflict" }, "422": { "description": "Task is locked or invalid" } }
+      },
+      "delete": {
+        "summary": "Cancel an unstarted task while preserving audit history",
+        "parameters": [
+          { "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "responses": { "200": { "description": "Cancelled work item" }, "409": { "description": "scheduleVersion conflict" }, "422": { "description": "Task cannot be cancelled" } }
+      }
     },
     "/api/work-items/{workItemId}/ready": {
       "post": {

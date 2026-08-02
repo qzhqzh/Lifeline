@@ -9,8 +9,19 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "LIFELINE_SEED_DEMO=1 node --watch src/server.js",
+    "dev": "LIFELINE_SEED_DEMO=1 LIFELINE_DEV_RELOAD=1 node --watch --watch-path=src --watch-path=public --watch-path=openapi.json src/server.js",
+    "dev:docker": "docker compose -f compose.yaml -f compose.dev.yaml up --build",
+    "dev:docker:down": "docker compose -f compose.yaml -f compose.dev.yaml down",
+    "merge:lifeline-projects": "node scripts/merge-lifeline-projects.mjs",
+    "reconcile:lifeline-schedule": "node scripts/reconcile-lifeline-schedule.mjs",
+    "repair:agent-run": "node scripts/repair-agent-run-autocomplete.mjs",
+    "mcp": "node src/mcp-server.js",
     "test": "node --test",
-    "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/service.js && node --check src/server.js && node --test"
+    "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/service.js && node --check src/server.js && node --check src/mcp-server.js && node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.4.3"
   }
 }

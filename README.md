@@ -29,16 +29,19 @@ Lifeline 是一套面向个人与小型研发团队的 **AI 项目操作系统**
 - 工作包重复排队保护；
 - 失败后保留已有证据并进入 `BLOCKED`；
 - REST API、OpenAPI 文档和 SSE 运行事件流；
-- 项目指挥中心、工作包流水线和运行回放界面；
+- 按优先级排序的项目 × Phase × Task 组合排期大板、执行工作台和运行回放界面；
+- 可安全迁移旧数据的 Lifeline、EchoMe、Totemora 真实项目排期，以及每用户一次、跨重启有效的载入 receipt；
+- 可被 Codex 自动发现的本地 MCP：查询排期、幂等拆分录入 Phase/Task、记录真实 Agent Run/Completion/Evidence，并通过验证门禁更新完成状态；
 - Node 原生测试、Docker Compose 和 GitHub Actions CI。
 
 详细边界和后续迁移见 [实现状态](docs/IMPLEMENTATION_STATUS.md)。
 
 ## 快速开始
 
-要求 Node.js 22 或更高版本。当前 MVP 没有第三方运行时依赖。
+要求 Node.js 22 或更高版本。首次运行先安装锁定的 MCP 协议与 schema 依赖：
 
 ```bash
+npm install
 npm test
 npm start
 ```
@@ -49,11 +52,15 @@ npm start
 http://localhost:3000
 ```
 
-启动时自动创建演示项目：
+首次进入可点击“载入本次项目排期”。服务端会原子创建或迁移三个真实项目并记录当前用户的 receipt；成功后该入口永久隐藏，重复请求不会重复写入。
+
+如需调试旧版自动播种流程：
 
 ```bash
 LIFELINE_SEED_DEMO=1 npm start
 ```
+
+Codex 在信任本项目后会读取 [项目 MCP 配置](.codex/config.toml) 与 [Agent 工作规则](AGENTS.md)。新增或修改配置后请新开 Codex 对话；也可运行 `npm run mcp` 供其他 stdio Host 接入。完整工作流见 [MCP 与 Codex 接入](docs/MCP.md)。
 
 使用 Docker Compose：
 
@@ -61,13 +68,34 @@ LIFELINE_SEED_DEMO=1 npm start
 docker compose up --build
 ```
 
+开发模式使用源码挂载、Node watch 与浏览器自动刷新：`src/`、`public/` 或 OpenAPI 文件保存后会重启开发进程，页面在服务恢复后自动刷新，无需反复重建镜像：
+
+```bash
+npm run dev:docker
+```
+
+该 override 与正式模式共用当前 Compose 项目、端口和数据卷，会重建同一个 `lifeline` 容器；开发结束后运行 `docker compose up -d --build lifeline` 即可恢复正式启动方式，不会删除数据卷。
+
+停止开发服务：
+
+```bash
+npm run dev:docker:down
+```
+
 常用接口：
 
 ```text
 GET  /api/health
 GET  /api/dashboard
+GET  /api/bootstrap/portfolio-v2
+POST /api/bootstrap/portfolio-v2
 POST /api/projects
+POST /api/phases
 POST /api/work-items
+GET  /api/projects/:id/schedule
+PATCH /api/projects/:id/schedule
+PATCH /api/work-items/:id
+DELETE /api/work-items/:id
 POST /api/work-items/:id/ready
 POST /api/work-items/:id/queue
 GET  /api/runs/:id
@@ -113,6 +141,7 @@ GET  /api/openapi.json
 - [分阶段路线图](docs/ROADMAP.md)
 - [初始开发 Backlog](docs/INITIAL_BACKLOG.md)
 - [实现状态](docs/IMPLEMENTATION_STATUS.md)
+- [MCP 与 Codex 接入](docs/MCP.md)
 - [ADR-0001：控制平面优先](docs/adr/0001-control-plane-first.md)
 - [ADR-0002：首个可执行本地垂直切片](docs/adr/0002-executable-local-vertical-slice.md)
 
