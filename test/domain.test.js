@@ -98,7 +98,40 @@ test('work items receive a two-level schedule and routing recommendation', () =>
     commitment: 'COMMITTED'
   });
   assert.equal(item.recommendation.capability, 'code-repair');
+  assert.equal(item.recommendation.executor, 'luna_worker');
+  assert.equal(item.recommendation.reasoningEffort, 'medium');
+  assert.equal(item.recommendation.compute, 'low');
+  assert.equal(item.recommendation.validationProfile, 'V1');
+  assert.equal(item.recommendation.policyVersion, 'risk-tier-v1');
+});
+
+test('high-risk work routes to the main model and a release-grade validation profile', () => {
+  const item = createWorkItem({
+    ...validWorkItemInput(),
+    riskTier: 'high',
+    planning: { kind: 'bug' }
+  });
+  assert.equal(item.recommendation.executor, 'codex');
   assert.equal(item.recommendation.reasoningEffort, 'high');
+  assert.equal(item.recommendation.compute, 'high');
+  assert.equal(item.recommendation.validationProfile, 'V3');
+});
+
+test('legacy automatic routing is recalibrated without losing its estimate', () => {
+  const item = hydrateWorkItemMetadata({
+    ...validWorkItemInput(),
+    recommendation: {
+      capability: 'agentic-coding',
+      executor: 'codex',
+      reasoningEffort: 'high',
+      compute: 'high',
+      estimateMinutes: 25,
+      approach: 'Legacy generated route'
+    }
+  });
+  assert.equal(item.recommendation.executor, 'luna_worker');
+  assert.equal(item.recommendation.validationProfile, 'V1');
+  assert.equal(item.recommendation.estimateMinutes, 25);
 });
 
 test('legacy work items hydrate with backward-compatible planning defaults', () => {

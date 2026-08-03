@@ -154,13 +154,19 @@ POST 必须支持 `Idempotency-Key`，并在 receipt 唯一约束冲突时读取
 | `READY` | 契约完整，可进入执行队列 |
 | `PLANNED` | 已排期，但依赖或验收契约尚未满足 |
 
-推荐执行档：
+推荐执行档由任务类型和 `riskTier` 共同决定：
 
-- `LOW-SCAN`：确定性命令优先，低推理、低算力；
-- `LUNA-CODE`：Luna 主实现，高推理、高算力；
-- `LUNA-MEDIUM`：Luna 处理边界清晰任务，中推理、中算力；
-- `INDEPENDENT-REVIEW`：与实现上下文隔离的复核模型，中高算力；
-- `HUMAN-DECISION`：涉及产品取舍、权限或高风险迁移时由用户确认。
+| 风险 / 任务 | 默认执行者 | 推理 / 算力 | 验收档 |
+|---|---|---|---|
+| low 的功能、Bug | Luna Worker | 中 / 低 | V1 |
+| medium Bug | Luna Worker | 中 / 中 | V2 |
+| medium 功能、调研 | Codex 主 Agent | 中 / 中 | V2 |
+| high / critical | Codex 主 Agent | 高 / 高 | V3 |
+| scan | Luna Worker | 低 / 低 | low 为 V0，其余 V2/V3 |
+| ops | Shell + 主 Agent 监督 | 中 / 低 | 按风险 V0–V3 |
+| 独立审查 | 与实现者隔离的 Codex / reviewer | 高 / 中高 | V1–V3 |
+
+旧模板中的 `LOW-SCAN`、`LUNA-CODE`、`LUNA-MEDIUM` 仅作为历史能力标签；实际排期会按当前 `risk-tier-v1` 策略重新校准。主 Agent 可以基于上下文覆盖推荐，但必须记录实际模型与原因。
 
 具体 provider、model id、版本、token 和费用只在 Run 发生时记录，不写死在模板中。
 
@@ -622,6 +628,17 @@ READY
 | 独立复核窗口 | 数据迁移、跨用户隔离、筛选视觉稳定、排序冲突、Agent 完成门禁 |
 
 高算力批次应尽量集中完成一个完整纵向切片，避免同时开启 S2、S3、S4 三条半成品链路。低算力任务可以持续填充证据、fixture 和回归样本，为下一次集中突破准备上下文。
+
+### 13.1 轻量验收与批次重启
+
+| 档位 | 默认验收 |
+|---|---|
+| V0 | 静态检查、数据 dry-run 或确定性命令；不启动服务 |
+| V1 | 只运行一个直接覆盖改动的测试文件或命令 |
+| V2 | 运行直接测试，再补一条受影响的 API/领域边界测试 |
+| V3 | 批次末全量检查，并按风险补运行时、浏览器或迁移证据 |
+
+一个批次内，小改完成后只跑对应的 V0–V2 验收；整批结束时只执行一次 `npm run check`。由于 `npm run check` 已包含完整 Node 测试，不再额外执行一次 `npm test`。全量检查通过后统一 rebuild/restart 一次，再检查 `/api/health` 和本批次涉及的真实交互。只有无法继续定位运行时问题时才允许提前重启。
 
 ## 14. 验收测试矩阵
 

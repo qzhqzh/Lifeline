@@ -34,60 +34,45 @@ export const REASONING_EFFORTS = Object.freeze(['low', 'medium', 'high']);
 export const PARALLEL_POLICIES = Object.freeze(['AUTO', 'SEQUENTIAL', 'PARALLEL_ALLOWED']);
 export const PHASE_STATUS = Object.freeze(['ACTIVE', 'COMPLETED', 'CANCELLED']);
 export const COMPLETION_METHODS = Object.freeze(['AGENT_RUN', 'HUMAN', 'IMPORTED_HISTORY']);
+export const COMPLETION_OUTCOMES = Object.freeze(['COMPLETED', 'FAILED', 'BLOCKED']);
 export const TASK_ORIGINS = Object.freeze(['HUMAN', 'AI', 'IMPORTED', 'UNKNOWN']);
+export const ROUTING_POLICY_VERSION = 'risk-tier-v1';
 // Version 2 introduced planning/recommendation metadata. Version 3 adds
 // Phase, bootstrap receipt, migration snapshot and completion collections.
 // Version 4 adds durable, fingerprinted scan proposals before task creation.
-export const CURRENT_SCHEMA_VERSION = 4;
+// Version 5 isolates legacy Mock Runs from formal task progress and trajectories.
+export const CURRENT_SCHEMA_VERSION = 5;
 export const DEFAULT_LOCAL_USER_ID = 'local-owner';
 export const SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
 
-const RECOMMENDATION_DEFAULTS = Object.freeze({
+const RECOMMENDATION_BASES = Object.freeze({
   feature: {
     capability: 'agentic-coding',
-    executor: 'codex',
-    reasoningEffort: 'high',
-    compute: 'high',
     estimateMinutes: 90,
-    approach: '先确认执行契约与验收证据，再实现并独立审查。'
+    approach: '先确认范围和依赖，再完成一个可独立验收的纵向切片。'
   },
   bug: {
     capability: 'code-repair',
-    executor: 'codex',
-    reasoningEffort: 'high',
-    compute: 'medium',
     estimateMinutes: 45,
     approach: '先复现并补回归测试，再做最小修复。'
   },
   scan: {
     capability: 'repository-scan',
-    executor: 'codex',
-    reasoningEffort: 'low',
-    compute: 'low',
     estimateMinutes: 20,
     approach: '先跑确定性检查，只把异常和高价值区域交给模型分析。'
   },
   research: {
     capability: 'research-synthesis',
-    executor: 'codex',
-    reasoningEffort: 'medium',
-    compute: 'medium',
     estimateMinutes: 40,
     approach: '先快速铺开证据，再用强推理收敛分歧和方案。'
   },
   ops: {
     capability: 'safe-automation',
-    executor: 'shell',
-    reasoningEffort: 'medium',
-    compute: 'low',
     estimateMinutes: 30,
     approach: '优先使用确定性脚本，高风险动作保留人工审批。'
   },
   review: {
     capability: 'independent-review',
-    executor: 'codex',
-    reasoningEffort: 'high',
-    compute: 'medium',
     estimateMinutes: 35,
     approach: '与实现上下文隔离审查，先报告可验证问题再决定修改。'
   }
@@ -204,7 +189,7 @@ export function validateWorkItemInput(input) {
     )
   };
   const planning = normalizePlanning(input?.planning);
-  const recommendation = normalizeRecommendation(input?.recommendation, planning.kind);
+  const recommendation = normalizeRecommendation(input?.recommendation, planning.kind, riskTier);
   const phaseId = optionalString(input?.phaseId, 'phaseId', 160);
 
   return {
@@ -240,7 +225,7 @@ export function hydrateWorkItemMetadata(workItem) {
     dependsOnTaskIds: normalizeStringArray(workItem?.dependsOnTaskIds ?? [], 'dependsOnTaskIds', 100, 160),
     parallelPolicy: PARALLEL_POLICIES.includes(workItem?.parallelPolicy) ? workItem.parallelPolicy : 'AUTO',
     planning,
-    recommendation: normalizeRecommendation(workItem?.recommendation, planning.kind),
+    recommendation: normalizeRecommendation(workItem?.recommendation, planning.kind, workItem?.riskTier),
     provenance: hydrateTaskProvenance(workItem)
   };
 }
@@ -303,7 +288,11 @@ export function validateReadyContract(workItem) {
 
 export function evidenceScoreForWorkItem(evidence) {
   if (!Array.isArray(evidence) || evidence.length === 0) return 0;
-  return Math.max(...evidence.map((entry) => clamp(Number(entry.score) || 0, 0, 1)));
+  const realEvidence = evidence.filter((entry) => (
+    entry?.metadata?.legacyMock !== true && entry?.metadata?.executor !== 'mock'
+  ));
+  if (realEvidence.length === 0) return 0;
+  return Math.max(...realEvidence.map((entry) => clamp(Number(entry.score) || 0, 0, 1)));
 }
 
 export function calculateProjectProgress(workItems, evidence) {
@@ -415,6 +404,13 @@ export function validateCompletionRecordInput(input) {
       'INVALID_INPUT'
     );
   }
+  const outcome = input?.outcome ?? 'COMPLETED';
+  if (!COMPLETION_OUTCOMES.includes(outcome)) {
+    throw new DomainError(
+      `outcome must be one of: ${COMPLETION_OUTCOMES.join(', ')}`,
+      'INVALID_INPUT'
+    );
+  }
   const runId = optionalString(input?.runId, 'runId', 160);
   const agentId = optionalString(input?.agentId, 'agentId', 160);
   const executor = optionalString(input?.executor, 'executor', 160);
@@ -439,6 +435,7 @@ export function validateCompletionRecordInput(input) {
     taskId,
     runId,
     completionMethod,
+    outcome,
     agentId,
     executor,
     provider,
@@ -549,22 +546,24 @@ function normalizePlanning(input = {}) {
   return planning;
 }
 
-function normalizeRecommendation(input = {}, kind = 'feature') {
-  const defaults = RECOMMENDATION_DEFAULTS[kind] ?? RECOMMENDATION_DEFAULTS.feature;
-  const reasoningEffort = input?.reasoningEffort ?? defaults.reasoningEffort;
+function normalizeRecommendation(input = {}, kind = 'feature', riskTier = 'medium') {
+  const defaults = recommendationDefaults(kind, riskTier);
+  const currentPolicy = input?.policyVersion === ROUTING_POLICY_VERSION;
+  const routingInput = currentPolicy ? input : {};
+  const reasoningEffort = routingInput?.reasoningEffort ?? defaults.reasoningEffort;
   if (!REASONING_EFFORTS.includes(reasoningEffort)) {
     throw new DomainError(
       `recommendation.reasoningEffort must be one of: ${REASONING_EFFORTS.join(', ')}`,
       'INVALID_INPUT'
     );
   }
-  const compute = input?.compute ?? defaults.compute;
+  const compute = routingInput?.compute ?? defaults.compute;
   if (!COMPUTE_CLASSES.includes(compute)) {
     throw new DomainError(`recommendation.compute must be one of: ${COMPUTE_CLASSES.join(', ')}`, 'INVALID_INPUT');
   }
   return {
-    capability: optionalString(input?.capability, 'recommendation.capability', 120) ?? defaults.capability,
-    executor: optionalString(input?.executor, 'recommendation.executor', 120) ?? defaults.executor,
+    capability: optionalString(routingInput?.capability, 'recommendation.capability', 120) ?? defaults.capability,
+    executor: optionalString(routingInput?.executor, 'recommendation.executor', 120) ?? defaults.executor,
     reasoningEffort,
     compute,
     estimateMinutes: normalizeNumber(
@@ -573,8 +572,40 @@ function normalizeRecommendation(input = {}, kind = 'feature') {
       1,
       100000
     ),
-    approach: optionalString(input?.approach, 'recommendation.approach', 500) ?? defaults.approach
+    approach: optionalString(routingInput?.approach, 'recommendation.approach', 500) ?? defaults.approach,
+    validationProfile: defaults.validationProfile,
+    policyVersion: ROUTING_POLICY_VERSION
   };
+}
+
+function recommendationDefaults(kind, riskTier) {
+  const base = RECOMMENDATION_BASES[kind] ?? RECOMMENDATION_BASES.feature;
+  const normalizedRisk = RISK_TIERS.includes(riskTier) ? riskTier : 'medium';
+  const validationProfile = normalizedRisk === 'critical' || normalizedRisk === 'high'
+    ? 'V3'
+    : normalizedRisk === 'medium'
+      ? 'V2'
+      : ['scan', 'ops'].includes(kind) ? 'V0' : 'V1';
+
+  if (kind === 'ops') {
+    return { ...base, executor: 'shell', reasoningEffort: 'medium', compute: 'low', validationProfile };
+  }
+  if (kind === 'review') {
+    return { ...base, executor: 'codex', reasoningEffort: 'high', compute: normalizedRisk === 'low' ? 'medium' : 'high', validationProfile };
+  }
+  if (normalizedRisk === 'critical' || normalizedRisk === 'high') {
+    return { ...base, executor: 'codex', reasoningEffort: 'high', compute: 'high', validationProfile };
+  }
+  if (kind === 'scan') {
+    return { ...base, executor: 'luna_worker', reasoningEffort: 'low', compute: 'low', validationProfile };
+  }
+  if (normalizedRisk === 'low') {
+    return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'low', validationProfile };
+  }
+  if (kind === 'bug') {
+    return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'medium', validationProfile };
+  }
+  return { ...base, executor: 'codex', reasoningEffort: 'medium', compute: 'medium', validationProfile };
 }
 
 function normalizeNumber(value, name, min, max) {

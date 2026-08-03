@@ -107,21 +107,17 @@ export function reconcileLifelineSchedule(state, at = nowIso()) {
     }
   }
 
-  const currentTask = state.workItems.find((task) => (
-    task.projectId === project.id
-      && task.title === LIFELINE_TEMPLATE.currentTaskTitle
-      && isTerminal(task.status)
-  ));
-  if (currentTask && project.currentTaskId !== currentTask.id) {
-    project.currentTaskId = currentTask.id;
-    changes.currentTaskIds.push(currentTask.id);
-  }
-
   for (const [title, artifactUris] of VERIFIED_EXTRA_TASKS) {
     const task = state.workItems.find((candidate) => candidate.projectId === project.id && candidate.title === title);
     if (!task || isTerminal(task.status)) continue;
     verifyFromRepositoryEvidence(state, task, artifactUris, at);
     changes.verifiedTaskIds.push(task.id);
+  }
+
+  const currentTask = latestCompletedTask(state, project.id);
+  if (currentTask && project.currentTaskId !== currentTask.id) {
+    project.currentTaskId = currentTask.id;
+    changes.currentTaskIds.push(currentTask.id);
   }
 
   const changed = Object.values(changes).some((entries) => entries.length > 0)
@@ -231,7 +227,9 @@ function verifyFromRepositoryEvidence(state, task, artifactUris, at) {
 }
 
 function reconcileTemplateTaskStatus(state, task, taskSpec, created, changes, at) {
-  if (taskSpec.status === 'VERIFIED' && (created || !isTerminal(task.status))) {
+  if (!created && taskWasAdjustedByHuman(task)) return;
+
+  if (taskSpec.status === 'VERIFIED' && (created || ['PLANNED', 'READY'].includes(task.status))) {
     verifyFromRepositoryEvidence(state, task, taskSpec.history?.artifactUris ?? [], at);
     if (!changes.verifiedTaskIds.includes(task.id)) changes.verifiedTaskIds.push(task.id);
     return;
@@ -269,6 +267,32 @@ function reconcileTemplateTaskStatus(state, task, taskSpec, created, changes, at
     if (task.status !== 'RECURRING') changeTaskStatus(task, 'RECURRING', changes, at);
     task.recurrence = { ...task.recurrence, enabled: true };
   }
+}
+
+function taskWasAdjustedByHuman(task) {
+  return task.provenance?.contentAdjustedByHuman === true
+    || task.provenance?.lastContentEditorType === 'HUMAN';
+}
+
+function latestCompletedTask(state, projectId) {
+  const tasks = state.workItems.filter((task) => (
+    task.projectId === projectId && ['VERIFIED', 'RELEASED', 'ARCHIVED'].includes(task.status)
+  ));
+  const taskIds = new Set(tasks.map((task) => task.id));
+  const completionTimes = new Map();
+  for (const record of state.completionRecords) {
+    const taskId = record.taskId ?? record.workItemId;
+    if (!taskIds.has(taskId)) continue;
+    const parsed = Date.parse(record.verifiedAt ?? record.completedAt ?? record.startedAt ?? '');
+    if (Number.isFinite(parsed) && parsed > (completionTimes.get(taskId) ?? -Infinity)) {
+      completionTimes.set(taskId, parsed);
+    }
+  }
+  return tasks.sort((left, right) => (
+    (completionTimes.get(right.id) ?? 0) - (completionTimes.get(left.id) ?? 0)
+      || Number(right.planning?.phaseOrder ?? 0) - Number(left.planning?.phaseOrder ?? 0)
+      || Number(right.planning?.taskOrder ?? 0) - Number(left.planning?.taskOrder ?? 0)
+  )).at(0) ?? null;
 }
 
 function changeTaskStatus(task, status, changes, at) {

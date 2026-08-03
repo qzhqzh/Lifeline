@@ -223,21 +223,15 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
   assert.equal(acceptedScan.task.issue, scanFinding.issue);
 
   const task = firstPlan.tasks[0];
-  const started = await callTool(client, 'lifeline_start_task', {
+  const reportedStartedAt = '2026-08-03T12:00:00.000Z';
+  const completion = await callTool(client, 'lifeline_submit_completion', {
     taskId: task.id,
+    resultSummary: 'Implemented and exercised through the MCP client.',
+    startedAt: reportedStartedAt,
+    completedAt: '2026-08-03T12:00:01.200Z',
     executor: 'codex',
     modelRef: 'gpt-5.6-test',
     reasoningEffort: 'high',
-    idempotencyKey: 'goal:mcp-test:start:1'
-  });
-  assert.equal(started.task.status, 'RUNNING');
-
-  const completion = await callTool(client, 'lifeline_submit_completion', {
-    taskId: task.id,
-    runId: started.run.id,
-    resultSummary: 'Implemented and exercised through the MCP client.',
-    modelRef: 'gpt-5.6-test',
-    durationMs: 1200,
     evidence: [{
       type: 'TEST_COMMAND',
       summary: 'MCP integration test passed.',
@@ -246,6 +240,11 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
     idempotencyKey: 'goal:mcp-test:complete:1'
   });
   assert.equal(completion.task.status, 'REVIEW');
+  assert.equal(completion.run.kind, 'AGENT');
+  assert.equal(completion.run.reportedAtCompletion, true);
+  assert.equal(completion.completionRecord.startedAt, reportedStartedAt);
+  assert.equal(completion.completionRecord.durationMs, 1200);
+  assert.equal(completion.completionRecord.outcome, 'COMPLETED');
   assert.equal((await service.dashboard()).projects[0].verifiedProgress, 0);
 
   const verified = await callTool(client, 'lifeline_verify_task', {
@@ -323,6 +322,67 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
   });
   assert.equal(rejectedVerification.isError, true);
   assert.equal((await service.getWorkItem(unverifiedTask.id)).status, 'REVIEW');
+
+  const blockedTask = await service.createWorkItem({
+    projectId: project.id,
+    phaseId: firstPlan.phase.id,
+    title: 'Report a blocked result once',
+    objective: 'Record a truthful blocked outcome without a separate start call.',
+    acceptanceCriteria: [],
+    testCommands: [],
+    riskTier: 'low',
+    resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 1 },
+    planning: { phaseId: firstPlan.phase.id, taskOrder: 3, kind: 'feature', priority: 'P1', commitment: 'COMMITTED' }
+  });
+  const blockedResult = await callTool(client, 'lifeline_submit_completion', {
+    taskId: blockedTask.id,
+    outcome: 'BLOCKED',
+    startedAt: '2026-08-03T12:05:00.000Z',
+    completedAt: '2026-08-03T12:06:00.000Z',
+    modelRef: 'gpt-5.6-test',
+    resultSummary: 'A required external credential was unavailable.',
+    idempotencyKey: 'goal:mcp-test:blocked:1'
+  });
+  assert.equal(blockedResult.task.status, 'BLOCKED');
+  assert.equal(blockedResult.run.status, 'FAILED');
+  assert.equal(blockedResult.completionRecord.outcome, 'BLOCKED');
+  assert.equal(blockedResult.evidence.length, 0);
+});
+
+test('MCP accepts a maximum-length Unicode planId without overflowing derived keys', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-long-plan-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const project = await service.createProject({ name: 'Long plan identifiers' });
+  const server = createLifelineMcpServer({ service, actor: 'codex-test', clientName: 'node-test' });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'lifeline-long-plan-client', version: '1.0.0' });
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  t.after(async () => {
+    await client.close();
+    await server.close();
+  });
+
+  const input = {
+    projectId: project.id,
+    planId: '排'.repeat(256),
+    phase: { title: 'Long identifier phase', phaseOrder: 1 },
+    tasks: [{
+      title: 'Reuse one task for a long plan identifier',
+      objective: 'Keep derived idempotency keys within the storage contract.',
+      acceptanceCriteria: ['Repeated sync returns the same task'],
+      testCommands: ['node --test test/mcp.test.js'],
+      taskOrder: 1,
+      riskTier: 'low'
+    }]
+  };
+  const first = await callTool(client, 'lifeline_sync_plan', input);
+  const repeated = await callTool(client, 'lifeline_sync_plan', input);
+
+  assert.equal(repeated.phase.id, first.phase.id);
+  assert.equal(repeated.tasks[0].id, first.tasks[0].id);
+  assert.equal((await service.getSchedule(project.id)).phases[0].tasks.length, 1);
 });
 
 test('JsonStore preserves writes from separate Web and MCP service instances', async (t) => {

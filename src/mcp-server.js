@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
-import { MockExecutor } from './executor.js';
 import { LifelineService } from './service.js';
 import { JsonStore } from './store.js';
 
@@ -22,8 +21,8 @@ export const LIFELINE_MCP_INSTRUCTIONS = [
   'Repository scanners must call lifeline_propose_scan_finding with a stable fingerprint, then use lifeline_review_scan_proposal before a finding becomes a scheduled Task.',
   'Before editing, reordering, or cancelling tasks, read the current scheduleVersion and pass it as expectedScheduleVersion.',
   'Use dependsOnTaskIds only for hard same-project predecessors and parallelPolicy for execution intent; dependencies must stay acyclic and before the dependent task.',
-  'Before executing a tracked task call lifeline_start_task.',
-  'After implementation call lifeline_submit_completion with the actual model, timestamps, result, and evidence. This moves the task only to REVIEW.',
+  'By default, report a tracked task once at the end with lifeline_submit_completion, including the actual startedAt, completedAt, model, outcome, and result. A prior lifeline_start_task call is optional and remains available when live RUNNING visibility is needed.',
+  'lifeline_submit_completion creates a real Agent Run when none exists. COMPLETED moves only to REVIEW; FAILED or BLOCKED ends the Run without creating verified progress.',
   'Call lifeline_verify_task only after deterministic tests, independent review, or explicit human approval. Never claim VERIFIED from an Agent statement alone; a recurring task returns to RECURRING after each verified cycle.'
 ].join(' ');
 
@@ -471,7 +470,7 @@ function registerWriteTools(server, service, identity) {
         : await service.createPhase(
           { projectId: input.projectId, ...input.phase, source },
           mutationOptions(identity, 'lifeline_sync_plan', {
-            idempotencyKey: `${input.planId}:phase`,
+            idempotencyKey: planScopedKey(input.planId, 'phase'),
             source
           })
         );
@@ -479,7 +478,7 @@ function registerWriteTools(server, service, identity) {
 
       const tasks = [];
       for (const task of input.tasks) {
-        const taskKey = `${input.planId}:task:${shortHash(`${task.taskOrder}:${task.title}`)}`;
+        const taskKey = planScopedKey(input.planId, `task:${shortHash(`${task.taskOrder}:${task.title}`)}`);
         tasks.push(await createTaskFromMcp(
           service,
           { ...task, projectId: input.projectId, phaseId: phase.id, idempotencyKey: taskKey, source },
@@ -521,16 +520,17 @@ function registerWriteTools(server, service, identity) {
     'lifeline_submit_completion',
     {
       title: 'Submit Agent completion',
-      description: 'Attach actual model/time/artifact/test evidence and move RUNNING → REVIEW. This never verifies the task.',
+      description: 'Report one real task result. Without a prior Run, include startedAt, completedAt, and modelRef; COMPLETED moves only to REVIEW, while FAILED or BLOCKED leaves the task blocked. This never verifies the task.',
       inputSchema: z.object({
         taskId: z.string().trim().min(3).max(160),
         runId: z.string().trim().min(3).max(160).optional(),
+        outcome: z.enum(['COMPLETED', 'FAILED', 'BLOCKED']).default('COMPLETED'),
         resultSummary: z.string().trim().min(1).max(4000),
         evidence: z.array(z.object({
           type: z.string().trim().min(1).max(80),
           summary: z.string().trim().min(1).max(2000),
           metadata: z.record(z.string(), z.unknown()).optional()
-        })).min(1).max(50),
+        })).max(50).default([]),
         agentId: z.string().trim().min(1).max(160).optional(),
         executor: z.string().trim().min(1).max(160).optional(),
         provider: z.string().trim().min(1).max(160).optional(),
@@ -725,6 +725,11 @@ function shortHash(value) {
   return createHash('sha256').update(value).digest('hex').slice(0, 16);
 }
 
+function planScopedKey(planId, suffix) {
+  const legacyKey = `${planId}:${suffix}`;
+  return legacyKey.length <= 256 ? legacyKey : `plan:${shortHash(planId)}:${suffix}`;
+}
+
 function singleVariable(value) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -745,7 +750,6 @@ async function main() {
   await store.ready();
   const service = new LifelineService({
     store,
-    executor: new MockExecutor({ delayMs: 0 }),
     localUserId: actor,
     logger: { error: (...args) => console.error(...args) }
   });

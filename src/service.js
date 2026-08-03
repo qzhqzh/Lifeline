@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import {
+  COMPLETION_OUTCOMES,
   DomainError,
   RUN_STATUS,
   WORK_ITEM_STATUS,
@@ -25,6 +26,17 @@ import {
   PORTFOLIO_TEMPLATE_VERSION
 } from './portfolio-v2-template.js';
 
+export const RUN_KIND = Object.freeze({
+  INTERNAL_MOCK: 'INTERNAL_MOCK',
+  AGENT: 'AGENT'
+});
+
+const TRAJECTORY_WINDOW_MS = Object.freeze({
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000
+});
+
 export class LifelineService {
   #store;
   #executor;
@@ -41,12 +53,6 @@ export class LifelineService {
 
   async start() {
     await this.#store.ready();
-    const state = await this.#store.read();
-    const resumable = state.runs.filter((run) => (
-      run.executor === 'mock'
-        && [RUN_STATUS.QUEUED, RUN_STATUS.RUNNING].includes(run.status)
-    ));
-    for (const run of resumable) this.#schedule(run.id);
   }
 
   async listProjects() {
@@ -552,6 +558,7 @@ export class LifelineService {
       const before = taskContractSnapshot(workItem);
       const candidate = { ...workItem, ...validated, phaseId: phase.id };
       assertTaskDependencies(state, candidate);
+      assertProjectDependencyTopology(state, project.id, candidate);
       const after = taskContractSnapshot(candidate);
       if (JSON.stringify(before) === JSON.stringify(after)) return workItem;
 
@@ -722,41 +729,11 @@ export class LifelineService {
   }
 
   async queueWorkItem(workItemId) {
-    const result = await this.#store.mutate((state) => {
-      const index = findIndexOrThrow(state.workItems, workItemId, 'work item');
-      const workItem = state.workItems[index];
-
-      if ([WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.REVIEW].includes(workItem.status)) {
-        return requireEntity(state.runs, workItem.currentRunId, 'run');
-      }
-
-      validateReadyContract(workItem);
-      assertDependenciesSatisfied(state, workItem);
-      const recurring = isRecurringWorkItem(workItem);
-      const queued = transitionWorkItem(workItem, WORK_ITEM_STATUS.QUEUED);
-      const run = {
-        id: createId('run'),
-        workItemId,
-        executor: 'mock',
-        status: RUN_STATUS.QUEUED,
-        stage: 0,
-        attempt: nextRunAttempt(state, workItemId),
-        onSuccessStatus: recurring ? WORK_ITEM_STATUS.RECURRING : WORK_ITEM_STATUS.VERIFIED,
-        error: null,
-        createdAt: nowIso(),
-        startedAt: null,
-        finishedAt: null,
-        updatedAt: nowIso()
-      };
-      queued.currentRunId = run.id;
-      state.workItems[index] = queued;
-      state.runs.push(run);
-      state.events.push(createRunEvent(state, run, 'run.queued', 'Run queued for the mock executor'));
-      return run;
-    });
-
-    this.#schedule(result.id);
-    return result;
+    await this.getWorkItem(workItemId);
+    throw new DomainError(
+      'Internal Mock execution is disabled; report the real result once with lifeline_submit_completion',
+      'MOCK_EXECUTOR_DISABLED'
+    );
   }
 
   async startTask(workItemId, input = {}, options = {}) {
@@ -798,7 +775,7 @@ export class LifelineService {
       const run = {
         id: createId('run'),
         workItemId,
-        kind: 'AGENT',
+        kind: RUN_KIND.AGENT,
         executor: normalizeRequiredText(input?.executor ?? 'codex', 'executor', 160),
         agentId: normalizeOptionalText(input?.agentId, 'agentId', 160),
         provider: normalizeOptionalText(input?.provider, 'provider', 160),
@@ -843,12 +820,54 @@ export class LifelineService {
 
       const workItemIndex = findIndexOrThrow(state.workItems, workItemId, 'work item');
       let workItem = state.workItems[workItemIndex];
+      const outcome = normalizeCompletionOutcome(input?.outcome);
       const runId = input?.runId ?? workItem.currentRunId;
-      const run = requireEntity(state.runs, runId, 'run');
-      if (run.workItemId !== workItemId) {
+      const completedAt = normalizeIsoTimestamp(input?.completedAt ?? nowIso(), 'completedAt');
+      let run = runId ? requireEntity(state.runs, runId, 'run') : null;
+      if (run && run.workItemId !== workItemId) {
         throw new DomainError('run does not belong to task', 'INVALID_INPUT');
       }
-      if (workItem.status !== WORK_ITEM_STATUS.RUNNING || run.status !== RUN_STATUS.RUNNING) {
+      if (!run) {
+        const startedAt = normalizeIsoTimestamp(input?.startedAt, 'startedAt', true);
+        if (Date.parse(startedAt) > Date.parse(completedAt)) {
+          throw new DomainError('startedAt must not be after completedAt', 'INVALID_INPUT');
+        }
+        const recurring = isRecurringWorkItem(workItem);
+        workItem = transitionReportedTaskToRunning(workItem, startedAt);
+        run = {
+          id: createId('run'),
+          workItemId,
+          kind: RUN_KIND.AGENT,
+          executor: normalizeOptionalText(input?.executor, 'executor', 160) ?? 'agent',
+          agentId: normalizeOptionalText(input?.agentId, 'agentId', 160),
+          provider: normalizeOptionalText(input?.provider, 'provider', 160),
+          modelRef: normalizeRequiredText(input?.modelRef, 'modelRef', 240),
+          modelSnapshot: input?.modelSnapshot ?? null,
+          reasoningEffort: normalizeOptionalText(input?.reasoningEffort, 'reasoningEffort', 80),
+          status: RUN_STATUS.RUNNING,
+          stage: 0,
+          attempt: nextRunAttempt(state, workItemId),
+          onSuccessStatus: recurring ? WORK_ITEM_STATUS.RECURRING : WORK_ITEM_STATUS.VERIFIED,
+          error: null,
+          idempotencyKey: context.idempotencyKey,
+          createdBy: context.actor,
+          source: mutationSource(input, options),
+          createdAt: nowIso(),
+          startedAt,
+          finishedAt: null,
+          updatedAt: nowIso(),
+          reportedAtCompletion: true
+        };
+        workItem.currentRunId = run.id;
+        state.runs.push(run);
+        state.events.push(createRunEvent(
+          state,
+          run,
+          'run.reported',
+          'Agent reported a real task result',
+          auditMetadata(context, { executor: run.executor, modelRef: run.modelRef })
+        ));
+      } else if (workItem.status !== WORK_ITEM_STATUS.RUNNING || run.status !== RUN_STATUS.RUNNING) {
         throw new DomainError('Only a running task can submit completion', 'INVALID_TRANSITION');
       }
 
@@ -866,11 +885,16 @@ export class LifelineService {
       }));
       state.evidence.push(...evidence);
 
-      const completedAt = normalizeOptionalText(input?.completedAt, 'completedAt', 80) ?? nowIso();
+      const startedAt = normalizeIsoTimestamp(input?.startedAt ?? run.startedAt, 'startedAt', true);
+      if (Date.parse(startedAt) > Date.parse(completedAt)) {
+        throw new DomainError('startedAt must not be after completedAt', 'INVALID_INPUT');
+      }
+      const durationMs = input?.durationMs ?? Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
       const completionRecord = createCompletionRecord({
         taskId: workItemId,
         runId: run.id,
         completionMethod: 'AGENT_RUN',
+        outcome,
         agentId: input?.agentId ?? run.agentId,
         executor: input?.executor ?? run.executor,
         provider: input?.provider ?? run.provider,
@@ -879,9 +903,9 @@ export class LifelineService {
         reasoningEffort: input?.reasoningEffort ?? run.reasoningEffort,
         promptVersion: input?.promptVersion,
         policyVersion: input?.policyVersion,
-        startedAt: input?.startedAt ?? run.startedAt,
+        startedAt,
         completedAt,
-        durationMs: input?.durationMs,
+        durationMs,
         inputTokens: input?.inputTokens,
         outputTokens: input?.outputTokens,
         cost: input?.cost,
@@ -897,14 +921,27 @@ export class LifelineService {
       completionRecord.source = mutationSource(input, options);
       state.completionRecords.push(completionRecord);
 
-      workItem = transitionWorkItem(workItem, WORK_ITEM_STATUS.REVIEW);
+      workItem = transitionWorkItem(
+        workItem,
+        outcome === 'COMPLETED' ? WORK_ITEM_STATUS.REVIEW : WORK_ITEM_STATUS.BLOCKED,
+        completedAt
+      );
       state.workItems[workItemIndex] = workItem;
-      run.status = RUN_STATUS.SUCCEEDED;
+      run.status = outcome === 'COMPLETED' ? RUN_STATUS.SUCCEEDED : RUN_STATUS.FAILED;
       run.finishedAt = completedAt;
       run.updatedAt = completedAt;
-      state.events.push(createRunEvent(state, run, 'completion.submitted', 'Agent completion submitted for review', auditMetadata(context, {
+      run.error = outcome === 'COMPLETED' ? null : {
+        code: outcome === 'BLOCKED' ? 'AGENT_REPORTED_BLOCKED' : 'AGENT_REPORTED_FAILURE',
+        message: completionRecord.resultSummary
+      };
+      const eventType = outcome === 'COMPLETED' ? 'completion.submitted' : outcome === 'BLOCKED' ? 'run.blocked' : 'run.failed';
+      const eventMessage = outcome === 'COMPLETED'
+        ? 'Agent completion submitted for review'
+        : outcome === 'BLOCKED' ? 'Agent reported the task as blocked' : 'Agent reported the task as failed';
+      state.events.push(createRunEvent(state, run, eventType, eventMessage, auditMetadata(context, {
         completionRecordId: completionRecord.id,
-        evidenceIds: evidence.map((entry) => entry.id)
+        evidenceIds: evidence.map((entry) => entry.id),
+        outcome
       })));
       return { task: workItem, run, completionRecord, evidence };
     });
@@ -985,6 +1022,11 @@ export class LifelineService {
         : WORK_ITEM_STATUS.VERIFIED;
       workItem = transitionWorkItem(workItem, successStatus);
       state.workItems[workItemIndex] = workItem;
+      if (successStatus === WORK_ITEM_STATUS.VERIFIED) {
+        const project = requireEntity(state.projects, workItem.projectId, 'project');
+        project.currentTaskId = workItem.id;
+        project.updatedAt = nowIso();
+      }
       state.events.push(createAuditEvent({
         type: successStatus === WORK_ITEM_STATUS.RECURRING ? 'work_item.cycle_verified' : 'work_item.verified',
         message: successStatus === WORK_ITEM_STATUS.RECURRING
@@ -1019,6 +1061,109 @@ export class LifelineService {
       .sort((a, b) => a.sequence - b.sequence);
   }
 
+  async getTrajectory(window = '7d', { now = nowIso() } = {}) {
+    const windowMs = TRAJECTORY_WINDOW_MS[window];
+    if (!windowMs) {
+      throw new DomainError('window must be one of 24h, 7d, or 30d', 'INVALID_INPUT');
+    }
+    const endMs = Date.parse(now);
+    if (!Number.isFinite(endMs)) throw new DomainError('now must be a valid timestamp', 'INVALID_INPUT');
+    const startMs = endMs - windowMs;
+    const state = await this.#store.read();
+    const runsById = new Map(state.runs.map((run) => [run.id, run]));
+    const tasksById = new Map(state.workItems.map((task) => [task.id, task]));
+    const phasesById = new Map(state.phases.map((phase) => [phase.id, phase]));
+    const projectsById = new Map(state.projects.map((project) => [project.id, project]));
+
+    const intervals = state.completionRecords.flatMap((record) => {
+      const run = record.runId ? runsById.get(record.runId) : null;
+      if (record.completionMethod !== 'AGENT_RUN' || run?.kind !== RUN_KIND.AGENT || run?.legacyMock === true) return [];
+      const taskId = record.taskId ?? record.workItemId;
+      const task = tasksById.get(taskId);
+      const project = task ? projectsById.get(task.projectId) : null;
+      const startedMs = Date.parse(record.startedAt ?? run.startedAt ?? '');
+      const completedMs = Date.parse(record.completedAt ?? run.finishedAt ?? '');
+      if (!task || !project || !Number.isFinite(startedMs) || !Number.isFinite(completedMs) || completedMs < startedMs || completedMs > endMs) return [];
+      if (completedMs < startMs || startedMs > endMs) return [];
+      const evidence = state.evidence.filter((entry) => (
+        entry.runId === run.id && entry.metadata?.legacyMock !== true
+      )).map((entry) => ({
+        id: entry.id,
+        type: entry.type,
+        summary: entry.summary,
+        metadata: entry.metadata ?? {},
+        createdAt: entry.createdAt
+      }));
+      const phase = task.phaseId ? phasesById.get(task.phaseId) : null;
+      return [{
+        id: record.id,
+        projectId: project.id,
+        projectName: project.name,
+        taskId,
+        taskTitle: task.title,
+        phaseId: task.phaseId ?? task.planning?.phaseId ?? null,
+        phaseTitle: phase?.title ?? task.planning?.phase ?? null,
+        runId: run.id,
+        outcome: record.outcome ?? 'COMPLETED',
+        taskStatus: task.status,
+        startedAt: new Date(startedMs).toISOString(),
+        completedAt: new Date(completedMs).toISOString(),
+        durationMs: record.durationMs ?? Math.max(0, completedMs - startedMs),
+        displayStartedAt: new Date(Math.max(startMs, startedMs)).toISOString(),
+        displayCompletedAt: new Date(Math.min(endMs, completedMs)).toISOString(),
+        modelRef: record.modelRef ?? run.modelRef ?? null,
+        reasoningEffort: record.reasoningEffort ?? run.reasoningEffort ?? null,
+        resultSummary: record.resultSummary ?? '',
+        verificationStatus: record.verifiedAt ? 'VERIFIED' : 'REVIEW',
+        verifiedAt: record.verifiedAt ?? null,
+        artifactUris: [...(record.artifactUris ?? [])],
+        evidence
+      }];
+    }).sort((left, right) => Date.parse(left.startedAt) - Date.parse(right.startedAt)
+      || Date.parse(left.completedAt) - Date.parse(right.completedAt));
+
+    const coverageIntervals = mergeIntervals(intervals.map((interval) => ({
+      startMs: Math.max(startMs, Date.parse(interval.startedAt)),
+      endMs: Math.min(endMs, Date.parse(interval.completedAt))
+    })));
+    const recordedDurationMs = coverageIntervals.reduce((sum, interval) => sum + interval.endMs - interval.startMs, 0);
+    const gaps = invertIntervals(coverageIntervals, startMs, endMs).map((gap) => ({
+      startedAt: new Date(gap.startMs).toISOString(),
+      completedAt: new Date(gap.endMs).toISOString(),
+      durationMs: gap.endMs - gap.startMs,
+      label: '未记录推进'
+    }));
+    const projects = [...new Set(intervals.map((interval) => interval.projectId))]
+      .map((projectId) => {
+        const project = projectsById.get(projectId);
+        return {
+          id: projectId,
+          name: project.name,
+          strategicValue: project.strategicValue,
+          intervals: intervals.filter((interval) => interval.projectId === projectId)
+        };
+      })
+      .sort(compareProjects);
+
+    return {
+      window,
+      startedAt: new Date(startMs).toISOString(),
+      completedAt: new Date(endMs).toISOString(),
+      summary: {
+        coverageRatio: Number((recordedDurationMs / windowMs).toFixed(4)),
+        recordedDurationMs,
+        unrecordedDurationMs: windowMs - recordedDurationMs,
+        peakConcurrency: peakConcurrency(intervals, startMs, endMs),
+        completedTaskCount: countTrajectoryOutcomes(intervals, 'COMPLETED', startMs, endMs),
+        failedTaskCount: countTrajectoryOutcomes(intervals, 'FAILED', startMs, endMs),
+        blockedTaskCount: countTrajectoryOutcomes(intervals, 'BLOCKED', startMs, endMs),
+        projectCount: projects.length
+      },
+      projects,
+      gaps
+    };
+  }
+
   async dashboard() {
     const state = await this.#store.read();
     const projects = state.projects.filter((project) => project.status !== 'ARCHIVED').map((project) => {
@@ -1044,8 +1189,11 @@ export class LifelineService {
     return {
       generatedAt: nowIso(),
       projects,
-      activeRuns: state.runs.filter((run) => [RUN_STATUS.QUEUED, RUN_STATUS.RUNNING].includes(run.status)).length,
-      totalRuns: state.runs.length,
+      activeRuns: state.runs.filter((run) => (
+        run.kind === RUN_KIND.AGENT && [RUN_STATUS.QUEUED, RUN_STATUS.RUNNING].includes(run.status)
+      )).length,
+      totalRuns: state.runs.filter((run) => run.kind === RUN_KIND.AGENT).length,
+      legacyMockRuns: state.runs.filter((run) => run.kind === RUN_KIND.INTERNAL_MOCK).length,
       evidenceCount: state.evidence.length,
       bootstrap: {
         portfolioV2: bootstrapStatusFromState(state, this.#localUserId)
@@ -1167,10 +1315,6 @@ export class LifelineService {
             workItem = await this.markReady(workItem.id);
             advancedWorkItems += 1;
           }
-          if (workItem.status === WORK_ITEM_STATUS.READY) {
-            queuedRuns.push(await this.queueWorkItem(workItem.id));
-            advancedWorkItems += 1;
-          }
         }
       }
     }
@@ -1279,6 +1423,11 @@ export class LifelineService {
         );
       }
       state.workItems[itemIndex] = workItem;
+      if (workItem.status === WORK_ITEM_STATUS.VERIFIED) {
+        const project = requireEntity(state.projects, workItem.projectId, 'project');
+        project.currentTaskId = workItem.id;
+        project.updatedAt = nowIso();
+      }
       run.status = RUN_STATUS.SUCCEEDED;
       run.finishedAt = nowIso();
       run.updatedAt = run.finishedAt;
@@ -1586,6 +1735,15 @@ function assertDependencyOrderForReorder(state, phase, orderedTaskIds, lockedMax
   }
 }
 
+function assertProjectDependencyTopology(state, projectId, candidate) {
+  const workItems = state.workItems.map((task) => task.id === candidate.id ? candidate : task);
+  const candidateState = { ...state, workItems };
+  for (const task of workItems) {
+    if (task.projectId !== projectId || task.status === WORK_ITEM_STATUS.CANCELLED) continue;
+    assertTaskDependencies(candidateState, task);
+  }
+}
+
 function assertDependenciesSatisfied(state, workItem) {
   const unmet = (workItem.dependsOnTaskIds ?? []).map((dependencyId) => {
     const dependency = state.workItems.find((entry) => entry.id === dependencyId);
@@ -1598,6 +1756,38 @@ function assertDependenciesSatisfied(state, workItem) {
   if (unmet.length > 0) {
     throw new DomainError('Task dependencies are not complete', 'UNSATISFIED_TASK_DEPENDENCIES', { unmet });
   }
+}
+
+function latestCompletedTaskId(state, projectId) {
+  const completedTasks = state.workItems.filter((task) => (
+    task.projectId === projectId
+      && [WORK_ITEM_STATUS.VERIFIED, WORK_ITEM_STATUS.RELEASED, WORK_ITEM_STATUS.ARCHIVED].includes(task.status)
+  ));
+  if (completedTasks.length === 0) return null;
+
+  const completedTaskIds = new Set(completedTasks.map((task) => task.id));
+  const completionTime = new Map();
+  for (const record of state.completionRecords) {
+    const taskId = record.taskId ?? record.workItemId;
+    if (!completedTaskIds.has(taskId)) continue;
+    const timestamp = record.verifiedAt ?? record.completedAt ?? record.startedAt;
+    const time = Date.parse(timestamp ?? '');
+    if (Number.isFinite(time) && time > (completionTime.get(taskId) ?? -Infinity)) {
+      completionTime.set(taskId, time);
+    }
+  }
+  return completedTasks.sort((left, right) => (
+    taskCompletionTime(right, completionTime) - taskCompletionTime(left, completionTime)
+      || Number(right.planning?.phaseOrder ?? 0) - Number(left.planning?.phaseOrder ?? 0)
+      || Number(right.planning?.taskOrder ?? 0) - Number(left.planning?.taskOrder ?? 0)
+  )).at(0)?.id ?? null;
+}
+
+function taskCompletionTime(task, completionTime) {
+  const recorded = completionTime.get(task.id);
+  if (Number.isFinite(recorded)) return recorded;
+  const fallback = Date.parse(task.updatedAt ?? task.createdAt ?? '');
+  return Number.isFinite(fallback) ? fallback : 0;
 }
 
 function taskContractSnapshot(workItem) {
@@ -1771,8 +1961,9 @@ function verificationResultFromState(state, workItemId, completionRecord, eviden
 }
 
 function normalizeCompletionEvidence(value) {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 50) {
-    throw new DomainError('evidence must contain between 1 and 50 records', 'INVALID_INPUT');
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value) || value.length > 50) {
+    throw new DomainError('evidence must contain at most 50 records', 'INVALID_INPUT');
   }
   return value.map((entry, index) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
@@ -1784,6 +1975,47 @@ function normalizeCompletionEvidence(value) {
       metadata: normalizeSource(entry.metadata) ?? {}
     };
   });
+}
+
+function normalizeCompletionOutcome(value = 'COMPLETED') {
+  const outcome = String(value ?? 'COMPLETED').trim().toUpperCase();
+  if (!COMPLETION_OUTCOMES.includes(outcome)) {
+    throw new DomainError(`outcome must be one of: ${COMPLETION_OUTCOMES.join(', ')}`, 'INVALID_INPUT');
+  }
+  return outcome;
+}
+
+function normalizeIsoTimestamp(value, name, required = false) {
+  const timestamp = normalizeOptionalText(value, name, 80);
+  if (!timestamp) {
+    if (required) throw new DomainError(`${name} is required when reporting without a started Run`, 'INVALID_INPUT');
+    return null;
+  }
+  const milliseconds = Date.parse(timestamp);
+  if (!Number.isFinite(milliseconds)) {
+    throw new DomainError(`${name} must be an ISO-8601 timestamp`, 'INVALID_INPUT');
+  }
+  return new Date(milliseconds).toISOString();
+}
+
+function transitionReportedTaskToRunning(workItem, at) {
+  let task = workItem;
+  if ([WORK_ITEM_STATUS.PLANNED, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.BLOCKED].includes(task.status)) {
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.READY, at);
+  }
+  if ([WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.RECURRING].includes(task.status)) {
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.QUEUED, at);
+  }
+  if (task.status === WORK_ITEM_STATUS.QUEUED) {
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.RUNNING, at);
+  }
+  if (task.status !== WORK_ITEM_STATUS.RUNNING) {
+    throw new DomainError(
+      `Task must be PLANNED, DEFERRED, READY, BLOCKED, or RECURRING for a one-shot result report; received ${task.status}`,
+      'INVALID_TRANSITION'
+    );
+  }
+  return task;
 }
 
 function isPassingTestEvidence(evidence) {
@@ -2026,11 +2258,7 @@ function applyPortfolioTemplate(state, template, userId) {
         }));
       }
     }
-    if (projectSpec.currentTaskTitle) {
-      project.currentTaskId = state.workItems.find((entry) => (
-        entry.projectId === project.id && entry.title === projectSpec.currentTaskTitle
-      ))?.id ?? null;
-    }
+    project.currentTaskId = latestCompletedTaskId(state, project.id);
     for (const phase of phases.values()) {
       const phaseItems = state.workItems.filter((entry) => (
         entry.phaseId === phase.id && entry.status !== WORK_ITEM_STATUS.CANCELLED
@@ -2213,6 +2441,56 @@ function archiveLegacyProject(state, project) {
 function compareProjects(left, right) {
   return Number(right.strategicValue ?? 0) - Number(left.strategicValue ?? 0)
     || String(left.name).localeCompare(String(right.name), 'zh-CN');
+}
+
+function mergeIntervals(intervals) {
+  const sorted = intervals
+    .filter((interval) => interval.endMs >= interval.startMs)
+    .sort((left, right) => left.startMs - right.startMs || left.endMs - right.endMs);
+  const merged = [];
+  for (const interval of sorted) {
+    const previous = merged.at(-1);
+    if (!previous || interval.startMs > previous.endMs) {
+      merged.push({ ...interval });
+    } else {
+      previous.endMs = Math.max(previous.endMs, interval.endMs);
+    }
+  }
+  return merged;
+}
+
+function invertIntervals(intervals, startMs, endMs) {
+  const gaps = [];
+  let cursor = startMs;
+  for (const interval of intervals) {
+    if (interval.startMs > cursor) gaps.push({ startMs: cursor, endMs: interval.startMs });
+    cursor = Math.max(cursor, interval.endMs);
+  }
+  if (cursor < endMs) gaps.push({ startMs: cursor, endMs });
+  return gaps;
+}
+
+function peakConcurrency(intervals, startMs, endMs) {
+  const points = intervals.flatMap((interval) => {
+    const start = Math.max(startMs, Date.parse(interval.startedAt));
+    const end = Math.min(endMs, Date.parse(interval.completedAt));
+    if (end <= start) return [];
+    return [{ at: start, delta: 1 }, { at: end, delta: -1 }];
+  }).sort((left, right) => left.at - right.at || left.delta - right.delta);
+  let active = 0;
+  let peak = 0;
+  for (const point of points) {
+    active += point.delta;
+    peak = Math.max(peak, active);
+  }
+  return peak;
+}
+
+function countTrajectoryOutcomes(intervals, outcome, startMs, endMs) {
+  return intervals.filter((interval) => {
+    const completedMs = Date.parse(interval.completedAt);
+    return interval.outcome === outcome && completedMs >= startMs && completedMs <= endMs;
+  }).length;
 }
 
 function compareWorkItems(left, right) {

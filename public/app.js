@@ -2,8 +2,9 @@ const state = {
   projects: [],
   workItems: [],
   dashboard: null,
-  eventSource: null,
   devReloadSource: null,
+  trajectory: null,
+  trajectoryWindow: readTrajectoryWindow(),
   filter: 'all',
   bootstrap: null,
   selectedProjectId: new URLSearchParams(window.location.search).get('project'),
@@ -17,7 +18,8 @@ const state = {
   detailView: readDetailView(),
   draggedTaskId: null,
   dragPlaceholder: null,
-  dragTooltipSuppressed: false
+  dragTooltipSuppressed: false,
+  boardScrollPositions: new Map()
 };
 
 const elements = {
@@ -26,8 +28,16 @@ const elements = {
   nextAction: document.querySelector('#nextAction'),
   board: document.querySelector('#portfolioBoard'),
   projectId: document.querySelector('#projectId'),
-  timeline: document.querySelector('#timeline'),
-  runStatus: document.querySelector('#runStatus'),
+  trajectory: document.querySelector('#trajectory'),
+  trajectorySummary: document.querySelector('#trajectorySummary'),
+  trajectoryCoverage: document.querySelector('#trajectoryCoverage'),
+  trajectoryBoard: document.querySelector('#trajectoryBoard'),
+  trajectoryWindowSwitch: document.querySelector('#trajectoryWindowSwitch'),
+  trajectoryDrawer: document.querySelector('#trajectoryDrawer'),
+  trajectoryDrawerContext: document.querySelector('#trajectoryDrawerContext'),
+  trajectoryDrawerTitle: document.querySelector('#trajectoryDrawerTitle'),
+  trajectoryDrawerBody: document.querySelector('#trajectoryDrawerBody'),
+  closeTrajectoryDrawer: document.querySelector('#closeTrajectoryDrawer'),
   bootstrapAction: document.querySelector('#bootstrapAction'),
   seedDemo: document.querySelector('#seedDemo'),
   refresh: document.querySelector('#refresh'),
@@ -134,7 +144,20 @@ elements.boardFilters.addEventListener('click', (event) => {
     entry.classList.toggle('active', active);
     entry.setAttribute('aria-pressed', String(active));
   });
-  renderBoard();
+  applyBoardFilter();
+});
+elements.trajectoryWindowSwitch.addEventListener('click', async (event) => {
+  const button = event.target.closest('[data-trajectory-window]');
+  if (!button || button.dataset.trajectoryWindow === state.trajectoryWindow) return;
+  state.trajectoryWindow = button.dataset.trajectoryWindow;
+  try { window.localStorage.setItem('lifeline.trajectoryWindow', state.trajectoryWindow); } catch {}
+  syncTrajectoryWindowSwitch();
+  await loadTrajectory();
+});
+elements.closeTrajectoryDrawer.addEventListener('click', () => elements.trajectoryDrawer.close());
+elements.trajectoryDrawer.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  elements.trajectoryDrawer.close();
 });
 window.addEventListener('popstate', async () => {
   state.selectedProjectId = new URLSearchParams(window.location.search).get('project');
@@ -183,14 +206,16 @@ function enableDevReload() {
 
 async function refresh() {
   try {
-    const [dashboard, projects, workItems] = await Promise.all([
+    const [dashboard, projects, workItems, trajectory] = await Promise.all([
       api('/api/dashboard'),
       api('/api/projects'),
-      api('/api/work-items')
+      api('/api/work-items'),
+      api(`/api/trajectory?window=${encodeURIComponent(state.trajectoryWindow)}`)
     ]);
     state.projects = projects.items;
     state.workItems = workItems.items.map(hydrateWorkItem);
     state.dashboard = hydrateDashboard(dashboard, state.workItems);
+    state.trajectory = trajectory;
     state.bootstrap = dashboard.bootstrap?.portfolioV2 ?? dashboard.bootstrap ?? null;
     if (state.selectedProjectId && state.projects.some((project) => project.id === state.selectedProjectId)) {
       state.detailSchedule = hydrateSchedule(await api(`/api/projects/${encodeURIComponent(state.selectedProjectId)}/schedule`));
@@ -407,55 +432,6 @@ async function markReady(workItemId) {
   }
 }
 
-async function runWorkItem(workItemId) {
-  try {
-    const run = await api(`/api/work-items/${encodeURIComponent(workItemId)}/queue`, { method: 'POST' });
-    elements.timeline.innerHTML = '';
-    setRunStatus(run.status);
-    openRunStream(run.id);
-    notify('任务已进入执行队列，可在下方工作台回放');
-    await refresh();
-  } catch (error) {
-    notify(error.message, true);
-  }
-}
-
-function openRunStream(runId) {
-  state.eventSource?.close();
-  const source = new EventSource(`/api/runs/${encodeURIComponent(runId)}/stream`);
-  state.eventSource = source;
-
-  const eventNames = ['run.queued', 'run.started', 'step.started', 'step.completed', 'run.succeeded', 'run.failed'];
-  for (const eventName of eventNames) {
-    source.addEventListener(eventName, (event) => appendTimeline(JSON.parse(event.data)));
-  }
-  source.addEventListener('terminal', async (event) => {
-    const terminal = JSON.parse(event.data);
-    setRunStatus(terminal.status);
-    source.close();
-    await refresh();
-  });
-  source.onerror = () => {
-    if (source.readyState === EventSource.CLOSED) return;
-    setRunStatus('RECONNECTING');
-  };
-}
-
-function appendTimeline(event) {
-  elements.timeline.querySelector('.empty')?.remove();
-  const item = document.createElement('li');
-  item.innerHTML = `
-    <span class="timeline-dot"></span>
-    <div>
-      <div class="timeline-meta"><strong>${escapeHtml(event.type)}</strong><time>${formatTime(event.createdAt)}</time></div>
-      <p>${escapeHtml(event.message)}</p>
-      ${event.metadata?.evidenceScore !== undefined ? `<small>证据得分 ${Math.round(event.metadata.evidenceScore * 100)}%</small>` : ''}
-    </div>
-  `;
-  elements.timeline.append(item);
-  item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
 function render() {
   document.body.classList.toggle('project-detail-mode', Boolean(state.selectedProjectId));
   renderBootstrapAction();
@@ -464,6 +440,219 @@ function render() {
   renderBoardToolbar();
   renderBoard();
   renderProjectSelect();
+  renderTrajectory();
+}
+
+async function loadTrajectory() {
+  elements.trajectoryBoard.setAttribute('aria-busy', 'true');
+  try {
+    state.trajectory = await api(`/api/trajectory?window=${encodeURIComponent(state.trajectoryWindow)}`);
+    renderTrajectory();
+  } catch (error) {
+    elements.trajectoryBoard.innerHTML = `<div class="trajectory-empty error"><strong>轨迹暂时没有载入</strong><p>${escapeHtml(error.message)}</p></div>`;
+    notify(error.message, true);
+  } finally {
+    elements.trajectoryBoard.removeAttribute('aria-busy');
+  }
+}
+
+function renderTrajectory() {
+  if (!elements.trajectory) return;
+  elements.trajectory.hidden = Boolean(state.selectedProjectId);
+  syncTrajectoryWindowSwitch();
+  const trajectory = state.trajectory;
+  if (!trajectory) return;
+  const summary = trajectory.summary;
+  elements.trajectorySummary.innerHTML = [
+    trajectoryMetric('推进覆盖', formatTrajectoryPercent(summary.coverageRatio), '真实 Agent 任务区间的并集占当前窗口的比例'),
+    trajectoryMetric('完成上报', `${summary.completedTaskCount} 次`, 'Agent 在当前窗口内上报完成的任务结果'),
+    trajectoryMetric('并发峰值', `${summary.peakConcurrency} 路`, '真实任务区间发生重叠时的最高并行数'),
+    trajectoryMetric('未记录推进', formatElapsedMs(summary.unrecordedDurationMs), '没有收到任务完成上报的时间，不等同于用户空闲')
+  ].join('');
+  renderTrajectoryCoverage(trajectory);
+
+  if (trajectory.projects.length === 0) {
+    elements.trajectoryBoard.innerHTML = `
+      <div class="trajectory-empty">
+        <strong>还没有真实推进记录</strong>
+        <p>任务完成时让 Agent 只调用一次 <code>lifeline_submit_completion</code>，第一条轨迹就会出现在这里。</p>
+      </div>
+    `;
+    return;
+  }
+
+  const axis = trajectoryAxisLabels(trajectory);
+  elements.trajectoryBoard.innerHTML = `
+    <div class="trajectory-axis" aria-hidden="true">
+      <span></span>
+      <div><time>${axis[0]}</time><time>${axis[1]}</time><time>${axis[2]}</time></div>
+    </div>
+    <div class="trajectory-projects">
+      ${trajectory.projects.map((project) => renderTrajectoryProject(project, trajectory)).join('')}
+    </div>
+    <div class="trajectory-legend">
+      <span><i class="verified"></i>已验证</span>
+      <span><i class="review"></i>待复核</span>
+      <span><i class="failed"></i>失败 / 阻塞</span>
+      <span class="trajectory-legend-note">轨迹只来自 Agent 的真实结果上报</span>
+    </div>
+  `;
+  elements.trajectoryBoard.querySelectorAll('[data-trajectory-record]').forEach((button) => {
+    button.addEventListener('click', () => openTrajectoryRecord(button.dataset.trajectoryRecord));
+  });
+}
+
+function trajectoryMetric(label, value, title) {
+  return `<div class="trajectory-metric" title="${escapeHtml(title)}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function renderTrajectoryCoverage(trajectory) {
+  const startMs = Date.parse(trajectory.startedAt);
+  const windowMs = Date.parse(trajectory.completedAt) - startMs;
+  const gapSegments = trajectory.gaps.map((gap) => {
+    const left = ((Date.parse(gap.startedAt) - startMs) / windowMs) * 100;
+    const width = (gap.durationMs / windowMs) * 100;
+    return `<span class="trajectory-gap" style="left:${left.toFixed(4)}%;width:${width.toFixed(4)}%" title="未记录推进 · ${escapeHtml(formatElapsedMs(gap.durationMs))}"></span>`;
+  }).join('');
+  elements.trajectoryCoverage.innerHTML = `
+    <div class="coverage-copy"><strong>推进脉冲</strong><span>亮色是已上报区间，灰色是未记录推进</span></div>
+    <div class="coverage-track" aria-label="真实推进覆盖 ${escapeHtml(formatTrajectoryPercent(trajectory.summary.coverageRatio))}">${gapSegments}</div>
+  `;
+}
+
+function renderTrajectoryProject(project, trajectory) {
+  const startMs = Date.parse(trajectory.startedAt);
+  const windowMs = Date.parse(trajectory.completedAt) - startMs;
+  const lanes = assignTrajectoryLanes(project.intervals);
+  const laneCount = Math.max(1, ...lanes.map((entry) => entry.lane + 1));
+  return `
+    <article class="trajectory-project" style="--trajectory-lanes:${laneCount}">
+      <header>
+        <strong>${escapeHtml(project.name)}</strong>
+        <span>${project.intervals.length} 次真实上报</span>
+      </header>
+      <div class="trajectory-track" aria-label="${escapeHtml(project.name)} 推进时间轴">
+        ${lanes.map(({ interval, lane }) => {
+          const displayStart = Date.parse(interval.displayStartedAt);
+          const displayEnd = Date.parse(interval.displayCompletedAt);
+          const left = Math.max(0, Math.min(100, ((displayStart - startMs) / windowMs) * 100));
+          const width = Math.max(0, ((displayEnd - displayStart) / windowMs) * 100);
+          const edge = left > 98 ? ' edge' : '';
+          const status = interval.outcome === 'COMPLETED'
+            ? interval.verificationStatus.toLowerCase()
+            : interval.outcome.toLowerCase();
+          const label = `${interval.taskTitle} · ${formatDateTime(interval.startedAt)} 至 ${formatDateTime(interval.completedAt)}`;
+          return `<button
+            class="trajectory-interval ${status}${edge}"
+            type="button"
+            data-trajectory-record="${escapeHtml(interval.id)}"
+            data-label="${escapeHtml(interval.taskTitle)}"
+            style="--interval-left:${left.toFixed(4)}%;--interval-width:${width.toFixed(4)}%;--interval-lane:${lane}"
+            aria-label="${escapeHtml(label)}"
+            title="${escapeHtml(label)}"
+          ><span aria-hidden="true"></span></button>`;
+        }).join('')}
+      </div>
+    </article>
+  `;
+}
+
+function assignTrajectoryLanes(intervals) {
+  const laneEnds = [];
+  return [...intervals]
+    .sort((left, right) => Date.parse(left.displayStartedAt) - Date.parse(right.displayStartedAt))
+    .map((interval) => {
+      const startedAt = Date.parse(interval.displayStartedAt);
+      const completedAt = Date.parse(interval.displayCompletedAt);
+      let lane = laneEnds.findIndex((endAt) => endAt <= startedAt);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = completedAt;
+      return { interval, lane };
+    });
+}
+
+function openTrajectoryRecord(recordId) {
+  const interval = state.trajectory?.projects.flatMap((project) => project.intervals).find((entry) => entry.id === recordId);
+  if (!interval) return;
+  elements.trajectoryDrawerContext.textContent = `${interval.projectName}${interval.phaseTitle ? ` · ${interval.phaseTitle}` : ''}`;
+  elements.trajectoryDrawerTitle.textContent = interval.taskTitle;
+  const evidence = interval.evidence.length > 0
+    ? `<ul>${interval.evidence.map((entry) => `<li><strong>${escapeHtml(evidenceLabel(entry.type))}</strong><span>${escapeHtml(entry.summary)}</span>${Object.keys(entry.metadata ?? {}).length > 0 ? `<pre>${escapeHtml(JSON.stringify(entry.metadata, null, 2))}</pre>` : ''}</li>`).join('')}</ul>`
+    : '<p class="trajectory-detail-empty">本次上报没有附加证据。</p>';
+  const artifacts = interval.artifactUris.length > 0
+    ? `<ul>${interval.artifactUris.map((uri) => `<li><code>${escapeHtml(uri)}</code></li>`).join('')}</ul>`
+    : '<p class="trajectory-detail-empty">本次上报没有附加产物路径。</p>';
+  elements.trajectoryDrawerBody.innerHTML = `
+    <section class="trajectory-result ${interval.outcome.toLowerCase()}">
+      <div><span>本次结果</span><strong>${escapeHtml(outcomeLabel(interval.outcome))}</strong></div>
+      <p>${escapeHtml(interval.resultSummary || 'Agent 未填写结果摘要。')}</p>
+    </section>
+    <dl class="trajectory-facts">
+      <div><dt>开始</dt><dd>${escapeHtml(formatDateTime(interval.startedAt))}</dd></div>
+      <div><dt>完成</dt><dd>${escapeHtml(formatDateTime(interval.completedAt))}</dd></div>
+      <div><dt>持续</dt><dd>${escapeHtml(formatElapsedMs(interval.durationMs))}</dd></div>
+      <div><dt>模型</dt><dd>${escapeHtml(interval.modelRef || '未记录')}</dd></div>
+      <div><dt>推理强度</dt><dd>${escapeHtml(effortLabel(interval.reasoningEffort))}</dd></div>
+      <div><dt>复核状态</dt><dd>${escapeHtml(interval.verificationStatus === 'VERIFIED' ? '已验证' : '待复核')}</dd></div>
+    </dl>
+    <details class="trajectory-details">
+      <summary>证据明细 <span>${interval.evidence.length}</span></summary>
+      ${evidence}
+    </details>
+    <details class="trajectory-details">
+      <summary>代码与文档产物 <span>${interval.artifactUris.length}</span></summary>
+      ${artifacts}
+    </details>
+  `;
+  elements.trajectoryDrawer.showModal();
+}
+
+function syncTrajectoryWindowSwitch() {
+  elements.trajectoryWindowSwitch.querySelectorAll('[data-trajectory-window]').forEach((button) => {
+    const active = button.dataset.trajectoryWindow === state.trajectoryWindow;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function trajectoryAxisLabels(trajectory) {
+  const startMs = Date.parse(trajectory.startedAt);
+  const endMs = Date.parse(trajectory.completedAt);
+  return [startMs, startMs + (endMs - startMs) / 2, endMs].map((time) => new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit', day: '2-digit', hour: trajectory.window === '24h' ? '2-digit' : undefined,
+    minute: trajectory.window === '24h' ? '2-digit' : undefined
+  }).format(new Date(time)));
+}
+
+function formatTrajectoryPercent(ratio) {
+  const percent = Math.max(0, Number(ratio) || 0) * 100;
+  if (percent > 0 && percent < 0.1) return '<0.1%';
+  return `${percent < 10 ? percent.toFixed(1) : Math.round(percent)}%`;
+}
+
+function formatElapsedMs(value) {
+  const milliseconds = Math.max(0, Number(value) || 0);
+  const minutes = Math.round(milliseconds / 60_000);
+  if (minutes < 1) return '少于 1 分钟';
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  if (hours < 24) return remainder ? `${hours} 小时 ${remainder} 分` : `${hours} 小时`;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return remainingHours ? `${days} 天 ${remainingHours} 小时` : `${days} 天`;
+}
+
+function outcomeLabel(outcome) {
+  return { COMPLETED: '已完成', FAILED: '执行失败', BLOCKED: '遇到阻塞' }[outcome] ?? outcome;
+}
+
+function effortLabel(effort) {
+  return { low: '低', medium: '中', high: '高', max: 'Max' }[effort] ?? effort ?? '未记录';
+}
+
+function evidenceLabel(type) {
+  return { TEST_COMMAND: '测试', TEST: '测试', VERIFICATION: '验证', REVIEW: '复核' }[type] ?? type;
 }
 
 function renderBoardToolbar() {
@@ -533,19 +722,17 @@ function renderBoard() {
     renderProjectDetail();
     return;
   }
+  captureBoardScrollPositions();
   const projects = state.dashboard?.projects ?? [];
   const rows = [];
   for (const [projectIndex, project] of projects.entries()) {
-    const projectItems = state.workItems.filter((item) => item.projectId === project.id);
-    const visibleItems = state.workItems
-      .filter((item) => item.projectId === project.id && matchesFilter(item))
-      .sort(compareItems);
-    const phases = visibleItems.length > 0
-      ? groupPhases(visibleItems)
+    const projectItems = state.workItems.filter((item) => item.projectId === project.id).sort(compareItems);
+    const phases = projectItems.length > 0
+      ? groupPhases(projectItems)
       : [{ order: '—', name: projectItems.length > 0 ? '当前筛选无任务' : '尚未排期', items: [] }];
     const firstUnfinishedPhase = phases.findIndex((phase) => phase.items.some(isUnfinished));
     rows.push(`
-      <article class="project-row" aria-labelledby="project-${escapeHtml(project.id)}">
+      <article class="project-row" data-project-row="${escapeHtml(project.id)}" aria-labelledby="project-${escapeHtml(project.id)}">
         <button class="project-summary" type="button" data-open-project="${escapeHtml(project.id)}" aria-label="打开 ${escapeHtml(project.name)} 项目详情">
           <div>
             <div class="project-rank">
@@ -563,7 +750,7 @@ function renderBoard() {
             <div class="project-facts"><span>已验证进度</span><strong>${Math.round(project.verifiedProgress * 100)}%</strong></div>
           </div>
         </button>
-        <div class="phase-track" aria-label="${escapeHtml(project.name)} 的阶段进度">
+        <div class="phase-track" data-project-track="${escapeHtml(project.id)}" aria-label="${escapeHtml(project.name)} 的阶段进度">
           ${phases.map((phase, phaseIndex) => renderPhase(phase, phaseIndex, firstUnfinishedPhase)).join('')}
         </div>
       </article>
@@ -573,6 +760,8 @@ function renderBoard() {
     ? rows.join('')
     : '<div class="portfolio-empty">这个筛选下暂时没有任务。换个筛选条件，或从右上角添加新的项目与任务。</div>';
   bindActionButtons(elements.board);
+  applyBoardFilter();
+  restoreBoardScrollPositions();
 }
 
 function renderProjectDetail() {
@@ -760,8 +949,11 @@ function renderDetailTask(task, phase, reorderableIds, index, currentTaskId) {
       </div>
       <div class="detail-task-content">
         <div class="task-title-row">
-          <strong>${task.starred ? '<span class="star-marker" aria-label="星标任务">★</span>' : ''}${escapeHtml(task.title)}</strong>
-          <span class="state-badge ${productState.className}">${productState.label}</span>
+          <strong class="task-title" title="${escapeHtml(task.title)}">${escapeHtml(task.title)}</strong>
+          <div class="task-title-controls">
+            ${renderStarControl(task, editable)}
+            <span class="state-badge ${productState.className}">${productState.label}</span>
+          </div>
         </div>
         <p>${escapeHtml(task.objective)}</p>
         <div class="task-meta">
@@ -786,10 +978,8 @@ function renderDetailTask(task, phase, reorderableIds, index, currentTaskId) {
           </div>
         ` : ''}
       </div>
-      ${locked ? `<span class="task-lock-indicator" title="${recurring ? '周期任务定义和顺序已锁定，但可再次执行' : '已进入执行或完成，内容与顺序已锁定'}" aria-label="已锁定"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"></rect><path d="M5.5 7V4.8a2.5 2.5 0 0 1 5 0V7"></path></svg></span>` : ''}
-      ${(recurring || editable) ? `<div class="detail-task-actions">
-        ${recurring ? `<button data-run="${escapeHtml(task.id)}" class="button secondary compact" type="button">再次执行</button>` : ''}
-        ${editable ? `<button class="button quiet compact star-toggle${task.starred ? ' active' : ''}" type="button" data-toggle-star="${escapeHtml(task.id)}" aria-pressed="${task.starred ? 'true' : 'false'}">${task.starred ? '取消星标' : '设为星标'}</button>` : ''}
+      ${locked ? `<span class="task-lock-indicator" title="${recurring ? '周期任务已锁定，由 Agent 完成后上报新一轮结果' : '已进入执行或完成，内容与顺序已锁定'}" aria-label="已锁定"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"></rect><path d="M5.5 7V4.8a2.5 2.5 0 0 1 5 0V7"></path></svg></span>` : ''}
+      ${editable ? `<div class="detail-task-actions">
         ${editable ? `<button class="button quiet compact" type="button" data-edit-task="${escapeHtml(task.id)}">编辑</button>` : ''}
         ${editable ? `<button class="button danger compact" type="button" data-cancel-task="${escapeHtml(task.id)}">移出排期</button>` : ''}
       </div>` : ''}
@@ -805,7 +995,7 @@ function renderPhase(phase, phaseIndex, firstUnfinishedPhase) {
           <div><span class="phase-index">S${phase.order}</span><h4>${escapeHtml(phase.name)}</h4></div>
           <span class="phase-state">等待补充</span>
         </div>
-        <p class="phase-empty">从下方工作台加入第一个 Phase 与 Task；项目会保留在当前优先级位置。</p>
+        <p class="phase-empty">从右上角添加第一个阶段或任务；项目会保留在当前优先级位置。</p>
       </section>
     `;
   }
@@ -818,7 +1008,7 @@ function renderPhase(phase, phaseIndex, firstUnfinishedPhase) {
   const className = blocked ? 'blocked' : current ? 'current' : completed ? 'completed' : 'planned';
   const stateLabel = blocked ? '有阻塞' : current ? '正在推进' : completed ? '已验证' : deferred ? '计划' : '待排期';
   return `
-    <section class="phase ${className}">
+    <section class="phase ${className}" data-filter-phase>
       <div class="phase-head">
         <div><span class="phase-index">S${phase.order}</span><h4>${escapeHtml(phase.name)}</h4></div>
         <span class="phase-state">${stateLabel}</span>
@@ -833,20 +1023,26 @@ function renderPhase(phase, phaseIndex, firstUnfinishedPhase) {
 function renderTask(item) {
   const planning = item.planning;
   const recommendation = item.recommendation;
-  const action = item.status === 'RECURRING'
-    ? `<button data-run="${escapeHtml(item.id)}" class="button secondary compact" type="button">再次执行</button>`
-    : item.status === 'PLANNED'
-    ? `<button data-ready="${escapeHtml(item.id)}" class="button secondary compact" type="button">校验并就绪</button>`
-    : item.status === 'READY'
-      ? `<button data-run="${escapeHtml(item.id)}" class="button primary compact" type="button">执行推荐方案</button>`
-      : item.currentRunId
-        ? `<button data-replay="${escapeHtml(item.currentRunId)}" class="button secondary compact" type="button">查看运行</button>`
+  const stateClass = isFinished(item)
+    ? ' finished'
+    : isInProgress(item)
+      ? ' in-progress'
+      : isUnfinished(item)
+        ? ' pending'
         : '';
+  const action = item.status === 'PLANNED'
+    ? `<button data-ready="${escapeHtml(item.id)}" class="button secondary compact" type="button">校验并就绪</button>`
+    : ['READY', 'RECURRING'].includes(item.status)
+      ? `<span class="task-agent-state">等待 Agent 完成后上报</span>`
+      : '';
   return `
-    <article class="task-item${item.starred ? ' starred' : ''}" data-item-id="${escapeHtml(item.id)}">
+    <article class="task-item${stateClass}${item.starred ? ' starred' : ''}" data-item-id="${escapeHtml(item.id)}" data-filter-task="${escapeHtml(item.id)}">
       <div class="task-title-row">
-        <strong>${item.starred ? '<span class="star-marker" aria-label="星标任务">★</span>' : ''}${escapeHtml(item.title)}</strong>
-        <span class="status ${item.status.toLowerCase()}">${statusLabel(item.status)}</span>
+        <strong class="task-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</strong>
+        <div class="task-title-controls">
+          ${renderStarControl(item, canEditTask(item))}
+          <span class="status ${item.status.toLowerCase()}">${statusLabel(item.status)}</span>
+        </div>
       </div>
       <div class="task-meta">
         <span class="tag priority-${planning.priority.toLowerCase()}">${planning.priority}</span>
@@ -859,9 +1055,19 @@ function renderTask(item) {
         ${renderIssueReminder(item)}
       </div>
       <p class="task-route">${escapeHtml(routeLabel(recommendation))} · ${formatDuration(recommendation.estimateMinutes)}<br>${escapeHtml(recommendation.approach)}</p>
-      ${(action || canEditTask(item)) ? `<div class="task-actions">${canEditTask(item) ? `<button class="button quiet compact star-toggle${item.starred ? ' active' : ''}" type="button" data-toggle-star="${escapeHtml(item.id)}" aria-pressed="${item.starred ? 'true' : 'false'}">${item.starred ? '取消星标' : '设为星标'}</button>` : ''}${action}</div>` : ''}
+      ${action ? `<div class="task-actions">${action}</div>` : ''}
     </article>
   `;
+}
+
+function renderStarControl(task, editable) {
+  if (!editable && !task.starred) return '';
+  const active = task.starred === true;
+  const label = active ? '取消星标' : '设为星标';
+  if (!editable) {
+    return `<span class="star-toggle static active" title="星标任务" aria-label="星标任务"><span aria-hidden="true">★</span></span>`;
+  }
+  return `<button class="star-toggle${active ? ' active' : ''}" type="button" data-toggle-star="${escapeHtml(task.id)}" aria-pressed="${active ? 'true' : 'false'}" aria-label="${label}" title="${label}"><span aria-hidden="true">${active ? '★' : '☆'}</span></button>`;
 }
 
 function bindActionButtons(container) {
@@ -870,12 +1076,6 @@ function bindActionButtons(container) {
   });
   container.querySelectorAll('[data-ready]').forEach((button) => {
     button.addEventListener('click', () => markReady(button.dataset.ready));
-  });
-  container.querySelectorAll('[data-run]').forEach((button) => {
-    button.addEventListener('click', () => runWorkItem(button.dataset.run));
-  });
-  container.querySelectorAll('[data-replay]').forEach((button) => {
-    button.addEventListener('click', () => replayRun(button.dataset.replay));
   });
   container.querySelectorAll('[data-focus-item]').forEach((button) => {
     button.addEventListener('click', () => focusItem(button.dataset.focusItem));
@@ -911,6 +1111,7 @@ async function toggleTaskStar(taskId) {
 }
 
 async function openProjectDetail(projectId) {
+  captureBoardScrollPositions();
   try {
     const url = new URL(window.location.href);
     url.searchParams.set('project', projectId);
@@ -1564,7 +1765,10 @@ function syncScheduleIntoWorkItems() {
 
 function hydrateWorkItem(item) {
   const kind = item.planning?.kind ?? inferKind(item);
-  const defaults = recommendationDefaults(kind);
+  const defaults = recommendationDefaults(kind, item.riskTier);
+  const recommendation = item.recommendation?.policyVersion === 'risk-tier-v1'
+    ? item.recommendation
+    : { estimateMinutes: item.recommendation?.estimateMinutes };
   return {
     ...item,
     starred: item.starred === true,
@@ -1583,21 +1787,30 @@ function hydrateWorkItem(item) {
     },
     recommendation: {
       ...defaults,
-      ...(item.recommendation ?? {}),
-      estimateMinutes: positiveNumber(item.recommendation?.estimateMinutes, defaults.estimateMinutes)
+      ...recommendation,
+      estimateMinutes: positiveNumber(recommendation.estimateMinutes, defaults.estimateMinutes)
     }
   };
 }
 
-function recommendationDefaults(kind) {
-  return {
-    feature: { capability: 'agentic-coding', executor: 'codex', reasoningEffort: 'high', compute: 'high', estimateMinutes: 90, approach: '先确认执行契约与验收证据，再实现并独立审查。' },
-    bug: { capability: 'code-repair', executor: 'codex', reasoningEffort: 'high', compute: 'medium', estimateMinutes: 45, approach: '先复现并补回归测试，再做最小修复。' },
-    scan: { capability: 'repository-scan', executor: 'codex', reasoningEffort: 'low', compute: 'low', estimateMinutes: 20, approach: '先跑确定性检查，只把异常和高价值区域交给模型分析。' },
-    research: { capability: 'research-synthesis', executor: 'codex', reasoningEffort: 'medium', compute: 'medium', estimateMinutes: 40, approach: '先快速铺开证据，再用强推理收敛分歧和方案。' },
-    ops: { capability: 'safe-automation', executor: 'shell', reasoningEffort: 'medium', compute: 'low', estimateMinutes: 30, approach: '优先使用确定性脚本，高风险动作保留人工审批。' },
-    review: { capability: 'independent-review', executor: 'codex', reasoningEffort: 'high', compute: 'medium', estimateMinutes: 35, approach: '与实现上下文隔离审查，先报告可验证问题再决定修改。' }
-  }[kind] ?? recommendationDefaults('feature');
+function recommendationDefaults(kind, riskTier = 'medium') {
+  const base = {
+    feature: { capability: 'agentic-coding', estimateMinutes: 90, approach: '先确认范围和依赖，再完成一个可独立验收的纵向切片。' },
+    bug: { capability: 'code-repair', estimateMinutes: 45, approach: '先复现并补回归测试，再做最小修复。' },
+    scan: { capability: 'repository-scan', estimateMinutes: 20, approach: '先跑确定性检查，只把异常和高价值区域交给模型分析。' },
+    research: { capability: 'research-synthesis', estimateMinutes: 40, approach: '先快速铺开证据，再用强推理收敛分歧和方案。' },
+    ops: { capability: 'safe-automation', estimateMinutes: 30, approach: '优先使用确定性脚本，高风险动作保留人工审批。' },
+    review: { capability: 'independent-review', estimateMinutes: 35, approach: '与实现上下文隔离审查，先报告可验证问题再决定修改。' }
+  }[kind] ?? recommendationDefaults('feature', riskTier);
+  const risk = ['critical', 'high', 'medium', 'low'].includes(riskTier) ? riskTier : 'medium';
+  const validationProfile = ['critical', 'high'].includes(risk) ? 'V3' : risk === 'medium' ? 'V2' : ['scan', 'ops'].includes(kind) ? 'V0' : 'V1';
+  if (kind === 'ops') return { ...base, executor: 'shell', reasoningEffort: 'medium', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
+  if (kind === 'review') return { ...base, executor: 'codex', reasoningEffort: 'high', compute: risk === 'low' ? 'medium' : 'high', validationProfile, policyVersion: 'risk-tier-v1' };
+  if (['critical', 'high'].includes(risk)) return { ...base, executor: 'codex', reasoningEffort: 'high', compute: 'high', validationProfile, policyVersion: 'risk-tier-v1' };
+  if (kind === 'scan') return { ...base, executor: 'luna_worker', reasoningEffort: 'low', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
+  if (risk === 'low') return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
+  if (kind === 'bug') return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'medium', validationProfile, policyVersion: 'risk-tier-v1' };
+  return { ...base, executor: 'codex', reasoningEffort: 'medium', compute: 'medium', validationProfile, policyVersion: 'risk-tier-v1' };
 }
 
 function inferKind(item) {
@@ -1611,24 +1824,6 @@ function inferKind(item) {
 function positiveNumber(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : fallback;
-}
-
-async function replayRun(runId) {
-  try {
-    const run = await api(`/api/runs/${encodeURIComponent(runId)}`);
-    elements.timeline.innerHTML = '';
-    for (const event of run.events) appendTimeline(event);
-    setRunStatus(run.status);
-    document.querySelector('#workbench').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    if (!['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(run.status)) openRunStream(runId);
-  } catch (error) {
-    notify(error.message, true);
-  }
-}
-
-function setRunStatus(status) {
-  elements.runStatus.textContent = statusLabel(status);
-  elements.runStatus.className = `status ${String(status).toLowerCase()}`;
 }
 
 function groupPhases(items) {
@@ -1686,6 +1881,38 @@ function matchesFilter(item) {
   if (state.filter === 'bug') return ['bug', 'scan'].includes(item.planning.kind);
   if (state.filter === 'starred') return item.starred === true;
   return true;
+}
+
+function applyBoardFilter() {
+  if (state.selectedProjectId) return;
+  const byId = new Map(state.workItems.map((item) => [item.id, item]));
+  elements.board.querySelectorAll('[data-filter-task]').forEach((node) => {
+    const item = byId.get(node.dataset.filterTask);
+    const matches = item ? matchesFilter(item) : false;
+    node.classList.toggle('filter-muted', !matches);
+    node.classList.toggle('filter-match', matches && state.filter !== 'all');
+  });
+  elements.board.querySelectorAll('[data-filter-phase]').forEach((phase) => {
+    const tasks = [...phase.querySelectorAll('[data-filter-task]')];
+    phase.classList.toggle('filter-empty', tasks.length > 0 && tasks.every((task) => task.classList.contains('filter-muted')));
+  });
+  elements.board.querySelectorAll('[data-project-row]').forEach((row) => {
+    const tasks = [...row.querySelectorAll('[data-filter-task]')];
+    row.classList.toggle('filter-empty', tasks.length > 0 && tasks.every((task) => task.classList.contains('filter-muted')));
+  });
+}
+
+function captureBoardScrollPositions() {
+  if (state.selectedProjectId) return;
+  elements.board.querySelectorAll('[data-project-track]').forEach((track) => {
+    state.boardScrollPositions.set(track.dataset.projectTrack, track.scrollLeft);
+  });
+}
+
+function restoreBoardScrollPositions() {
+  elements.board.querySelectorAll('[data-project-track]').forEach((track) => {
+    track.scrollLeft = state.boardScrollPositions.get(track.dataset.projectTrack) ?? 0;
+  });
 }
 
 function compareItems(left, right) {
@@ -1785,6 +2012,10 @@ function provenanceClass(task) {
 function bindTaskTooltips() {
   elements.board.querySelectorAll('[data-tooltip-task]').forEach((node) => {
     const show = () => showTaskTooltip(node, detailTaskFor(node.dataset.tooltipTask));
+    node.addEventListener('pointerdown', () => {
+      state.dragTooltipSuppressed = true;
+      hideTaskTooltip();
+    });
     node.addEventListener('mouseenter', show);
     node.addEventListener('focusin', show);
     node.addEventListener('mouseleave', scheduleTaskTooltipHide);
@@ -1864,9 +2095,13 @@ function cancelTaskTooltipHide() {
 }
 
 function routeLabel(recommendation) {
-  const executor = recommendation.executor === 'codex' ? 'Codex' : recommendation.executor === 'shell' ? 'Shell' : recommendation.executor;
+  const executor = recommendation.executor === 'codex'
+    ? 'Codex'
+    : recommendation.executor === 'luna_worker'
+      ? 'Luna Worker'
+      : recommendation.executor === 'shell' ? 'Shell' : recommendation.executor;
   const effort = { low: '低推理', medium: '中推理', high: '高推理' }[recommendation.reasoningEffort] ?? recommendation.reasoningEffort;
-  return `${executor} · ${effort} · ${recommendation.capability}`;
+  return `${executor} · ${effort} · ${recommendation.validationProfile ?? 'V2'} · ${recommendation.capability}`;
 }
 
 function formatDuration(minutes) {
@@ -1913,6 +2148,15 @@ function readDetailView() {
   }
 }
 
+function readTrajectoryWindow() {
+  try {
+    const value = window.localStorage.getItem('lifeline.trajectoryWindow');
+    return ['24h', '7d', '30d'].includes(value) ? value : '7d';
+  } catch {
+    return '7d';
+  }
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
@@ -1931,12 +2175,6 @@ async function api(path, options = {}) {
 
 function lines(value) {
   return value.split('\n').map((line) => line.trim()).filter(Boolean);
-}
-
-function formatTime(value) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
-  }).format(new Date(value));
 }
 
 function formatDateTime(value) {

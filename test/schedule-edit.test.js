@@ -272,7 +272,22 @@ test('every active or terminal locked status rejects content edits, cancellation
 
   for (const status of ['QUEUED', 'RUNNING', 'REVIEW', 'RECURRING', 'VERIFIED', 'RELEASED', 'ARCHIVED', 'CANCELLED']) {
     await store.mutate((state) => {
-      state.workItems.find((entry) => entry.id === task.id).status = status;
+      const lockedTask = state.workItems.find((entry) => entry.id === task.id);
+      const active = ['QUEUED', 'RUNNING'].includes(status);
+      const runId = `run-${status.toLowerCase()}`;
+      lockedTask.status = status;
+      lockedTask.currentRunId = active ? runId : null;
+      state.runs = state.runs.filter((run) => run.workItemId !== task.id);
+      if (active) {
+        state.runs.push({
+          id: runId,
+          workItemId: task.id,
+          kind: 'AGENT',
+          executor: 'codex',
+          status,
+          createdAt: '2026-08-03T00:00:00.000Z'
+        });
+      }
     });
     const scheduleVersion = (await service.getProject(project.id)).scheduleVersion;
     await assert.rejects(

@@ -3,6 +3,8 @@ import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import {
   CURRENT_SCHEMA_VERSION,
+  RUN_STATUS,
+  WORK_ITEM_STATUS,
   hydrateWorkItemMetadata
 } from './domain.js';
 
@@ -146,6 +148,9 @@ export function migrateState(input) {
   };
 
   normalizePhases(state);
+  normalizeRunKinds(state);
+  isolateLegacyMockRuns(state);
+  repairDetachedActiveTasks(state);
   const after = JSON.stringify(state);
   return { state, changed: before !== after };
 }
@@ -153,6 +158,162 @@ export function migrateState(input) {
 // Kept as a named export for tests and future repository adapters.
 export const normalizeState = (state) => migrateState(state).state;
 export const migrateLegacyState = migrateState;
+
+function normalizeRunKinds(state) {
+  for (const run of state.runs) {
+    if (!run || typeof run !== 'object' || run.kind) continue;
+    run.kind = run.executor === 'mock' ? 'INTERNAL_MOCK' : 'AGENT';
+  }
+}
+
+function isolateLegacyMockRuns(state) {
+  const mockRunIds = new Set();
+  const changedProjectIds = new Set();
+  for (const run of state.runs) {
+    if (run?.kind !== 'INTERNAL_MOCK') continue;
+    mockRunIds.add(run.id);
+    run.legacyMock = true;
+    if ([RUN_STATUS.QUEUED, RUN_STATUS.RUNNING].includes(run.status)) {
+      run.status = RUN_STATUS.CANCELLED;
+      run.error = { code: 'MOCK_EXECUTOR_DISABLED', message: 'Historical Mock Run stopped by schema v5.' };
+      run.finishedAt ??= run.updatedAt ?? run.createdAt ?? null;
+    }
+  }
+  if (mockRunIds.size === 0) return;
+
+  for (const evidence of state.evidence) {
+    if (!mockRunIds.has(evidence?.runId)) continue;
+    evidence.metadata = { ...(evidence.metadata ?? {}), legacyMock: true };
+  }
+
+  const runsById = new Map(state.runs.map((run) => [run.id, run]));
+  const realVerifiedTaskIds = new Set(state.completionRecords
+    .filter((record) => {
+      if (!record?.verifiedAt) return false;
+      const run = record.runId ? runsById.get(record.runId) : null;
+      return !run || run.kind === 'AGENT';
+    })
+    .map((record) => record.taskId ?? record.workItemId));
+
+  for (const task of state.workItems) {
+    const mockRun = mockRunIds.has(task.currentRunId) ? runsById.get(task.currentRunId) : null;
+    if (!mockRun) continue;
+    const beforeStatus = task.status;
+    const beforeRunId = task.currentRunId;
+    task.legacyMockRunIds = [...new Set([...(task.legacyMockRunIds ?? []), mockRun.id])];
+    task.currentRunId = null;
+    if ([WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.RUNNING].includes(task.status)) {
+      task.status = WORK_ITEM_STATUS.PLANNED;
+    } else if (task.status === WORK_ITEM_STATUS.VERIFIED && !realVerifiedTaskIds.has(task.id)) {
+      task.status = WORK_ITEM_STATUS.PLANNED;
+    }
+    changedProjectIds.add(task.projectId);
+    appendMockIsolationEvent(state, task, { beforeStatus, beforeRunId, afterStatus: task.status });
+  }
+
+  for (const project of state.projects) {
+    const verifiedRecords = state.completionRecords
+      .filter((record) => {
+        const task = state.workItems.find((entry) => entry.id === (record.taskId ?? record.workItemId));
+        if (!task || task.projectId !== project.id || !record.verifiedAt) return false;
+        const run = record.runId ? runsById.get(record.runId) : null;
+        return !run || run.kind === 'AGENT';
+      })
+      .sort((left, right) => String(left.verifiedAt).localeCompare(String(right.verifiedAt)));
+    const currentTaskId = verifiedRecords.at(-1)?.taskId ?? verifiedRecords.at(-1)?.workItemId ?? null;
+    if (project.currentTaskId === currentTaskId) continue;
+    project.currentTaskId = currentTaskId;
+    changedProjectIds.add(project.id);
+  }
+
+  for (const projectId of changedProjectIds) {
+    const project = state.projects.find((entry) => entry.id === projectId);
+    if (project) project.scheduleVersion = Number(project.scheduleVersion ?? 0) + 1;
+  }
+}
+
+function appendMockIsolationEvent(state, task, metadata) {
+  const key = `${task.id}|${metadata.beforeRunId}|${metadata.beforeStatus}|${metadata.afterStatus}`;
+  const id = `event_mock_isolation_${createHash('sha256').update(key).digest('hex').slice(0, 24)}`;
+  if (state.events.some((event) => event.id === id)) return;
+  const sequence = Math.max(0, ...state.events.map((event) => Number(event.sequence) || 0)) + 1;
+  state.events.push({
+    id,
+    sequence,
+    type: 'work_item.mock_history_isolated',
+    message: 'Historical Mock Run isolated from formal progress',
+    runId: metadata.beforeRunId,
+    workItemId: task.id,
+    metadata: { projectId: task.projectId, ...metadata },
+    createdAt: task.updatedAt ?? task.createdAt ?? null
+  });
+}
+
+function repairDetachedActiveTasks(state) {
+  const repairedProjectIds = new Set();
+  for (const task of state.workItems) {
+    if (![WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.RUNNING].includes(task.status)) continue;
+    const activeRuns = state.runs
+      .filter((run) => (
+        run.workItemId === task.id
+          && [RUN_STATUS.QUEUED, RUN_STATUS.RUNNING].includes(run.status)
+      ))
+      .sort((left, right) => String(left.createdAt ?? '').localeCompare(String(right.createdAt ?? '')));
+    if (activeRuns.some((run) => run.id === task.currentRunId)) continue;
+
+    const replacement = activeRuns.at(-1);
+    const durableCurrent = state.runs.find((run) => run.id === task.currentRunId && run.workItemId === task.id);
+    const completion = state.completionRecords
+      .filter((record) => (record.taskId ?? record.workItemId) === task.id)
+      .at(-1);
+    const beforeStatus = task.status;
+    const beforeRunId = task.currentRunId ?? null;
+    let reason = 'MISSING_ACTIVE_RUN';
+    if (replacement) {
+      task.currentRunId = replacement.id;
+      reason = 'ATTACHED_ACTIVE_RUN';
+    } else if (durableCurrent?.status === RUN_STATUS.SUCCEEDED && completion) {
+      task.status = completion.verifiedAt ? WORK_ITEM_STATUS.VERIFIED : WORK_ITEM_STATUS.REVIEW;
+      reason = completion.verifiedAt ? 'RESTORED_VERIFIED_COMPLETION' : 'RESTORED_REVIEW_COMPLETION';
+    } else if (durableCurrent?.status === RUN_STATUS.FAILED) {
+      task.status = WORK_ITEM_STATUS.BLOCKED;
+      reason = 'RESTORED_FAILED_RUN';
+    } else {
+      task.status = WORK_ITEM_STATUS.PLANNED;
+      task.currentRunId = null;
+    }
+    repairedProjectIds.add(task.projectId);
+    appendMigrationEvent(state, task, {
+      beforeStatus,
+      beforeRunId,
+      afterStatus: task.status,
+      afterRunId: task.currentRunId,
+      reason
+    });
+  }
+
+  for (const projectId of repairedProjectIds) {
+    const project = state.projects.find((entry) => entry.id === projectId);
+    if (project) project.scheduleVersion = Number(project.scheduleVersion ?? 0) + 1;
+  }
+}
+
+function appendMigrationEvent(state, task, metadata) {
+  const key = `${task.id}|${metadata.beforeStatus}|${metadata.beforeRunId ?? ''}|${metadata.afterStatus}|${metadata.afterRunId ?? ''}`;
+  const id = `event_migration_${createHash('sha256').update(key).digest('hex').slice(0, 24)}`;
+  if (state.events.some((event) => event.id === id)) return;
+  const sequence = Math.max(0, ...state.events.map((event) => Number(event.sequence) || 0)) + 1;
+  state.events.push({
+    id,
+    sequence,
+    type: 'work_item.active_run_repaired',
+    message: 'Active task state reconciled with durable runs',
+    runId: task.currentRunId,
+    workItemId: task.id,
+    metadata: { projectId: task.projectId, ...metadata },
+    createdAt: task.updatedAt ?? task.createdAt ?? null
+  });
+}
 
 function normalizePhases(state) {
   const phasesByKey = new Map();

@@ -3,7 +3,6 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
 
@@ -26,24 +25,37 @@ test('first vertical slice persists events, evidence, and verified progress', as
     resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 1 }
   });
 
-  await service.markReady(item.id);
-  const queued = await service.queueWorkItem(item.id);
-  const run = await waitForTerminal(service, queued.id);
+  const reported = await service.submitCompletion(item.id, {
+    startedAt: '2026-08-03T10:00:00.000Z',
+    completedAt: '2026-08-03T10:12:00.000Z',
+    modelRef: 'gpt-agent-test',
+    resultSummary: 'The real Agent workflow completed successfully.',
+    evidence: [{ type: 'TEST_COMMAND', summary: 'Focused workflow test passed.', metadata: { exitCode: 0 } }]
+  });
+  const verified = await service.verifyTask(item.id, {
+    completionRecordId: reported.completionRecord.id,
+    verificationMethod: 'DETERMINISTIC_TEST',
+    summary: 'The focused workflow test passed.'
+  });
+  const run = await service.getRun(reported.run.id);
 
   assert.equal(run.status, 'SUCCEEDED');
-  assert.equal(run.events.at(-1).type, 'run.succeeded');
-  assert.deepEqual(run.evidence.map((entry) => entry.type), ['PLAN', 'BRANCH', 'TEST', 'REVIEW']);
+  assert.equal(run.kind, 'AGENT');
+  assert.equal(run.events.at(-1).type, 'completion.submitted');
+  assert.deepEqual(run.evidence.map((entry) => entry.type), ['TEST_COMMAND', 'VERIFICATION']);
+  assert.equal(verified.completionRecord.durationMs, 12 * 60 * 1000);
   assert.equal((await service.getWorkItem(item.id)).status, 'VERIFIED');
-  assert.equal((await service.dashboard()).projects[0].verifiedProgress, 0.8);
+  assert.equal((await service.getProject(project.id)).currentTaskId, item.id);
+  assert.equal((await service.dashboard()).projects[0].verifiedProgress, 1);
 
   const restarted = await createService(file);
   const restoredRun = await restarted.getRun(run.id);
   assert.equal(restoredRun.status, 'SUCCEEDED');
   assert.equal(restoredRun.events.length, run.events.length);
-  assert.equal((await restarted.dashboard()).projects[0].verifiedProgress, 0.8);
+  assert.equal((await restarted.dashboard()).projects[0].verifiedProgress, 1);
 });
 
-test('executor failure blocks the work item and keeps prior evidence', async (t) => {
+test('a real Agent failure blocks the work item without synthetic evidence', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const service = await createService(join(directory, 'state.json'));
@@ -57,14 +69,20 @@ test('executor failure blocks the work item and keeps prior evidence', async (t)
     riskTier: 'low',
     resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 1 }
   });
-  await service.markReady(item.id);
-  const queued = await service.queueWorkItem(item.id);
-  const run = await waitForTerminal(service, queued.id);
+  const reported = await service.submitCompletion(item.id, {
+    outcome: 'FAILED',
+    startedAt: '2026-08-03T10:00:00.000Z',
+    completedAt: '2026-08-03T10:03:00.000Z',
+    modelRef: 'gpt-agent-test',
+    resultSummary: 'The focused test exposed a real failure.',
+    evidence: []
+  });
+  const run = await service.getRun(reported.run.id);
 
   assert.equal(run.status, 'FAILED');
   assert.equal((await service.getWorkItem(item.id)).status, 'BLOCKED');
-  assert.deepEqual(run.evidence.map((entry) => entry.type), ['PLAN', 'BRANCH']);
-  assert.equal(run.error.code, 'SIMULATED_EXECUTOR_FAILURE');
+  assert.deepEqual(run.evidence, []);
+  assert.equal(run.error.code, 'AGENT_REPORTED_FAILURE');
 });
 
 test('recurring work creates a new run for every verified cycle', async (t) => {
@@ -72,11 +90,7 @@ test('recurring work creates a new run for every verified cycle', async (t) => {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const file = join(directory, 'state.json');
   const store = new JsonStore(file);
-  const service = new LifelineService({
-    store,
-    executor: new MockExecutor({ delayMs: 0 }),
-    logger: silentLogger
-  });
+  const service = new LifelineService({ store, logger: silentLogger });
   await service.start();
   const project = await service.createProject({ name: 'Recurring work' });
   const item = await service.createWorkItem({
@@ -94,9 +108,31 @@ test('recurring work creates a new run for every verified cycle', async (t) => {
     task.recurrence = { enabled: true };
   });
 
-  const first = await waitForTerminal(service, (await service.queueWorkItem(item.id)).id);
+  const firstStarted = await service.startTask(item.id, { modelRef: 'gpt-agent-test' });
+  const firstReported = await service.submitCompletion(item.id, {
+    runId: firstStarted.run.id,
+    resultSummary: 'First repository scan completed.',
+    evidence: [{ type: 'TEST_COMMAND', summary: 'First scan passed.', metadata: { exitCode: 0 } }]
+  });
+  await service.verifyTask(item.id, {
+    completionRecordId: firstReported.completionRecord.id,
+    verificationMethod: 'DETERMINISTIC_TEST',
+    summary: 'First scan verified.'
+  });
+  const first = await service.getRun(firstStarted.run.id);
   assert.equal((await service.getWorkItem(item.id)).status, 'RECURRING');
-  const second = await waitForTerminal(service, (await service.queueWorkItem(item.id)).id);
+  const secondStarted = await service.startTask(item.id, { modelRef: 'gpt-agent-test' });
+  const secondReported = await service.submitCompletion(item.id, {
+    runId: secondStarted.run.id,
+    resultSummary: 'Second repository scan completed.',
+    evidence: [{ type: 'TEST_COMMAND', summary: 'Second scan passed.', metadata: { exitCode: 0 } }]
+  });
+  await service.verifyTask(item.id, {
+    completionRecordId: secondReported.completionRecord.id,
+    verificationMethod: 'DETERMINISTIC_TEST',
+    summary: 'Second scan verified.'
+  });
+  const second = await service.getRun(secondStarted.run.id);
 
   assert.notEqual(first.id, second.id);
   assert.equal(first.attempt, 1);
@@ -121,7 +157,8 @@ test('restart never routes a durable Agent run through the mock executor', async
     riskTier: 'low',
     resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 1 }
   });
-  const started = await firstService.startTask(item.id, { modelRef: 'gpt-agent-test' });
+  const started = await firstService.startTask(item.id, { executor: 'mock', modelRef: 'gpt-agent-test' });
+  assert.equal(started.run.kind, 'AGENT');
 
   const restarted = await createService(file);
   await new Promise((resolve) => setTimeout(resolve, 30));
@@ -138,29 +175,25 @@ test('restart never routes a durable Agent run through the mock executor', async
   });
   assert.equal(completion.task.status, 'REVIEW');
   assert.equal(completion.run.status, 'SUCCEEDED');
+
+  const verified = await restarted.verifyTask(item.id, {
+    completionRecordId: completion.completionRecord.id,
+    verificationMethod: 'DETERMINISTIC_TEST',
+    summary: 'The focused restart test passed.'
+  });
+  assert.equal(verified.task.status, 'VERIFIED');
+  assert.equal((await restarted.getProject(project.id)).currentTaskId, item.id);
 });
 
 async function createService(file) {
   const service = new LifelineService({
-    store: new JsonStore(file),
-    executor: new MockExecutor({ delayMs: 0 }),
-    logger: silentLogger
+    store: new JsonStore(file), logger: silentLogger
   });
   await service.start();
   return service;
 }
 
-async function waitForTerminal(service, runId) {
-  const deadline = Date.now() + 3000;
-  while (Date.now() < deadline) {
-    const run = await service.getRun(runId);
-    if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(run.status)) return run;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  throw new Error(`Run did not finish: ${runId}`);
-}
-
-test('startup resumes a queued run from its persisted checkpoint', async (t) => {
+test('startup isolates legacy Mock Runs without rewriting history', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const file = join(directory, 'state.json');
@@ -218,11 +251,28 @@ test('startup resumes a queued run from its persisted checkpoint', async (t) => 
     events: []
   }, null, 2));
 
-  const service = await createService(file);
-  const run = await waitForTerminal(service, runId);
-  assert.equal(run.status, 'SUCCEEDED');
-  assert.deepEqual(run.evidence.map((entry) => entry.type), ['PLAN', 'BRANCH', 'TEST', 'REVIEW']);
-  assert.equal((await service.getWorkItem(workItemId)).status, 'VERIFIED');
+  const store = new JsonStore(file);
+  const service = new LifelineService({ store, logger: silentLogger });
+  await service.start();
+  const run = await service.getRun(runId);
+  const task = await service.getWorkItem(workItemId);
+  const firstState = await store.read();
+  assert.equal(run.status, 'CANCELLED');
+  assert.equal(run.kind, 'INTERNAL_MOCK');
+  assert.equal(run.legacyMock, true);
+  assert.deepEqual(run.evidence.map((entry) => entry.type), ['PLAN', 'BRANCH']);
+  assert.ok(run.evidence.every((entry) => entry.metadata.legacyMock === true));
+  assert.equal(task.status, 'PLANNED');
+  assert.equal(task.currentRunId, null);
+  assert.deepEqual(task.legacyMockRunIds, [runId]);
+  assert.equal((await service.dashboard()).projects[0].verifiedProgress, 0);
+  assert.equal(firstState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 1);
+
+  const restartedStore = new JsonStore(file);
+  const restarted = new LifelineService({ store: restartedStore, logger: silentLogger });
+  await restarted.start();
+  const secondState = await restartedStore.read();
+  assert.equal(secondState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 1);
 });
 
 test('portfolio demo is idempotent and ordered by strategic value', async (t) => {
@@ -231,7 +281,6 @@ test('portfolio demo is idempotent and ordered by strategic value', async (t) =>
   const service = await createService(join(directory, 'state.json'));
 
   const first = await service.seedDemo();
-  await waitForTerminal(service, first.queuedRunIds[0]);
   const second = await service.seedDemo();
   const dashboard = await service.dashboard();
   const workItems = await service.listWorkItems(first.project.id);
@@ -239,6 +288,7 @@ test('portfolio demo is idempotent and ordered by strategic value', async (t) =>
   assert.equal(first.addedProjects, 3);
   assert.equal(second.addedProjects, 0);
   assert.equal(second.addedWorkItems, 0);
+  assert.deepEqual(first.queuedRunIds, []);
   assert.deepEqual(dashboard.projects.map((project) => project.strategicValue), [10, 7, 5]);
   assert.equal(workItems[0].planning.phase, '方向收敛');
   assert.equal(workItems.at(-1).planning.phase, '持续扫描');

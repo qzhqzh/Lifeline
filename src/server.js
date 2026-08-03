@@ -4,7 +4,6 @@ import http from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DomainError } from './domain.js';
-import { MockExecutor } from './executor.js';
 import { LifelineService, isTerminalRunStatus } from './service.js';
 import { JsonStore } from './store.js';
 
@@ -17,8 +16,7 @@ const devReloadEnabled = process.env.LIFELINE_DEV_RELOAD === '1';
 
 const store = new JsonStore(dataFile);
 const service = new LifelineService({
-  store,
-  executor: new MockExecutor({ delayMs: Number(process.env.MOCK_STEP_DELAY_MS ?? 180) })
+  store
 });
 await service.start();
 if (process.env.LIFELINE_SEED_DEMO === '1') await service.seedDemo();
@@ -66,6 +64,9 @@ async function handleApi(request, response, url) {
   }
   if (method === 'GET' && url.pathname === '/api/dashboard') {
     return sendJson(response, 200, await service.dashboard());
+  }
+  if (method === 'GET' && url.pathname === '/api/trajectory') {
+    return sendJson(response, 200, await service.getTrajectory(url.searchParams.get('window') ?? '7d'));
   }
   if (method === 'GET' && url.pathname === '/api/bootstrap/portfolio-v2') {
     return sendJson(response, 200, await service.getBootstrapStatus());

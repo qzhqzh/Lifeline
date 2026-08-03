@@ -12,10 +12,12 @@ test('reconciles historical completion times, run records, verified work, and th
   assert.equal(state.completionRecords[0].completedAt, '2026-08-01T14:44:07.000Z');
   assert.equal(state.completionRecords.some((record) => record.runId === 'run-latest'), true);
   assert.equal(state.workItems.find((task) => task.title === '让项目价值更清晰，创建入口更简单').status, 'VERIFIED');
-  const currentTask = state.workItems.find((task) => task.title === '固定项目栏、稳定筛选、当前节点居中');
+  const currentTask = state.workItems.find((task) => task.title === 'Agent 完成后自动进入复核并更新项目进度');
   assert.equal(currentTask.status, 'VERIFIED');
   assert.equal(state.projects[0].currentTaskId, currentTask.id);
-  assert.equal(state.workItems.find((task) => task.title === '补齐扫描提案与指纹去重 MCP').status, 'PLANNED');
+  assert.equal(state.workItems.find((task) => task.title === '展开项目全部任务并支持键盘/拖拽排序').status, 'VERIFIED');
+  assert.equal(state.workItems.find((task) => task.title === '加入依赖校验与可并行任务展示').status, 'VERIFIED');
+  assert.equal(state.workItems.find((task) => task.title === '补齐扫描提案与指纹去重 MCP').status, 'VERIFIED');
   assert.equal(state.workItems.find((task) => task.title === '修复旧数据载入与前后端版本不一致报错').status, 'CANCELLED');
   assert.equal(state.workItems.find((task) => task.title === '接入 Streamable HTTP、OAuth 与多用户隔离').status, 'DEFERRED');
   assert.equal(state.workItems.find((task) => task.title === '周期扫描仓库并去重生成 Bug 候选').status, 'RECURRING');
@@ -29,6 +31,21 @@ test('reconciles historical completion times, run records, verified work, and th
   const second = reconcileLifelineSchedule(state, at);
   assert.equal(second.changed, false);
   assert.equal(JSON.stringify(state), snapshot);
+});
+
+test('reconciliation does not overwrite a human-adjusted template task', () => {
+  const state = fixture();
+  const task = state.workItems.find((entry) => entry.id === 'scan-mcp');
+  task.provenance = {
+    origin: 'AI',
+    contentAdjustedByHuman: true,
+    lastContentEditorType: 'HUMAN'
+  };
+
+  reconcileLifelineSchedule(state, '2026-08-02T17:00:00.000Z');
+
+  assert.equal(task.status, 'PLANNED');
+  assert.equal(state.completionRecords.some((record) => record.taskId === task.id), false);
 });
 
 function fixture() {

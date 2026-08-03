@@ -9,6 +9,13 @@
   "paths": {
     "/api/health": { "get": { "summary": "Health check", "responses": { "200": { "description": "Healthy" } } } },
     "/api/dashboard": { "get": { "summary": "Portfolio dashboard", "responses": { "200": { "description": "Dashboard snapshot" } } } },
+    "/api/trajectory": {
+      "get": {
+        "summary": "Get real Agent completion intervals and portfolio coverage",
+        "parameters": [{ "in": "query", "name": "window", "required": false, "schema": { "type": "string", "enum": ["24h", "7d", "30d"], "default": "7d" } }],
+        "responses": { "200": { "description": "Trajectory snapshot" }, "422": { "description": "Invalid window" } }
+      }
+    },
     "/api/bootstrap/portfolio-v2": {
       "get": {
         "summary": "Get the current user's Portfolio V2 bootstrap capability",
@@ -104,9 +111,9 @@
     },
     "/api/work-items/{workItemId}/queue": {
       "post": {
-        "summary": "Queue durable mock workflow",
+        "summary": "Deprecated Mock execution endpoint",
         "parameters": [{ "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } }],
-        "responses": { "202": { "description": "Queued run" } }
+        "responses": { "422": { "description": "Mock execution is disabled; report the real Agent result through MCP" } }
       }
     },
     "/api/runs/{runId}": {

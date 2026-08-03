@@ -3,7 +3,6 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
 
@@ -82,10 +81,19 @@ test('a completed dependency allows markReady and startTask', async (t) => {
     dependsOnTaskIds: [predecessor.id]
   }));
 
-  await service.markReady(predecessor.id);
-  const queued = await service.queueWorkItem(predecessor.id);
-  const run = await waitForTerminal(service, queued.id);
-  assert.equal(run.status, 'SUCCEEDED');
+  const reported = await service.submitCompletion(predecessor.id, {
+    startedAt: '2026-08-03T10:00:00.000Z',
+    completedAt: '2026-08-03T10:01:00.000Z',
+    modelRef: 'gpt-dependency-test',
+    resultSummary: 'The prerequisite was completed by the real Agent.',
+    evidence: [{ type: 'TEST_COMMAND', summary: 'Dependency test passed.', metadata: { exitCode: 0 } }]
+  });
+  await service.verifyTask(predecessor.id, {
+    completionRecordId: reported.completionRecord.id,
+    verificationMethod: 'DETERMINISTIC_TEST',
+    summary: 'Dependency test passed.'
+  });
+  assert.equal(reported.run.status, 'SUCCEEDED');
   assert.equal((await service.getWorkItem(predecessor.id)).status, 'VERIFIED');
 
   const ready = await service.markReady(dependent.id);
@@ -168,6 +176,42 @@ test('a dependency must appear before its dependent task', async (t) => {
   );
 });
 
+test('moving a prerequisite across phases cannot invalidate an existing dependent', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-dependency-cross-phase-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const project = await service.createProject({ name: 'Cross-phase dependency order' });
+  const firstPhase = await service.createPhase({ projectId: project.id, title: 'Foundation', phaseOrder: 1 });
+  const secondPhase = await service.createPhase({ projectId: project.id, title: 'Delivery', phaseOrder: 2 });
+  const predecessor = await service.createWorkItem(taskInput(project.id, firstPhase.id, 'Foundation prerequisite', 1));
+  const dependent = await service.createWorkItem(taskInput(project.id, secondPhase.id, 'Delivery consumer', 1, {
+    dependsOnTaskIds: [predecessor.id],
+    planning: {
+      phaseId: secondPhase.id,
+      phase: 'Delivery',
+      phaseOrder: 2,
+      taskOrder: 1,
+      kind: 'feature',
+      priority: 'P1',
+      commitment: 'TENTATIVE'
+    }
+  }));
+  const before = await service.getSchedule(project.id);
+
+  await assert.rejects(
+    service.updateWorkItem(predecessor.id, {
+      phaseId: secondPhase.id,
+      expectedScheduleVersion: before.scheduleVersion
+    }),
+    (error) => error.code === 'INVALID_DEPENDENCY_ORDER'
+  );
+
+  const after = await service.getSchedule(project.id);
+  assert.equal(after.scheduleVersion, before.scheduleVersion);
+  assert.equal((await service.getWorkItem(predecessor.id)).phaseId, firstPhase.id);
+  assert.equal((await service.getWorkItem(dependent.id)).phaseId, secondPhase.id);
+});
+
 test('in-phase reorder cannot place a dependent before its dependency', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-dependency-reorder-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -238,20 +282,9 @@ function taskInput(projectId, phaseId, title, taskOrder, overrides = {}) {
 async function createService(file) {
   const service = new LifelineService({
     store: new JsonStore(file),
-    executor: new MockExecutor({ delayMs: 0 }),
     localUserId: 'local-owner',
     logger: silentLogger
   });
   await service.start();
   return service;
-}
-
-async function waitForTerminal(service, runId) {
-  const deadline = Date.now() + 3000;
-  while (Date.now() < deadline) {
-    const run = await service.getRun(runId);
-    if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(run.status)) return run;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  throw new Error(`Run did not finish: ${runId}`);
 }

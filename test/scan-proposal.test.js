@@ -11,7 +11,7 @@ const silentLogger = { error() {} };
 
 test('schema migration adds the durable scan proposal collection without discarding unknown data', () => {
   const migrated = migrateState({ schemaVersion: 3, projects: [], custom: { keep: true } }).state;
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.deepEqual(migrated.scanProposals, []);
   assert.deepEqual(migrated.custom, { keep: true });
 });

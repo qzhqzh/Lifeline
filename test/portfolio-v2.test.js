@@ -31,7 +31,7 @@ test('portfolio bootstrap is atomic, idempotent, and restart-safe', async (t) =>
   assert.deepEqual((await restarted.dashboard()).bootstrap.portfolioV2, status);
   const importedState = JSON.parse(await readFile(file));
   const lifeline = importedState.projects.find((project) => project.name === 'Lifeline');
-  assert.equal(importedState.workItems.find((item) => item.id === lifeline.currentTaskId).title, '固定项目栏、稳定筛选、当前节点居中');
+  assert.equal(importedState.workItems.find((item) => item.id === lifeline.currentTaskId).title, 'Agent 完成后自动进入复核并更新项目进度');
   assert.equal(importedState.workItems.find((item) => item.title === '周期扫描仓库并去重生成 Bug 候选').status, 'RECURRING');
   assert.equal(importedState.workItems.filter((item) => item.projectId === lifeline.id && item.planning.phaseOrder === 6).every((item) => item.status === 'DEFERRED'), true);
   const terminalIds = new Set(importedState.workItems
@@ -91,7 +91,7 @@ test('legacy data migrates without fake runs and records modified-template confl
   assert.equal(state.runs.some((run) => run.id === 'run_existing'), true);
   assert.equal(state.completionRecords.every((record) => record.completionMethod === 'IMPORTED_HISTORY'), true);
   assert.equal(state.completionRecords.some((record) => record.taskId === 'work_legacy'), false);
-  assert.equal(state.schemaVersion, 4);
+  assert.equal(state.schemaVersion, 5);
 });
 
 test('current portfolio fixture migrates to the three real projects without conflicts', async (t) => {
@@ -158,7 +158,7 @@ test('schema migration is idempotent and unfinished history does not raise progr
   };
   const first = migrateState(legacy);
   const second = migrateState(first.state);
-  assert.equal(first.state.schemaVersion, 4);
+  assert.equal(first.state.schemaVersion, 5);
   assert.equal(second.changed, false);
   assert.equal(first.state.phases[0].rank, 101376);
 
@@ -170,6 +170,30 @@ test('schema migration is idempotent and unfinished history does not raise progr
   });
   assert.equal(withRankedPhase.state.phases.length, 1);
   assert.equal(withRankedPhase.state.workItems[0].phaseId, 'phase_existing');
+});
+
+test('schema migration repairs active tasks that have no durable active run', () => {
+  const input = {
+    schemaVersion: 4,
+    projects: [{ id: 'project_p', name: 'Project', strategicValue: 5, scheduleVersion: 7 }],
+    workItems: [{
+      id: 'work_running',
+      projectId: 'project_p',
+      title: 'Detached active task',
+      objective: 'Do not leave a task locked when no executor run can finish it.',
+      status: 'RUNNING',
+      currentRunId: 'run_missing'
+    }],
+    runs: [],
+    events: []
+  };
+
+  const first = migrateState(input);
+  assert.equal(first.state.workItems[0].status, 'PLANNED');
+  assert.equal(first.state.workItems[0].currentRunId, null);
+  assert.equal(first.state.projects[0].scheduleVersion, 8);
+  assert.equal(first.state.events.at(-1).type, 'work_item.active_run_repaired');
+  assert.equal(migrateState(first.state).changed, false);
 });
 
 async function createService(file, localUserId) {

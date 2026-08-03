@@ -70,3 +70,60 @@ test('project detail supports inline Phase editing and unobtrusive lock and Issu
   assert.match(app, /待关联 Issue/);
   assert.doesNotMatch(app, /⌑ 已锁定/);
 });
+
+test('board filters keep lane DOM and horizontal scroll stable', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /boardScrollPositions: new Map\(\)/);
+  assert.match(app, /data-project-track=/);
+  assert.match(app, /function applyBoardFilter\(\)/);
+  assert.match(app, /function restoreBoardScrollPositions\(\)/);
+  const filterHandler = app.match(/elements\.boardFilters\.addEventListener\('click',[\s\S]*?\n\}\);/)?.[0] ?? '';
+  assert.match(filterHandler, /applyBoardFilter\(\);/);
+  assert.doesNotMatch(filterHandler, /renderBoard\(\);/);
+  const viewHandler = app.match(/elements\.detailControls\.addEventListener\('click',[\s\S]*?\n\}\);/)?.[0] ?? '';
+  assert.match(viewHandler, /renderBoard\(\);/);
+});
+
+test('task star actions use a compact top-right icon and titles clamp to two lines', async () => {
+  const [app, styles] = await Promise.all([
+    readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/styles.css', import.meta.url), 'utf8')
+  ]);
+  assert.match(app, /function renderStarControl\(task, editable\)/);
+  assert.match(app, /class="star-toggle\$\{active/);
+  assert.match(app, /aria-label="\$\{label\}" title="\$\{label\}"/);
+  assert.doesNotMatch(app, /button class="button quiet compact star-toggle/);
+  assert.match(app, /class="task-title" title="\$\{escapeHtml\((task|item)\.title\)\}"/);
+  assert.match(styles, /\.task-title-row \.task-title[\s\S]*?-webkit-line-clamp: 2;/);
+  assert.match(styles, /\.task-title-controls[\s\S]*?flex: 0 0 auto/);
+});
+
+test('routing labels expose Luna Worker and validation profiles', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /recommendation\.executor === 'luna_worker'/);
+  assert.match(app, /Luna Worker/);
+  assert.match(app, /recommendation\.validationProfile/);
+});
+
+test('home replaces Mock Run replay with a stable real-result trajectory', async () => {
+  const [html, app, styles] = await Promise.all([
+    readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/styles.css', import.meta.url), 'utf8')
+  ]);
+  assert.match(html, /id="trajectory"/);
+  assert.match(html, /data-trajectory-window="24h"/);
+  assert.match(html, /data-trajectory-window="7d"/);
+  assert.match(html, /data-trajectory-window="30d"/);
+  assert.match(html, /id="trajectoryDrawer"/);
+  assert.doesNotMatch(html, /执行工作台|运行回放|id="timeline"|id="runStatus"/);
+  assert.match(app, /\/api\/trajectory\?window=/);
+  assert.match(app, /function assignTrajectoryLanes/);
+  assert.match(app, /未记录推进/);
+  assert.match(app, /lifeline_submit_completion/);
+  assert.doesNotMatch(app, /\/api\/work-items\/\$\{encodeURIComponent\(workItemId\)\}\/queue/);
+  assert.doesNotMatch(app, /evidenceScore/);
+  assert.match(styles, /\.trajectory-board\s*\{[^}]*min-height:/);
+  assert.match(styles, /\.trajectory-project\s*\{[^}]*grid-template-columns:/);
+  assert.doesNotMatch(styles, /\.board-scroll\s*\{[^}]*max-height:\s*none/);
+});

@@ -73,28 +73,22 @@
         </div>
       </section>
 
-      <section class="workbench" id="workbench" aria-labelledby="workbench-title">
-        <div class="section-heading">
+      <section class="trajectory" id="trajectory" aria-labelledby="trajectory-title">
+        <div class="trajectory-heading">
           <div>
-            <h2 id="workbench-title">执行工作台</h2>
-            <p>创建入口统一收进右侧抽屉；这里专注运行回放与验收证据。</p>
+            <p class="context-line">真实上报，不演戏</p>
+            <h2 id="trajectory-title">算力花去哪，一眼见底。</h2>
+            <p>按项目还原真实完成顺序、时间重叠和未记录推进；不追踪 Agent 的内部思考。</p>
+          </div>
+          <div class="trajectory-window-switch" id="trajectoryWindowSwitch" aria-label="推进轨迹时间范围">
+            <button type="button" data-trajectory-window="24h" aria-pressed="false">24 小时</button>
+            <button type="button" data-trajectory-window="7d" aria-pressed="true">7 天</button>
+            <button type="button" data-trajectory-window="30d" aria-pressed="false">30 天</button>
           </div>
         </div>
-
-        <div class="workbench-grid replay-only">
-          <article class="replay-panel" aria-labelledby="replay-title">
-            <div class="replay-heading">
-              <div>
-                <h3 id="replay-title">运行回放</h3>
-                <p>从大板任务直接启动或打开历史运行。</p>
-              </div>
-              <span id="runStatus" class="status neutral">等待运行</span>
-            </div>
-            <ol id="timeline" class="timeline">
-              <li class="empty">启动工作包后，持久化事件会在这里实时出现。</li>
-            </ol>
-          </article>
-        </div>
+        <div class="trajectory-summary" id="trajectorySummary" aria-label="推进轨迹概况"></div>
+        <div class="trajectory-coverage" id="trajectoryCoverage"></div>
+        <div class="trajectory-board" id="trajectoryBoard" aria-live="polite"></div>
       </section>
     </main>
 
@@ -219,6 +213,19 @@
             <button class="button primary" type="submit">添加到项目大板</button>
           </form>
         </div>
+      </div>
+    </dialog>
+
+    <dialog class="side-drawer trajectory-drawer" id="trajectoryDrawer" aria-labelledby="trajectoryDrawerTitle">
+      <div class="drawer-shell">
+        <header class="drawer-header">
+          <div>
+            <p class="context-line" id="trajectoryDrawerContext">真实 Agent 结果</p>
+            <h2 id="trajectoryDrawerTitle">任务推进记录</h2>
+          </div>
+          <button class="button quiet compact" id="closeTrajectoryDrawer" type="button" aria-label="关闭任务推进记录">关闭</button>
+        </header>
+        <div class="drawer-body trajectory-drawer-body" id="trajectoryDrawerBody"></div>
       </div>
     </dialog>
 

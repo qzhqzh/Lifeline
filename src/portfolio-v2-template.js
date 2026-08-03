@@ -5,7 +5,7 @@
  * by the application service.
  */
 export const PORTFOLIO_TEMPLATE_KEY = 'portfolio-v2-real-projects';
-export const PORTFOLIO_TEMPLATE_VERSION = '2026-08-02.4';
+export const PORTFOLIO_TEMPLATE_VERSION = '2026-08-03.5';
 export const PORTFOLIO_V2_TEMPLATE_KEY = PORTFOLIO_TEMPLATE_KEY;
 export const PORTFOLIO_V2_TEMPLATE_VERSION = PORTFOLIO_TEMPLATE_VERSION;
 
@@ -26,13 +26,13 @@ const TEMPLATE = [
       task('导入三个真实项目和每用户一次性 receipt', '把真实项目、Phase、历史 Task 和一次性初始化事实写入服务端。', 2, 3, 'VERIFIED', 'feature', 'P0', 'LUNA-CODE', history(null, 'test/portfolio-v2.test.js')),
       task('让项目价值更清晰，创建入口更简单', '让用户先看懂每个项目解决什么问题，并从一个入口完成创建。', 2, 4, 'VERIFIED', 'feature', 'P1', 'LUNA-MEDIUM', history(null, 'public/app.js')),
       task('固定项目栏、稳定筛选、当前节点居中', '在长排期中保持项目栏、筛选结构和当前节点稳定。', 3, 1, 'VERIFIED', 'feature', 'P0', 'LUNA-CODE', history(null, 'public/app.js')),
-      task('展开项目全部任务并支持键盘/拖拽排序', '展开项目查看完整任务清单，并补齐键盘排序、跨阶段预览与撤销。', 3, 2, 'PLANNED', 'feature', 'P1', 'LUNA-CODE'),
-      task('加入依赖校验与可并行任务展示', '校验依赖关系并展示可并行的任务槽位。', 3, 3, 'PLANNED', 'feature', 'P1', 'LUNA-CODE'),
+      task('展开项目全部任务并支持键盘/拖拽排序', '展开项目查看完整任务清单，并补齐键盘排序、跨阶段预览与撤销。', 3, 2, 'VERIFIED', 'feature', 'P1', 'LUNA-CODE', history(null, 'test/ui-form.test.js')),
+      task('加入依赖校验与可并行任务展示', '校验依赖关系并展示可并行的任务槽位。', 3, 3, 'VERIFIED', 'feature', 'P1', 'LUNA-CODE', history(null, 'test/dependency-schedule.test.js')),
       task('提供 Project/Phase/Task 查询与创建 MCP', '让 Agent 可以通过 MCP 查询和创建项目、阶段与任务。', 4, 1, 'VERIFIED', 'feature', 'P1', 'LUNA-CODE', history(null, 'test/mcp.test.js')),
-      task('补齐扫描提案与指纹去重 MCP', '让扫描发现以可去重提案进入复核门禁。', 4, 2, 'PLANNED', 'feature', 'P1', 'LUNA-CODE'),
+      task('补齐扫描提案与指纹去重 MCP', '让扫描发现以可去重提案进入复核门禁。', 4, 2, 'VERIFIED', 'feature', 'P1', 'LUNA-CODE', history(null, 'test/scan-proposal.test.js')),
       task('接入 Streamable HTTP、OAuth 与多用户隔离', '让远程 Agent 在最小权限和真实用户边界下安全调用 MCP。', 4, 3, 'DEFERRED', 'ops', 'P1', 'INDEPENDENT-REVIEW'),
       task('周期扫描仓库并去重生成 Bug 候选', '周期扫描仓库并按 fingerprint 去重生成 Bug 候选。', 5, 1, 'RECURRING', 'scan', 'P2', 'LOW-SCAN'),
-      task('Agent 完成后自动进入复核并更新项目进度', 'Agent 回报完成后先进入 REVIEW，经证据核验再更新进度。', 5, 2, 'PLANNED', 'feature', 'P1', 'INDEPENDENT-REVIEW'),
+      task('Agent 完成后自动进入复核并更新项目进度', 'Agent 回报完成后先进入 REVIEW，经证据核验再更新进度。', 5, 2, 'VERIFIED', 'feature', 'P1', 'INDEPENDENT-REVIEW', history(null, 'test/mcp.test.js')),
       task('建立端到端浏览器回归与发布门禁', '把桌面、移动端、拖拽与危险操作纳入可重复的发布验收。', 6, 1, 'DEFERRED', 'review', 'P0', 'INDEPENDENT-REVIEW'),
       task('迁移 PostgreSQL Repository 并完成恢复演练', '在保持现有领域契约的前提下升级多用户持久层并验证备份恢复。', 6, 2, 'DEFERRED', 'ops', 'P1', 'LUNA-CODE'),
       task('接入 Temporal、真实 Executor 与模型路由', '让任务调度、执行、重试和模型选择进入可回放的生产链路。', 6, 3, 'DEFERRED', 'feature', 'P1', 'LUNA-CODE'),
@@ -52,8 +52,8 @@ const TEMPLATE = [
       task('完成 Memory Sleep 与可观测性', '让记忆休眠、唤醒和检索链路可以解释和监控。', 3, 3, 'RELEASED', 'feature', 'P1', 'LUNA-CODE', history('824fc64', 'v1.3.0')),
       task('增加 graph explain、feedback 和 retrieval debug', '支持记忆关系解释、反馈和检索调试。', 4, 1, 'VERIFIED', 'feature', 'P1', 'LUNA-CODE', history('7bff05d', '3f0c91d')),
       task('增加图工具、能力指南并改善检索相关性', '提高跨项目记忆检索的命中质量。', 4, 2, 'VERIFIED', 'research', 'P2', 'LUNA-MEDIUM', history('53745f9', '1730bfe')),
-      task('建立 Artifact 修订、Constraint 版本和影响关系', '让项目知识变更有版本、约束和影响追踪。', 5, 1, 'RUNNING', 'feature', 'P0', 'LUNA-CODE', history(null, 'docs/project-knowledge.md')),
-      task('完成 Project Workspace、MCP context/impact/index 闭环', '把项目知识工作区接入检索和影响分析。', 5, 2, 'RUNNING', 'feature', 'P0', 'LUNA-CODE'),
+      task('建立 Artifact 修订、Constraint 版本和影响关系', '让项目知识变更有版本、约束和影响追踪。', 5, 1, 'PLANNED', 'feature', 'P0', 'LUNA-CODE', history(null, 'docs/project-knowledge.md')),
+      task('完成 Project Workspace、MCP context/impact/index 闭环', '把项目知识工作区接入检索和影响分析。', 5, 2, 'PLANNED', 'feature', 'P0', 'LUNA-CODE'),
       task('完成迁移、回归、文档同步与发布评审', '在工作区实现稳定后完成迁移和发布复核。', 5, 3, 'PLANNED', 'review', 'P1', 'INDEPENDENT-REVIEW'),
       task('建立固定检索评测集和版本间回归报告', '用真实查询样本持续衡量记忆命中质量。', 6, 1, 'PLANNED', 'research', 'P2', 'LOW-SCAN')
     ]),
@@ -96,7 +96,6 @@ function project(name, headline, description, repositoryUrl, strategicValue, pri
     repositoryUrl,
     strategicValue,
     primary,
-    currentTaskTitle: name === 'Lifeline' ? '固定项目栏、稳定筛选、当前节点居中' : null,
     templateKey: PORTFOLIO_TEMPLATE_KEY,
     templateVersion: PORTFOLIO_TEMPLATE_VERSION,
     workItems
