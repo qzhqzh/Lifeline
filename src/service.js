@@ -452,8 +452,27 @@ export class LifelineService {
       if (!EDITABLE_WORK_ITEM_STATUSES.has(workItem.status)) {
         const validatedIssue = validateWorkItemInput({ ...workItem, issue: input.issue }).issue;
         const beforeIssue = workItem.issue ?? null;
-        if (beforeIssue === validatedIssue) return workItem;
         const source = mutationSource(input, options);
+        if (beforeIssue === validatedIssue) {
+          if (context.idempotencyKey) {
+            state.events.push(createAuditEvent({
+              type: 'work_item.updated',
+              message: 'Task issue reference unchanged',
+              workItemId,
+              metadata: auditMetadata(context, {
+                projectId: project.id,
+                phaseId: workItem.phaseId ?? workItem.planning?.phaseId ?? null,
+                beforeVersion,
+                afterVersion: beforeVersion,
+                unchanged: true,
+                source,
+                before: { issue: beforeIssue },
+                after: { issue: validatedIssue }
+              })
+            }, nextGlobalSequence(state)));
+          }
+          return workItem;
+        }
         const editedAt = nowIso();
         Object.assign(workItem, {
           issue: validatedIssue,
@@ -1317,6 +1336,7 @@ const EDITABLE_WORK_ITEM_STATUSES = new Set([
 ]);
 
 function isIssueReferenceOnlyUpdate(input = {}) {
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) return false;
   if (!Object.prototype.hasOwnProperty.call(input, 'issue')) return false;
   const metadataFields = new Set(['expectedScheduleVersion', 'issue', 'source']);
   return Object.entries(input).every(([key, value]) => value === undefined || metadataFields.has(key));

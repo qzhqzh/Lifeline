@@ -158,6 +158,48 @@ test('issue reference can be added and cleared without changing the rest of the 
     }),
     (error) => error.code === 'TASK_NOT_EDITABLE'
   );
+
+  await assert.rejects(
+    service.updateWorkItem(linked.id, null),
+    (error) => error.code === 'TASK_NOT_EDITABLE'
+  );
+});
+
+test('locked issue no-op records an idempotent receipt without overwriting a later update', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-locked-issue-idempotency-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const project = await service.createProject({ name: 'Locked issue idempotency' });
+  const phase = await service.createPhase({ projectId: project.id, title: 'Review', phaseOrder: 1 });
+  const task = await service.createWorkItem(taskInput(project.id, phase.id, 'Cancelled review finding', 1));
+  const cancelled = await service.cancelWorkItem(task.id, {
+    expectedScheduleVersion: (await service.getProject(project.id)).scheduleVersion,
+    reason: 'Keep only as audit history.'
+  });
+  const unchangedVersion = (await service.getProject(project.id)).scheduleVersion;
+  const noOpOptions = { actor: 'reviewer-a', idempotencyKey: 'locked-issue-no-op' };
+  await service.updateWorkItem(cancelled.id, {
+    expectedScheduleVersion: unchangedVersion,
+    issue: null
+  }, noOpOptions);
+  assert.equal((await service.getProject(project.id)).scheduleVersion, unchangedVersion);
+
+  const linked = await service.updateWorkItem(cancelled.id, {
+    expectedScheduleVersion: unchangedVersion,
+    issue: 'https://github.com/example/lifeline/issues/10'
+  }, { actor: 'reviewer-b', idempotencyKey: 'locked-issue-link' });
+  const linkedVersion = (await service.getProject(project.id)).scheduleVersion;
+  assert.equal(linked.issue, 'https://github.com/example/lifeline/issues/10');
+
+  const replayed = await service.updateWorkItem(cancelled.id, {
+    expectedScheduleVersion: unchangedVersion,
+    issue: null
+  }, noOpOptions);
+  assert.equal(replayed.issue, 'https://github.com/example/lifeline/issues/10');
+  assert.equal((await service.getProject(project.id)).scheduleVersion, linkedVersion);
+  const details = await service.getTaskDetails(cancelled.id);
+  const receipt = details.auditEvents.find((event) => event.metadata?.idempotencyKey === 'locked-issue-no-op');
+  assert.equal(receipt?.metadata?.unchanged, true);
 });
 
 test('dashboard recommendation prioritizes stars, scheduled dates, and human tasks without reordering the phase', async (t) => {
