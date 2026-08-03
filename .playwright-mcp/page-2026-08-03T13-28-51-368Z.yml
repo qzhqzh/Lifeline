@@ -1,0 +1,40 @@
+- generic [active] [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - strong [ref=f2e6]: Lifeline
+    - button "刷新状态" [ref=f2e8] [cursor=pointer]
+  - main [ref=f2e9]:
+    - region [ref=f2e10]:
+      - generic [ref=f2e11]:
+        - paragraph [ref=f2e12]: 每一份投入，都必须换来进度
+        - heading "榨干每一滴算力，谁都别下班。" [level=1] [ref=f2e13]
+        - paragraph [ref=f2e14]: 不再凭感觉分配模型和时间。高算力窗口集中攻坚，低算力窗口清理 Bug、补齐证据、 推进轻量任务，让每一个重要项目始终逼近交付。
+      - generic [ref=f2e15]:
+        - generic [ref=f2e16]:
+          - button "载入本次项目排期" [ref=f2e17] [cursor=pointer]
+          - generic [ref=f2e18]: 为当前用户写入三个真实项目及历史任务，仅可执行一次
+        - button "添加项目或任务" [ref=f2e19] [cursor=pointer]
+    - region "组合概况" [ref=f2e20]
+    - region [ref=f2e22]:
+      - generic [ref=f2e23]:
+        - generic [ref=f2e24]:
+          - heading "下一滴算力，投给谁？" [level=2] [ref=f2e25]
+          - paragraph [ref=f2e26]: 越靠上越值得优先投入，越向右越接近交付；切换算力和任务类型，立刻找到此刻最值得推进的工作。
+        - generic "任务筛选" [ref=f2e27]:
+          - button "全部排期" [pressed] [ref=f2e28] [cursor=pointer]
+          - button "低算力可做" [ref=f2e29] [cursor=pointer]
+          - button "集中突破" [ref=f2e30] [cursor=pointer]
+          - button "Bug / 扫描" [ref=f2e31] [cursor=pointer]
+          - button "星标优先" [ref=f2e32] [cursor=pointer]
+      - generic "横向滚动查看项目阶段"
+    - region [ref=f2e33]:
+      - generic [ref=f2e34]:
+        - generic [ref=f2e35]:
+          - paragraph [ref=f2e36]: 真实上报，不演戏
+          - heading "算力花去哪，一眼见底。" [level=2] [ref=f2e37]
+          - paragraph [ref=f2e38]: 按项目还原真实完成顺序、时间重叠和未记录推进；不追踪 Agent 的内部思考。
+        - generic "推进轨迹时间范围" [ref=f2e39]:
+          - button "24 小时" [ref=f2e40] [cursor=pointer]
+          - button "7 天" [pressed] [ref=f2e41] [cursor=pointer]
+          - button "30 天" [ref=f2e42] [cursor=pointer]
+      - generic "推进轨迹概况" [ref=f2e43]
+  - status

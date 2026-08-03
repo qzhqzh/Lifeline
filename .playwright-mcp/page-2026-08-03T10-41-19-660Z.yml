@@ -1,0 +1,45 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - strong [ref=e6]: Lifeline
+      - generic [ref=e7]: 多项目推进与验收
+    - generic [ref=e8]:
+      - generic [ref=e9]: 控制平面在线 · 10:41
+      - button "刷新状态" [ref=e10] [cursor=pointer]
+  - main [ref=e11]:
+    - region [ref=e12]:
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: 每一份投入，都必须换来进度
+        - heading "榨干每一滴算力，谁都别下班。" [level=1] [ref=e15]
+        - paragraph [ref=e16]: 不再凭感觉分配模型和时间。高算力窗口集中攻坚，低算力窗口清理 Bug、补齐证据、 推进轻量任务，让每一个重要项目始终逼近交付。
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - button "载入本次项目排期" [ref=e19] [cursor=pointer]
+          - generic [ref=e20]: 为当前用户写入三个真实项目及历史任务，仅可执行一次
+        - button "添加项目或任务" [ref=e21] [cursor=pointer]
+    - region "组合概况" [ref=e22]
+    - region [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - heading "下一滴算力，投给谁？" [level=2] [ref=e27]
+          - paragraph [ref=e28]: 越靠上越值得优先投入，越向右越接近交付；切换算力和任务类型，立刻找到此刻最值得推进的工作。
+        - generic "任务筛选" [ref=e29]:
+          - button "全部排期" [pressed] [ref=e30] [cursor=pointer]
+          - button "低算力可做" [ref=e31] [cursor=pointer]
+          - button "集中突破" [ref=e32] [cursor=pointer]
+          - button "Bug / 扫描" [ref=e33] [cursor=pointer]
+          - button "星标优先" [ref=e34] [cursor=pointer]
+      - generic "横向滚动查看项目阶段"
+    - region [ref=e35]:
+      - generic [ref=e37]:
+        - heading "执行工作台" [level=2] [ref=e38]
+        - paragraph [ref=e39]: 创建入口统一收进右侧抽屉；这里专注运行回放与验收证据。
+      - article [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - heading "运行回放" [level=3] [ref=e44]
+            - paragraph [ref=e45]: 从大板任务直接启动或打开历史运行。
+          - generic [ref=e46]: 等待运行
+        - list [ref=e47]:
+          - listitem [ref=e48]: 启动工作包后，持久化事件会在这里实时出现。
+  - status
