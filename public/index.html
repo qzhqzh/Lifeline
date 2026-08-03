@@ -2,107 +2,341 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Lifeline AI project operations control plane" />
-    <title>Lifeline Control Plane</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Lifeline 榨干每一滴算力：高算力集中攻坚，低算力持续推进，把最重要的项目推到终点。" />
+    <title>Lifeline · 榨干每一滴算力</title>
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="topbar">
-      <div>
-        <p class="eyebrow">AI PROJECT OPERATIONS</p>
-        <h1>Lifeline</h1>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <strong>Lifeline</strong>
+          <span>多项目推进与验收</span>
+        </div>
       </div>
-      <div class="health" id="health">正在连接控制平面…</div>
+      <div class="topbar-actions">
+        <span class="health" id="health">正在连接控制平面…</span>
+        <button class="button quiet" id="refresh" type="button">刷新状态</button>
+      </div>
     </header>
 
     <main>
-      <section class="hero">
+      <section class="page-intro" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">FIRST VERTICAL SLICE</p>
-          <h2>以证据而不是主观百分比推进项目</h2>
-          <p>
-            创建工作包，校验执行契约，运行可恢复的 Mock Executor，并实时回放持久化事件与验收证据。
+          <p class="context-line">每一份投入，都必须换来进度</p>
+          <h1 id="page-title">榨干每一滴算力，谁都别下班。</h1>
+          <p class="intro-copy">
+            不再凭感觉分配模型和时间。高算力窗口集中攻坚，低算力窗口清理 Bug、补齐证据、
+            推进轻量任务，让每一个重要项目始终逼近交付。
           </p>
         </div>
-        <div class="hero-actions">
-          <button class="primary" id="seedDemo">创建演示项目</button>
-          <button class="secondary" id="refresh">刷新状态</button>
+        <div class="intro-actions">
+          <div class="bootstrap-action" id="bootstrapAction">
+            <button class="button primary" id="seedDemo" type="button" aria-describedby="bootstrapHint">载入本次项目排期</button>
+            <small id="bootstrapHint">为当前用户写入三个真实项目及历史任务，仅可执行一次</small>
+          </div>
+          <button class="button secondary" id="openCreationDrawer" type="button">添加项目或任务</button>
         </div>
       </section>
 
-      <section class="metrics" id="metrics"></section>
+      <section class="metrics" id="metrics" aria-label="组合概况"></section>
 
-      <section class="grid">
-        <article class="panel span-7">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">PORTFOLIO</p>
-              <h3>项目指挥中心</h3>
-            </div>
-          </div>
-          <div id="projects" class="projects"></div>
-        </article>
+      <section class="next-action" id="nextAction" aria-live="polite"></section>
 
-        <article class="panel span-5">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">NEW WORK</p>
-              <h3>创建工作包</h3>
-            </div>
+      <section class="board-shell" aria-labelledby="portfolio-title">
+        <div class="board-toolbar">
+          <div class="board-heading">
+            <button class="detail-back" id="backToPortfolio" type="button" hidden>← 返回所有项目</button>
+            <h2 id="portfolio-title">下一滴算力，投给谁？</h2>
+            <p id="portfolioDescription">越靠上越值得优先投入，越向右越接近交付；切换算力和任务类型，立刻找到此刻最值得推进的工作。</p>
           </div>
-          <form id="workItemForm" class="form-stack">
-            <label>
-              项目
-              <select id="projectId" required></select>
-            </label>
-            <label>
-              标题
-              <input id="title" required minlength="3" value="验证首个执行闭环" />
-            </label>
-            <label>
-              目标
-              <textarea id="objective" required>通过状态校验、持久执行、证据写入与事件回放完成首个可验证工作包。</textarea>
-            </label>
-            <label>
-              验收标准（每行一条）
-              <textarea id="criteria" required>工作包状态最终为 VERIFIED
-运行事件可以完整回放
-项目进度由证据自动计算</textarea>
-            </label>
-            <label>
-              测试命令（每行一条）
-              <textarea id="commands" required>npm test</textarea>
-            </label>
-            <button class="primary" type="submit">创建工作包</button>
-          </form>
-        </article>
+          <div class="filter-group" id="boardFilters" aria-label="任务筛选">
+            <button class="filter-button active" type="button" data-filter="all" aria-pressed="true">全部排期</button>
+            <button class="filter-button" type="button" data-filter="low" aria-pressed="false">低算力可做</button>
+            <button class="filter-button" type="button" data-filter="high" aria-pressed="false">集中突破</button>
+            <button class="filter-button" type="button" data-filter="bug" aria-pressed="false">Bug / 扫描</button>
+            <button class="filter-button" type="button" data-filter="starred" aria-pressed="false">星标优先</button>
+          </div>
+          <div class="detail-controls" id="detailControls" hidden>
+            <div class="view-switch" aria-label="任务展示方式">
+              <button type="button" data-detail-view="row" aria-pressed="true">横条</button>
+              <button type="button" data-detail-view="card" aria-pressed="false">卡片</button>
+            </div>
+            <button class="button primary compact" id="addDetailTask" type="button">新增任务</button>
+          </div>
+        </div>
+        <div class="board-scroll" tabindex="0" aria-label="横向滚动查看项目阶段">
+          <div id="portfolioBoard" class="portfolio-board"></div>
+        </div>
+      </section>
 
-        <article class="panel span-7">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">PIPELINE</p>
-              <h3>工作包流水线</h3>
-            </div>
+      <section class="trajectory" id="trajectory" aria-labelledby="trajectory-title">
+        <div class="trajectory-heading">
+          <div>
+            <p class="context-line">真实上报，不演戏</p>
+            <h2 id="trajectory-title">算力花去哪，一眼见底。</h2>
+            <p>按项目还原真实完成顺序、时间重叠和未记录推进；不追踪 Agent 的内部思考。</p>
           </div>
-          <div id="workItems" class="work-items"></div>
-        </article>
-
-        <article class="panel span-5 replay-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">RUN REPLAY</p>
-              <h3>执行回放</h3>
-            </div>
-            <span id="runStatus" class="status neutral">等待运行</span>
+          <div class="trajectory-window-switch" id="trajectoryWindowSwitch" aria-label="推进轨迹时间范围">
+            <button type="button" data-trajectory-window="24h" aria-pressed="false">24 小时</button>
+            <button type="button" data-trajectory-window="7d" aria-pressed="true">7 天</button>
+            <button type="button" data-trajectory-window="30d" aria-pressed="false">30 天</button>
           </div>
-          <ol id="timeline" class="timeline">
-            <li class="empty">启动工作包后，事件会在这里实时出现。</li>
-          </ol>
-        </article>
+        </div>
+        <div class="trajectory-summary" id="trajectorySummary" aria-label="推进轨迹概况"></div>
+        <div class="trajectory-coverage" id="trajectoryCoverage"></div>
+        <div class="trajectory-board" id="trajectoryBoard" aria-live="polite"></div>
       </section>
     </main>
 
+    <dialog class="side-drawer" id="creationDrawer" aria-labelledby="creationDrawerTitle">
+      <div class="drawer-shell">
+        <header class="drawer-header">
+          <div>
+            <p class="context-line">唯一创建入口</p>
+            <h2 id="creationDrawerTitle">添加项目或任务</h2>
+          </div>
+          <button class="button quiet compact" id="closeCreationDrawer" type="button" aria-label="关闭创建抽屉">关闭</button>
+        </header>
+        <div class="drawer-body">
+          <div class="creation-mode" aria-label="创建类型">
+            <button type="button" data-create-mode="task" aria-pressed="true">新任务</button>
+            <button type="button" data-create-mode="project" aria-pressed="false">新项目</button>
+          </div>
+
+          <form id="workItemForm" class="form-stack drawer-form" data-create-pane="task">
+            <div class="form-row">
+              <label>
+                项目
+                <select id="projectId" required></select>
+              </label>
+              <label>
+                所属阶段
+                <select id="createPhaseId" required></select>
+              </label>
+            </div>
+            <div class="new-phase-fields" id="createNewPhaseFields" hidden>
+              <label>
+                新阶段名称
+                <input id="createNewPhaseTitle" minlength="1" maxlength="180" placeholder="例如：稳定性收口" />
+              </label>
+              <label>
+                阶段顺序
+                <input id="createNewPhaseOrder" type="number" min="1" max="999" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label>
+                任务类型
+                <select id="kind">
+                  <option value="feature">功能实现</option>
+                  <option value="bug">Bug 修复</option>
+                  <option value="scan">持续扫描</option>
+                  <option value="research">调研</option>
+                  <option value="ops">运维</option>
+                  <option value="review">独立审查</option>
+                </select>
+              </label>
+              <label>
+                优先级
+                <select id="createPriority">
+                  <option value="P0">P0</option>
+                  <option value="P1" selected>P1</option>
+                  <option value="P2">P2</option>
+                  <option value="P3">P3</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Task 标题
+              <input id="title" required minlength="3" placeholder="这项任务交付什么结果" />
+            </label>
+            <label>
+              目标
+              <textarea id="objective" required placeholder="写清完成后发生了什么变化"></textarea>
+            </label>
+            <label>
+              关联 Issue（可选）
+              <input id="issue" maxlength="1000" placeholder="GitHub Issue URL 或 #123" />
+            </label>
+            <div class="form-row">
+              <label class="checkbox-field">
+                <input id="starred" type="checkbox" />
+                <span>星标优先</span>
+              </label>
+              <label>
+                排期日期（可选）
+                <input id="scheduledFor" type="date" />
+              </label>
+            </div>
+            <label>
+              前置依赖（可选，可多选）
+              <select id="createDependencies" multiple size="4"></select>
+            </label>
+            <label>
+              并行策略
+              <select id="createParallelPolicy">
+                <option value="AUTO">自动判断</option>
+                <option value="PARALLEL_ALLOWED">允许并行</option>
+                <option value="SEQUENTIAL">必须串行</option>
+              </select>
+            </label>
+            <label>
+              验收标准（可选，每行一条）
+              <textarea id="criteria" placeholder="可以先留空；执行前再补齐可验证结果"></textarea>
+            </label>
+            <label>
+              测试命令（可选，每行一条）
+              <textarea id="commands" placeholder="可以先留空；进入执行前必须补齐"></textarea>
+            </label>
+            <p class="form-hint">页面创建记录为“人工新增”；推荐执行器、推理强度、算力和估时会自动生成。</p>
+            <button class="button primary" type="submit">加入排期</button>
+          </form>
+
+          <form id="projectForm" class="form-stack drawer-form" data-create-pane="project" hidden>
+            <label>
+              项目名称
+              <input id="projectName" required minlength="2" maxlength="120" placeholder="例如：客户门户" />
+            </label>
+            <label>
+              项目简介
+              <textarea id="projectDescription" maxlength="2000" placeholder="用一句让人想推进的话说明它的价值"></textarea>
+            </label>
+            <label>
+              战略价值 <span id="strategicValueOutput">8 / 10</span>
+              <input id="strategicValue" type="range" min="1" max="10" value="8" />
+            </label>
+            <p class="form-hint">战略价值决定项目在大板中的默认优先级，后续仍可调整。</p>
+            <button class="button primary" type="submit">添加到项目大板</button>
+          </form>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="side-drawer trajectory-drawer" id="trajectoryDrawer" aria-labelledby="trajectoryDrawerTitle">
+      <div class="drawer-shell">
+        <header class="drawer-header">
+          <div>
+            <p class="context-line" id="trajectoryDrawerContext">真实 Agent 结果</p>
+            <h2 id="trajectoryDrawerTitle">任务推进记录</h2>
+          </div>
+          <button class="button quiet compact" id="closeTrajectoryDrawer" type="button" aria-label="关闭任务推进记录">关闭</button>
+        </header>
+        <div class="drawer-body trajectory-drawer-body" id="trajectoryDrawerBody"></div>
+      </div>
+    </dialog>
+
+    <dialog class="side-drawer" id="taskEditor" aria-labelledby="taskEditorTitle">
+      <form class="drawer-shell" id="taskEditorForm">
+        <header class="drawer-header">
+          <div>
+            <p class="context-line" id="taskEditorContext">调整执行契约</p>
+            <h2 id="taskEditorTitle">编辑排期任务</h2>
+          </div>
+          <button class="button quiet compact" id="closeTaskEditor" type="button" aria-label="关闭任务编辑">关闭</button>
+        </header>
+        <div class="drawer-body">
+          <div class="form-row">
+            <label>
+              所属阶段
+              <select id="editPhaseId" required></select>
+            </label>
+            <label>
+              任务类型
+              <select id="editKind">
+                <option value="feature">功能实现</option>
+                <option value="bug">Bug 修复</option>
+                <option value="scan">持续扫描</option>
+                <option value="research">调研</option>
+                <option value="ops">运维</option>
+                <option value="review">独立审查</option>
+              </select>
+            </label>
+          </div>
+          <div class="new-phase-fields" id="newPhaseFields" hidden>
+            <label>
+              新阶段名称
+              <input id="editNewPhaseTitle" minlength="1" maxlength="180" placeholder="例如：S4 稳定性收口" />
+            </label>
+            <label>
+              阶段顺序
+              <input id="editNewPhaseOrder" type="number" min="1" max="999" />
+            </label>
+          </div>
+          <p class="form-hint" id="phaseMoveHint">选择阶段后可预览移动结果。</p>
+          <div class="form-row">
+            <label>
+              优先级
+              <select id="editPriority">
+                <option value="P0">P0</option>
+                <option value="P1">P1</option>
+                <option value="P2">P2</option>
+                <option value="P3">P3</option>
+              </select>
+            </label>
+            <label>
+              排期承诺
+              <select id="editCommitment">
+                <option value="COMMITTED">已确认</option>
+                <option value="TENTATIVE">可调整</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Task 标题
+            <input id="editTitle" required minlength="3" maxlength="180" />
+          </label>
+          <label>
+            目标
+            <textarea id="editObjective" required></textarea>
+          </label>
+          <label>
+            关联 Issue（可选）
+            <input id="editIssue" maxlength="1000" placeholder="GitHub Issue URL 或 #123" />
+          </label>
+          <div class="form-row">
+            <label class="checkbox-field">
+              <input id="editStarred" type="checkbox" />
+              <span>星标优先</span>
+            </label>
+            <label>
+              排期日期（可选）
+              <input id="editScheduledFor" type="date" />
+            </label>
+          </div>
+          <label>
+            前置依赖（可选，可多选）
+            <select id="editDependencies" multiple size="5"></select>
+          </label>
+          <label>
+            并行策略
+            <select id="editParallelPolicy">
+              <option value="AUTO">自动判断</option>
+              <option value="PARALLEL_ALLOWED">允许并行</option>
+              <option value="SEQUENTIAL">必须串行</option>
+            </select>
+          </label>
+          <label>
+            验收标准（可选，每行一条）
+            <textarea id="editCriteria" placeholder="可以先留空；执行前再补齐可验证结果"></textarea>
+          </label>
+          <label>
+            测试命令（可选，每行一条）
+            <textarea id="editCommands" placeholder="可以先留空；进入执行前必须补齐"></textarea>
+          </label>
+          <p class="form-hint" id="taskSourceHint">页面新增会标记为“人工新增”；Agent 通过 MCP 新增会标记为“AI 提交”。</p>
+        </div>
+        <footer class="drawer-footer">
+          <button class="button quiet" id="cancelTaskEdit" type="button">取消</button>
+          <button class="button primary" id="taskEditorSubmit" type="submit">保存调整</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div class="task-tooltip" id="taskTooltip" role="tooltip" hidden></div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script type="module" src="/app.js"></script>
   </body>

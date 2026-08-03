@@ -4,7 +4,6 @@ import http from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DomainError } from './domain.js';
-import { MockExecutor } from './executor.js';
 import { LifelineService, isTerminalRunStatus } from './service.js';
 import { JsonStore } from './store.js';
 
@@ -13,11 +12,11 @@ const PUBLIC_ROOT = join(ROOT, 'public');
 const dataFile = process.env.LIFELINE_DATA_FILE ?? join(ROOT, 'data', 'lifeline.json');
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';
+const devReloadEnabled = process.env.LIFELINE_DEV_RELOAD === '1';
 
 const store = new JsonStore(dataFile);
 const service = new LifelineService({
-  store,
-  executor: new MockExecutor({ delayMs: Number(process.env.MOCK_STEP_DELAY_MS ?? 180) })
+  store
 });
 await service.start();
 if (process.env.LIFELINE_SEED_DEMO === '1') await service.seedDemo();
@@ -53,22 +52,62 @@ async function handleApi(request, response, url) {
   const method = request.method ?? 'GET';
 
   if (method === 'GET' && url.pathname === '/api/health') {
-    return sendJson(response, 200, { status: 'ok', service: 'lifeline-control-plane', time: new Date().toISOString() });
+    return sendJson(response, 200, {
+      status: 'ok',
+      service: 'lifeline-control-plane',
+      time: new Date().toISOString(),
+      devReload: devReloadEnabled
+    });
+  }
+  if (method === 'GET' && url.pathname === '/api/dev-events' && devReloadEnabled) {
+    return openDevEventStream(request, response);
   }
   if (method === 'GET' && url.pathname === '/api/dashboard') {
     return sendJson(response, 200, await service.dashboard());
+  }
+  if (method === 'GET' && url.pathname === '/api/trajectory') {
+    return sendJson(response, 200, await service.getTrajectory(url.searchParams.get('window') ?? '7d'));
+  }
+  if (method === 'GET' && url.pathname === '/api/bootstrap/portfolio-v2') {
+    return sendJson(response, 200, await service.getBootstrapStatus());
+  }
+  if (method === 'POST' && url.pathname === '/api/bootstrap/portfolio-v2') {
+    const result = await service.bootstrapPortfolioV2({
+      idempotencyKey: request.headers['idempotency-key'] ?? null
+    });
+    return sendJson(response, result.created ? 201 : 200, result);
   }
   if (method === 'GET' && url.pathname === '/api/projects') {
     return sendJson(response, 200, { items: await service.listProjects() });
   }
   if (method === 'POST' && url.pathname === '/api/projects') {
-    return sendJson(response, 201, await service.createProject(await readJsonBody(request)));
+    return sendJson(response, 201, await service.createProject(
+      await readJsonBody(request),
+      webMutationOptions(request, 'project.create')
+    ));
+  }
+  if (method === 'POST' && url.pathname === '/api/phases') {
+    return sendJson(response, 201, await service.createPhase(
+      await readJsonBody(request),
+      webMutationOptions(request, 'phase.create')
+    ));
+  }
+  const phaseMatch = /^\/api\/phases\/([^/]+)$/.exec(url.pathname);
+  if (method === 'PATCH' && phaseMatch) {
+    return sendJson(response, 200, await service.updatePhase(
+      decodeURIComponent(phaseMatch[1]),
+      await readJsonBody(request),
+      webMutationOptions(request, 'phase.update')
+    ));
   }
   if (method === 'GET' && url.pathname === '/api/work-items') {
     return sendJson(response, 200, { items: await service.listWorkItems(url.searchParams.get('projectId')) });
   }
   if (method === 'POST' && url.pathname === '/api/work-items') {
-    return sendJson(response, 201, await service.createWorkItem(await readJsonBody(request)));
+    return sendJson(response, 201, await service.createWorkItem(
+      await readJsonBody(request),
+      webMutationOptions(request, 'work_item.create')
+    ));
   }
   if (method === 'POST' && url.pathname === '/api/demo') {
     return sendJson(response, 201, await service.seedDemo());
@@ -82,9 +121,38 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, await service.getProject(decodeURIComponent(projectMatch[1])));
   }
 
+  const scheduleMatch = /^\/api\/projects\/([^/]+)\/schedule$/.exec(url.pathname);
+  if (method === 'GET' && scheduleMatch) {
+    return sendJson(response, 200, await service.getSchedule(decodeURIComponent(scheduleMatch[1])));
+  }
+  if (method === 'PATCH' && scheduleMatch) {
+    const projectId = decodeURIComponent(scheduleMatch[1]);
+    return sendJson(response, 200, await service.reorderPhaseTasks(
+      projectId,
+      await readJsonBody(request),
+      webMutationOptions(request, 'schedule.reorder')
+    ));
+  }
+
   const workItemMatch = /^\/api\/work-items\/([^/]+)$/.exec(url.pathname);
   if (method === 'GET' && workItemMatch) {
     return sendJson(response, 200, await service.getWorkItem(decodeURIComponent(workItemMatch[1])));
+  }
+  if (method === 'PATCH' && workItemMatch) {
+    const workItemId = decodeURIComponent(workItemMatch[1]);
+    return sendJson(response, 200, await service.updateWorkItem(
+      workItemId,
+      await readJsonBody(request),
+      webMutationOptions(request, 'work_item.update')
+    ));
+  }
+  if (method === 'DELETE' && workItemMatch) {
+    const workItemId = decodeURIComponent(workItemMatch[1]);
+    return sendJson(response, 200, await service.cancelWorkItem(
+      workItemId,
+      await readJsonBody(request),
+      webMutationOptions(request, 'work_item.cancel')
+    ));
   }
 
   const readyMatch = /^\/api\/work-items\/([^/]+)\/ready$/.exec(url.pathname);
@@ -184,7 +252,9 @@ async function serveStatic(response, pathname) {
 }
 
 function handleError(response, error) {
-  const domainStatus = error instanceof DomainError ? (error.code === 'NOT_FOUND' ? 404 : 422) : null;
+  const domainStatus = error instanceof DomainError
+    ? ({ NOT_FOUND: 404, SCHEDULE_VERSION_CONFLICT: 409 }[error.code] ?? 422)
+    : null;
   const status = error instanceof HttpError ? error.status : domainStatus ?? 500;
   const payload = {
     error: {
@@ -203,12 +273,32 @@ function sendJson(response, status, body) {
   response.end(`${JSON.stringify(body)}\n`);
 }
 
+function openDevEventStream(request, response) {
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive'
+  });
+  response.write('event: ready\ndata: {}\n\n');
+  const heartbeat = setInterval(() => response.write(': keep-alive\n\n'), 15_000);
+  request.on('close', () => clearInterval(heartbeat));
+}
+
 function setCommonHeaders(response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Idempotency-Key');
+  response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'no-referrer');
+}
+
+function webMutationOptions(request, tool) {
+  return {
+    client: 'web',
+    tool,
+    idempotencyKey: request.headers['idempotency-key'] ?? null,
+    source: { kind: 'web-ui' }
+  };
 }
 
 function contentType(extension) {

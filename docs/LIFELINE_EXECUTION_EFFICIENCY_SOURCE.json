@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-08-03T09:49:33Z",
+  "projectId": "project_67357539-3a03-4c0c-89ee-2cb0d2412c38",
+  "projectName": "Lifeline",
+  "scheduleVersion": 45,
+  "summary": {
+    "plannedTotal": 7,
+    "s3ToS5Planned": 4,
+    "runCount": 11,
+    "runDurationMs": 4159292,
+    "completionRecordCount": 22,
+    "completionDurationRecorded": 2,
+    "inputTokensRecorded": 0,
+    "outputTokensRecorded": 0,
+    "costRecorded": 0
+  },
+  "pending_tasks": [
+    {
+      "sequence": 1,
+      "phase": "S5",
+      "issue": "#8",
+      "task": "防止 Agent 使用 mock executor 绕过 REVIEW 门禁",
+      "priority": "P1",
+      "risk": "critical",
+      "profile": "V3 安全/发布"
+    },
+    {
+      "sequence": 2,
+      "phase": "S3",
+      "issue": "#5",
+      "task": "跨阶段移动后校验全项目依赖拓扑",
+      "priority": "P1",
+      "risk": "high",
+      "profile": "V3 数据完整性"
+    },
+    {
+      "sequence": 3,
+      "phase": "S3",
+      "issue": "#3",
+      "task": "修复大板筛选导致泳道重建与滚动归零",
+      "priority": "P1",
+      "risk": "medium",
+      "profile": "V2 UI 交互"
+    },
+    {
+      "sequence": 4,
+      "phase": "S4",
+      "issue": "#11",
+      "task": "避免 MCP planId 派生幂等键超长",
+      "priority": "P2",
+      "risk": "medium",
+      "profile": "V1 定向修复"
+    },
+    {
+      "sequence": 5,
+      "phase": "S2",
+      "issue": "#10",
+      "task": "修复 EchoMe 无 Run 的 RUNNING 任务",
+      "priority": "P1",
+      "risk": "high",
+      "profile": "V3 迁移/数据"
+    },
+    {
+      "sequence": 6,
+      "phase": "S2",
+      "issue": "#7",
+      "task": "校正 Portfolio 模板历史状态并提供幂等校准",
+      "priority": "P2",
+      "risk": "medium",
+      "profile": "V2 数据校准"
+    },
+    {
+      "sequence": 7,
+      "phase": "S2",
+      "issue": "#6",
+      "task": "任务验证后同步最新进度指针",
+      "priority": "P2",
+      "risk": "medium",
+      "profile": "V2 状态语义"
+    }
+  ],
+  "runs": [
+    {
+      "task": "加入依赖校验与可并行任务展示",
+      "executor": "codex",
+      "durationSec": 940,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "样式优化，项目详情页面的信息编辑",
+      "executor": "codex",
+      "durationSec": 823,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "新增重要任务可以加上星标状态，并调整排期日期在任务执行的优先级",
+      "executor": "codex",
+      "durationSec": 623,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "信息录入样式调整",
+      "executor": "codex",
+      "durationSec": 479,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "Agent 完成后自动进入复核并更新项目进度",
+      "executor": "codex",
+      "durationSec": 453,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "补齐扫描提案与指纹去重 MCP",
+      "executor": "codex",
+      "durationSec": 403,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "展开项目全部任务并支持键盘/拖拽排序",
+      "executor": "codex",
+      "durationSec": 240,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "自动识别多任务并行处理",
+      "executor": "codex",
+      "durationSec": 172,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "桌面与移动端真实渲染验收",
+      "executor": "codex",
+      "durationSec": 24,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "理解现有控制平面与首页链路",
+      "executor": "mock",
+      "durationSec": 1,
+      "status": "SUCCEEDED"
+    },
+    {
+      "task": "周期扫描仓库 Bug 并回填待处理任务",
+      "executor": "mock",
+      "durationSec": 1,
+      "status": "SUCCEEDED"
+    }
+  ]
+}

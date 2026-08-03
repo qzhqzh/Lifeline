@@ -1,0 +1,7 @@
+[mcp_servers.lifeline]
+command = "docker"
+args = ["compose", "exec", "-T", "-e", "LIFELINE_LOCAL_USER_ID=local-owner", "-e", "LIFELINE_MCP_CLIENT_NAME=codex", "lifeline", "node", "src/mcp-server.js"]
+required = false
+startup_timeout_sec = 15
+tool_timeout_sec = 60
+default_tools_approval_mode = "writes"

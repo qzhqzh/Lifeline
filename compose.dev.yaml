@@ -1,0 +1,8 @@
+services:
+  lifeline:
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./src:/app/src:ro
+      - ./public:/app/public:ro
+      - ./openapi.json:/app/openapi.json:ro
+      - lifeline-data:/app/data

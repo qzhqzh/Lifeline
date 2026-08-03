@@ -1,0 +1,1601 @@
+- generic [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - generic [ref=f2e5]:
+      - strong [ref=f2e6]: Lifeline
+      - generic [ref=f2e46]: 多项目推进与验收
+    - generic [ref=f2e7]:
+      - generic [ref=f2e47]: 控制平面在线 · 13:28
+      - button "刷新状态" [ref=f2e8] [cursor=pointer]
+  - main [ref=f2e9]:
+    - region [ref=f2e10]:
+      - generic [ref=f2e11]:
+        - paragraph [ref=f2e12]: 每一份投入，都必须换来进度
+        - heading "榨干每一滴算力，谁都别下班。" [level=1] [ref=f2e13]
+        - paragraph [ref=f2e14]: 不再凭感觉分配模型和时间。高算力窗口集中攻坚，低算力窗口清理 Bug、补齐证据、 推进轻量任务，让每一个重要项目始终逼近交付。
+      - button "添加项目或任务" [ref=f2e19] [cursor=pointer]
+    - region "组合概况" [ref=f2e20]:
+      - generic [ref=f2e48]:
+        - generic [ref=f2e49]: 进行中项目
+        - strong [ref=f2e50]: "7"
+      - generic [ref=f2e51]:
+        - generic [ref=f2e52]: 待推进任务
+        - strong [ref=f2e53]: "27"
+      - generic [ref=f2e54]:
+        - generic [ref=f2e55]: 计划任务
+        - strong [ref=f2e56]: "5"
+      - generic [ref=f2e57]:
+        - generic [ref=f2e58]: 低算力可做
+        - strong [ref=f2e59]: "13"
+      - generic [ref=f2e60]:
+        - generic [ref=f2e61]: 当前阻塞
+        - strong [ref=f2e62]: "0"
+    - generic [ref=f2e21]:
+      - generic [ref=f2e63]:
+        - generic [ref=f2e64]: 当前建议
+        - generic [ref=f2e65]:
+          - strong [ref=f2e66]: BioWorkflowManage · 历史 WDL 工作台发布收口 · 审查并固化当前实现基线
+          - paragraph [ref=f2e67]: 与实现上下文隔离审查，先报告可验证问题再决定修改。 Codex · 高推理 · V3 · independent-review，预计 35 分钟。
+      - button "在排期中定位" [ref=f2e68] [cursor=pointer]
+    - region [ref=f2e22]:
+      - generic [ref=f2e23]:
+        - generic [ref=f2e24]:
+          - heading "下一滴算力，投给谁？" [level=2] [ref=f2e25]
+          - paragraph [ref=f2e26]: 越靠上越值得优先投入，越向右越接近交付；切换算力和任务类型，立刻找到此刻最值得推进的工作。
+        - generic "任务筛选" [ref=f2e27]:
+          - button "全部排期" [pressed] [ref=f2e28] [cursor=pointer]
+          - button "低算力可做" [ref=f2e29] [cursor=pointer]
+          - button "集中突破" [ref=f2e30] [cursor=pointer]
+          - button "Bug / 扫描" [ref=f2e31] [cursor=pointer]
+          - button "星标优先" [ref=f2e32] [cursor=pointer]
+      - generic "横向滚动查看项目阶段" [ref=f2e69]:
+        - generic [ref=f2e70]:
+          - article [ref=f2e71]:
+            - button "打开 Lifeline 项目详情" [ref=f2e72] [cursor=pointer]:
+              - generic [ref=f2e73]:
+                - generic [ref=f2e74]:
+                  - generic [ref=f2e75]: P1
+                  - generic [ref=f2e76]: 01 / 07
+                - heading "Lifeline" [level=3] [ref=f2e77]
+                - strong [ref=f2e78]: 项目再多，也知道下一步该推什么
+                - paragraph [ref=f2e79]: 把优先级、阶段、算力和验收放进同一张进度图。强算力集中攻坚，低算力持续清理 Bug，重要项目不会再被遗忘。
+                - generic [ref=f2e80]: 查看全部任务 →
+              - generic [ref=f2e81]:
+                - generic [ref=f2e82]:
+                  - generic [ref=f2e83]: 6 个阶段
+                  - generic [ref=f2e84]: 3 项待推进
+                - generic "已验证进度 81%" [ref=f2e85]
+                - generic [ref=f2e87]:
+                  - generic [ref=f2e88]: 已验证进度
+                  - strong [ref=f2e89]: 81%
+            - generic "Lifeline 的阶段进度" [ref=f2e90]:
+              - generic [ref=f2e91]:
+                - generic [ref=f2e92]:
+                  - generic [ref=f2e93]:
+                    - generic [ref=f2e94]: S1
+                    - heading "S1 建立可信控制平面" [level=4] [ref=f2e95]
+                  - generic [ref=f2e96]: 正在推进
+                - generic [ref=f2e97]:
+                  - article [ref=f2e98]:
+                    - generic [ref=f2e99]:
+                      - strong [ref=f2e100]: 明确控制平面优先的产品边界与 ADR
+                      - generic [ref=f2e101]: 已验证
+                    - generic [ref=f2e103]:
+                      - generic [ref=f2e104]: P0
+                      - generic [ref=f2e105]: 功能
+                      - generic [ref=f2e106]: 低算力
+                      - generic [ref=f2e107]: 已确认
+                    - paragraph [ref=f2e108]: Luna Worker · 中推理 · V1 · agentic-coding · 20 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e109]:
+                    - generic [ref=f2e110]:
+                      - strong [ref=f2e111]: 建立 Project、WorkItem、Run、Evidence 与状态机
+                      - generic [ref=f2e112]: 已验证
+                    - generic [ref=f2e114]:
+                      - generic [ref=f2e115]: P0
+                      - generic [ref=f2e116]: 功能
+                      - generic [ref=f2e117]: 低算力
+                      - generic [ref=f2e118]: 已确认
+                    - paragraph [ref=f2e119]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e120]:
+                    - generic [ref=f2e121]:
+                      - strong [ref=f2e122]: 实现原子 JSON 持久化、恢复和重复排队保护
+                      - generic [ref=f2e123]: 已验证
+                    - generic [ref=f2e125]:
+                      - generic [ref=f2e126]: P0
+                      - generic [ref=f2e127]: 功能
+                      - generic [ref=f2e128]: 低算力
+                      - generic [ref=f2e129]: 已确认
+                    - paragraph [ref=f2e130]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e131]:
+                    - generic [ref=f2e132]:
+                      - strong [ref=f2e133]: 跑通 Mock Executor、REST、SSE 与 Run Replay
+                      - generic [ref=f2e134]: 已验证
+                    - generic [ref=f2e136]:
+                      - generic [ref=f2e137]: P0
+                      - generic [ref=f2e138]: 功能
+                      - generic [ref=f2e139]: 低算力
+                      - generic [ref=f2e140]: 已确认
+                    - paragraph [ref=f2e141]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e142]:
+                    - generic [ref=f2e143]:
+                      - strong [ref=f2e144]: 理解现有控制平面与首页链路
+                      - generic [ref=f2e145]:
+                        - button "设为星标" [ref=f2e146] [cursor=pointer]:
+                          - generic [ref=f2e147]: ☆
+                        - generic [ref=f2e148]: 待排期
+                    - generic [ref=f2e149]:
+                      - generic [ref=f2e150]: P0
+                      - generic [ref=f2e151]: 调研
+                      - generic [ref=f2e152]: 低算力
+                      - generic [ref=f2e153]: 可调整
+                    - paragraph [ref=f2e154]: Luna Worker · 中推理 · V1 · research-synthesis · 30 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+                    - button "校验并就绪" [ref=f2e156] [cursor=pointer]
+              - generic [ref=f2e157]:
+                - generic [ref=f2e158]:
+                  - generic [ref=f2e159]:
+                    - generic [ref=f2e160]: S2
+                    - heading "S2 看清所有项目" [level=4] [ref=f2e161]
+                  - generic [ref=f2e162]: 已验证
+                - generic [ref=f2e163]:
+                  - article [ref=f2e164]:
+                    - generic [ref=f2e165]:
+                      - strong [ref=f2e166]: 实现 Project × Phase × Task 组合大板
+                      - generic [ref=f2e167]: 已验证
+                    - generic [ref=f2e169]:
+                      - generic [ref=f2e170]: P0
+                      - generic [ref=f2e171]: 功能
+                      - generic [ref=f2e172]: 低算力
+                      - generic [ref=f2e173]: 已确认
+                    - paragraph [ref=f2e174]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e175]:
+                    - generic [ref=f2e176]:
+                      - strong [ref=f2e177]: 导入三个真实项目和每用户一次性 receipt
+                      - generic [ref=f2e178]: 已验证
+                    - generic [ref=f2e180]:
+                      - generic [ref=f2e181]: P0
+                      - generic [ref=f2e182]: 功能
+                      - generic [ref=f2e183]: 低算力
+                      - generic [ref=f2e184]: 已确认
+                    - paragraph [ref=f2e185]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e186]:
+                    - generic [ref=f2e187]:
+                      - strong [ref=f2e188]: 让项目价值更清晰，创建入口更简单
+                      - generic [ref=f2e189]: 已验证
+                    - generic [ref=f2e191]:
+                      - generic [ref=f2e192]: P1
+                      - generic [ref=f2e193]: 功能
+                      - generic [ref=f2e194]: 低算力
+                      - generic [ref=f2e195]: 可调整
+                    - paragraph [ref=f2e196]: Luna Worker · 中推理 · V1 · agentic-coding · 45 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e197]:
+                    - generic [ref=f2e198]:
+                      - strong [ref=f2e199]: 确定 Project × Phase × Task 两级模型
+                      - generic [ref=f2e200]: 已验证
+                    - generic [ref=f2e202]:
+                      - generic [ref=f2e203]: P0
+                      - generic [ref=f2e204]: 功能
+                      - generic [ref=f2e205]: 低算力
+                      - generic [ref=f2e206]: 可调整
+                    - paragraph [ref=f2e207]: Luna Worker · 中推理 · V1 · agentic-coding · 45 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e208]:
+                    - generic [ref=f2e209]:
+                      - strong [ref=f2e210]: 为任务补齐推荐执行配置
+                      - generic [ref=f2e211]: 已验证
+                    - generic [ref=f2e213]:
+                      - generic [ref=f2e214]: P1
+                      - generic [ref=f2e215]: 功能
+                      - generic [ref=f2e216]: 低算力
+                      - generic [ref=f2e217]: 已确认
+                    - paragraph [ref=f2e218]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e219]:
+                    - generic [ref=f2e220]:
+                      - strong [ref=f2e221]: 新增重要任务可以加上星标状态，并调整排期日期在任务执行的优先级
+                      - generic [ref=f2e222]: 已验证
+                    - generic [ref=f2e224]:
+                      - generic [ref=f2e225]: P1
+                      - generic [ref=f2e226]: 功能
+                      - generic [ref=f2e227]: 低算力
+                      - generic [ref=f2e228]: 可调整
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e229]: 待关联 Issue
+                    - paragraph [ref=f2e230]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e231]:
+                    - generic [ref=f2e232]:
+                      - strong [ref=f2e233]: 信息录入样式调整
+                      - generic [ref=f2e234]: 已验证
+                    - generic [ref=f2e236]:
+                      - generic [ref=f2e237]: P1
+                      - generic [ref=f2e238]: Bug
+                      - generic [ref=f2e239]: 低算力
+                      - generic [ref=f2e240]: 可调整
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e241]: 待关联 Issue
+                    - paragraph [ref=f2e242]: Luna Worker · 中推理 · V1 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e243]:
+                    - generic [ref=f2e244]:
+                      - strong [ref=f2e245]: 样式优化，项目详情页面的信息编辑
+                      - generic [ref=f2e246]: 已验证
+                    - generic [ref=f2e248]:
+                      - generic [ref=f2e249]: P1
+                      - generic [ref=f2e250]: 功能
+                      - generic [ref=f2e251]: 低算力
+                      - generic [ref=f2e252]: 可调整
+                      - generic [ref=f2e253]: 允许并行
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e254]: 待关联 Issue
+                    - paragraph [ref=f2e255]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e256]:
+                    - generic [ref=f2e257]:
+                      - strong [ref=f2e258]: 任务验证后同步最新进度指针
+                      - generic [ref=f2e259]: 已验证
+                    - generic [ref=f2e261]:
+                      - generic [ref=f2e262]: P2
+                      - generic [ref=f2e263]: Bug
+                      - generic [ref=f2e264]: 中算力
+                      - generic [ref=f2e265]: 可调整
+                      - link "关联 Issue ↗" [ref=f2e266] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/6
+                    - paragraph [ref=f2e267]: Luna Worker · 中推理 · V2 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e268]:
+                    - generic [ref=f2e269]:
+                      - strong [ref=f2e270]: 校正 Portfolio 模板历史状态并提供幂等校准
+                      - generic [ref=f2e271]: 已验证
+                    - generic [ref=f2e273]:
+                      - generic [ref=f2e274]: P2
+                      - generic [ref=f2e275]: Bug
+                      - generic [ref=f2e276]: 中算力
+                      - generic [ref=f2e277]: 可调整
+                      - link "关联 Issue ↗" [ref=f2e278] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/7
+                    - paragraph [ref=f2e279]: Luna Worker · 中推理 · V2 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e280]:
+                    - generic [ref=f2e281]:
+                      - strong [ref=f2e282]: 修复 EchoMe 无 Run 的 RUNNING 任务
+                      - generic [ref=f2e283]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e284]: 已验证
+                    - generic [ref=f2e285]:
+                      - generic [ref=f2e286]: P1
+                      - generic [ref=f2e287]: Bug
+                      - generic [ref=f2e288]: 高算力
+                      - generic [ref=f2e289]: 已确认
+                      - link "关联 Issue ↗" [ref=f2e290] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/10
+                    - paragraph [ref=f2e291]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e292]:
+                    - generic [ref=f2e293]:
+                      - strong [ref=f2e294]: 强化项目、阶段与任务卡片的视觉层级
+                      - generic [ref=f2e295]: 已验证
+                    - generic [ref=f2e297]:
+                      - generic [ref=f2e298]: P1
+                      - generic [ref=f2e299]: 功能
+                      - generic [ref=f2e300]: 低算力
+                      - generic [ref=f2e301]: 已确认
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e302]: 待关联 Issue
+                    - paragraph [ref=f2e303]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e304]:
+                - generic [ref=f2e305]:
+                  - generic [ref=f2e306]:
+                    - generic [ref=f2e307]: S3
+                    - heading "S3 稳定编辑排期" [level=4] [ref=f2e308]
+                  - generic [ref=f2e309]: 已验证
+                - generic [ref=f2e310]:
+                  - article [ref=f2e311]:
+                    - generic [ref=f2e312]:
+                      - strong [ref=f2e313]: 固定项目栏、稳定筛选、当前节点居中
+                      - generic [ref=f2e314]: 已验证
+                    - generic [ref=f2e316]:
+                      - generic [ref=f2e317]: P1
+                      - generic [ref=f2e318]: 功能
+                      - generic [ref=f2e319]: 低算力
+                      - generic [ref=f2e320]: 可调整
+                    - paragraph [ref=f2e321]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e322]:
+                    - generic [ref=f2e323]:
+                      - strong [ref=f2e324]: 展开项目全部任务并支持键盘/拖拽排序
+                      - generic [ref=f2e325]: 已验证
+                    - generic [ref=f2e327]:
+                      - generic [ref=f2e328]: P1
+                      - generic [ref=f2e329]: 功能
+                      - generic [ref=f2e330]: 低算力
+                      - generic [ref=f2e331]: 可调整
+                    - paragraph [ref=f2e332]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e333]:
+                    - generic [ref=f2e334]:
+                      - strong [ref=f2e335]: 加入依赖校验与可并行任务展示
+                      - generic [ref=f2e336]: 已验证
+                    - generic [ref=f2e338]:
+                      - generic [ref=f2e339]: P1
+                      - generic [ref=f2e340]: 功能
+                      - generic [ref=f2e341]: 低算力
+                      - generic [ref=f2e342]: 可调整
+                    - paragraph [ref=f2e343]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e344]:
+                    - generic [ref=f2e345]:
+                      - strong [ref=f2e346]: 桌面与移动端真实渲染验收
+                      - generic [ref=f2e347]: 已验证
+                    - generic [ref=f2e349]:
+                      - generic [ref=f2e350]: P0
+                      - generic [ref=f2e351]: 审查
+                      - generic [ref=f2e352]: 中算力
+                      - generic [ref=f2e353]: 可调整
+                      - generic [ref=f2e354]: 前置 1
+                      - generic [ref=f2e355]: 允许并行
+                    - paragraph [ref=f2e356]: Codex · 高推理 · V1 · independent-review · 45 分钟与实现上下文隔离审查，先报告可验证问题再决定修改。
+                  - article [ref=f2e357]:
+                    - generic [ref=f2e358]:
+                      - strong [ref=f2e359]: 自动识别多任务并行处理
+                      - generic [ref=f2e360]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e361]: 已验证
+                    - generic [ref=f2e362]:
+                      - generic [ref=f2e363]: P1
+                      - generic [ref=f2e364]: 功能
+                      - generic [ref=f2e365]: 低算力
+                      - generic [ref=f2e366]: 可调整
+                      - generic [ref=f2e367]: 前置 1
+                      - generic [ref=f2e368]: 允许并行
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e369]: 待关联 Issue
+                    - paragraph [ref=f2e370]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e371]:
+                    - generic [ref=f2e372]:
+                      - strong [ref=f2e373]: 修复大板筛选导致泳道重建与滚动归零
+                      - generic [ref=f2e374]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e375]: 已验证
+                    - generic [ref=f2e376]:
+                      - generic [ref=f2e377]: P1
+                      - generic [ref=f2e378]: Bug
+                      - generic [ref=f2e379]: 中算力
+                      - generic [ref=f2e380]: 已确认
+                      - link "关联 Issue ↗" [ref=f2e381] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/3
+                    - paragraph [ref=f2e382]: Luna Worker · 中推理 · V2 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e383]:
+                    - generic [ref=f2e384]:
+                      - strong [ref=f2e385]: 跨阶段移动后校验全项目依赖拓扑
+                      - generic [ref=f2e386]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e387]: 已验证
+                    - generic [ref=f2e388]:
+                      - generic [ref=f2e389]: P1
+                      - generic [ref=f2e390]: Bug
+                      - generic [ref=f2e391]: 高算力
+                      - generic [ref=f2e392]: 已确认
+                      - link "关联 Issue ↗" [ref=f2e393] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/5
+                    - paragraph [ref=f2e394]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e395]:
+                    - generic [ref=f2e396]:
+                      - strong [ref=f2e397]: 将任务星标操作收进右上角图标
+                      - generic [ref=f2e398]: 已验证
+                    - generic [ref=f2e400]:
+                      - generic [ref=f2e401]: P1
+                      - generic [ref=f2e402]: 功能
+                      - generic [ref=f2e403]: 低算力
+                      - generic [ref=f2e404]: 已确认
+                      - generic [ref=f2e405]: 必须串行
+                    - paragraph [ref=f2e406]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e407]:
+                    - generic [ref=f2e408]:
+                      - strong [ref=f2e409]: 任务标题最多显示两行并可悬浮查看全文
+                      - generic [ref=f2e410]: 已验证
+                    - generic [ref=f2e412]:
+                      - generic [ref=f2e413]: P1
+                      - generic [ref=f2e414]: 功能
+                      - generic [ref=f2e415]: 低算力
+                      - generic [ref=f2e416]: 已确认
+                      - generic [ref=f2e417]: 必须串行
+                    - paragraph [ref=f2e418]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e419]:
+                - generic [ref=f2e420]:
+                  - generic [ref=f2e421]:
+                    - generic [ref=f2e422]: S4
+                    - heading "S4 开放 Agent 接口" [level=4] [ref=f2e423]
+                  - generic [ref=f2e424]: 计划
+                - generic [ref=f2e425]:
+                  - article [ref=f2e426]:
+                    - generic [ref=f2e427]:
+                      - strong [ref=f2e428]: 提供 Project/Phase/Task 查询与创建 MCP
+                      - generic [ref=f2e429]: 已验证
+                    - generic [ref=f2e431]:
+                      - generic [ref=f2e432]: P1
+                      - generic [ref=f2e433]: 功能
+                      - generic [ref=f2e434]: 低算力
+                      - generic [ref=f2e435]: 可调整
+                    - paragraph [ref=f2e436]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e437]:
+                    - generic [ref=f2e438]:
+                      - strong [ref=f2e439]: 补齐扫描提案与指纹去重 MCP
+                      - generic [ref=f2e440]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e441]: 已验证
+                    - generic [ref=f2e442]:
+                      - generic [ref=f2e443]: P1
+                      - generic [ref=f2e444]: 功能
+                      - generic [ref=f2e445]: 低算力
+                      - generic [ref=f2e446]: 可调整
+                      - generic [ref=f2e447]: 排期 2026-08-02
+                    - paragraph [ref=f2e448]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e449]:
+                    - generic [ref=f2e450]:
+                      - strong [ref=f2e451]: 接入 Streamable HTTP、OAuth 与多用户隔离
+                      - generic [ref=f2e452]:
+                        - button "设为星标" [ref=f2e453] [cursor=pointer]:
+                          - generic [ref=f2e454]: ☆
+                        - generic [ref=f2e455]: 计划
+                    - generic [ref=f2e456]:
+                      - generic [ref=f2e457]: P1
+                      - generic [ref=f2e458]: 运维
+                      - generic [ref=f2e459]: 低算力
+                      - generic [ref=f2e460]: 可调整
+                    - paragraph [ref=f2e461]: Shell · 中推理 · V0 · safe-automation · 35 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                  - article [ref=f2e462]:
+                    - generic [ref=f2e463]:
+                      - strong [ref=f2e464]: 避免 MCP planId 派生幂等键超长
+                      - generic [ref=f2e465]: 已验证
+                    - generic [ref=f2e467]:
+                      - generic [ref=f2e468]: P2
+                      - generic [ref=f2e469]: Bug
+                      - generic [ref=f2e470]: 中算力
+                      - generic [ref=f2e471]: 可调整
+                      - link "关联 Issue ↗" [ref=f2e472] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/11
+                    - paragraph [ref=f2e473]: Luna Worker · 中推理 · V2 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+              - generic [ref=f2e474]:
+                - generic [ref=f2e475]:
+                  - generic [ref=f2e476]:
+                    - generic [ref=f2e477]: S5
+                    - heading "S5 持续推进闭环" [level=4] [ref=f2e478]
+                  - generic [ref=f2e479]: 待排期
+                - generic [ref=f2e480]:
+                  - article [ref=f2e481]:
+                    - generic [ref=f2e482]:
+                      - strong [ref=f2e483]: 周期扫描仓库并去重生成 Bug 候选
+                      - generic [ref=f2e484]: 周期
+                    - generic [ref=f2e486]:
+                      - generic [ref=f2e487]: P2
+                      - generic [ref=f2e488]: 扫描
+                      - generic [ref=f2e489]: 低算力
+                      - generic [ref=f2e490]: 可调整
+                    - paragraph [ref=f2e491]: Luna Worker · 低推理 · V0 · repository-scan · 20 分钟先跑确定性检查，只把异常和高价值区域交给模型分析。
+                    - generic [ref=f2e492]: 等待 Agent 完成后上报
+                  - article [ref=f2e494]:
+                    - generic [ref=f2e495]:
+                      - strong [ref=f2e496]: Agent 完成后自动进入复核并更新项目进度
+                      - generic [ref=f2e497]: 已验证
+                    - generic [ref=f2e499]:
+                      - generic [ref=f2e500]: P1
+                      - generic [ref=f2e501]: 功能
+                      - generic [ref=f2e502]: 低算力
+                      - generic [ref=f2e503]: 可调整
+                    - paragraph [ref=f2e504]: Luna Worker · 中推理 · V1 · agentic-coding · 35 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e505]:
+                    - generic [ref=f2e506]:
+                      - strong [ref=f2e507]: 周期扫描仓库 Bug 并回填待处理任务
+                      - generic [ref=f2e508]:
+                        - button "设为星标" [ref=f2e509] [cursor=pointer]:
+                          - generic [ref=f2e510]: ☆
+                        - generic [ref=f2e511]: 待排期
+                    - generic [ref=f2e512]:
+                      - generic [ref=f2e513]: P1
+                      - generic [ref=f2e514]: 扫描
+                      - generic [ref=f2e515]: 低算力
+                      - generic [ref=f2e516]: 可调整
+                    - paragraph [ref=f2e517]: Luna Worker · 低推理 · V0 · repository-scan · 20 分钟先跑确定性检查，只把异常和高价值区域交给模型分析。
+                    - button "校验并就绪" [ref=f2e519] [cursor=pointer]
+                  - article [ref=f2e520]:
+                    - generic [ref=f2e521]:
+                      - strong [ref=f2e522]: 防止 Agent 使用 mock executor 绕过 REVIEW 门禁
+                      - generic [ref=f2e523]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e524]: 已验证
+                    - generic [ref=f2e525]:
+                      - generic [ref=f2e526]: P1
+                      - generic [ref=f2e527]: Bug
+                      - generic [ref=f2e528]: 高算力
+                      - generic [ref=f2e529]: 已确认
+                      - link "关联 Issue ↗" [ref=f2e530] [cursor=pointer]:
+                        - /url: https://github.com/qzhqzh/Lifeline/issues/8
+                    - paragraph [ref=f2e531]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e532]:
+                    - generic [ref=f2e533]:
+                      - strong [ref=f2e534]: 按风险分档模型并批次化验收
+                      - generic [ref=f2e535]: 已验证
+                    - generic [ref=f2e537]:
+                      - generic [ref=f2e538]: P1
+                      - generic [ref=f2e539]: 功能
+                      - generic [ref=f2e540]: 中算力
+                      - generic [ref=f2e541]: 已确认
+                      - generic [ref=f2e542]: 必须串行
+                    - paragraph [ref=f2e543]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e544]:
+                    - generic [ref=f2e545]:
+                      - strong [ref=f2e546]: 收敛为单次真实任务结果上报
+                      - generic [ref=f2e547]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e548]: 已验证
+                    - generic [ref=f2e549]:
+                      - generic [ref=f2e550]: P0
+                      - generic [ref=f2e551]: 功能
+                      - generic [ref=f2e552]: 中算力
+                      - generic [ref=f2e553]: 已确认
+                      - generic [ref=f2e554]: 必须串行
+                    - paragraph [ref=f2e555]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e556]:
+                    - generic [ref=f2e557]:
+                      - strong [ref=f2e558]: 停止 Mock Run 并隔离历史模拟数据
+                      - generic [ref=f2e559]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e560]: 已验证
+                    - generic [ref=f2e561]:
+                      - generic [ref=f2e562]: P0
+                      - generic [ref=f2e563]: Bug
+                      - generic [ref=f2e564]: 高算力
+                      - generic [ref=f2e565]: 已确认
+                      - generic [ref=f2e566]: 必须串行
+                    - paragraph [ref=f2e567]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e568]:
+                    - generic [ref=f2e569]:
+                      - strong [ref=f2e570]: 聚合项目推进轨迹与推进覆盖率
+                      - generic [ref=f2e571]: 已验证
+                    - generic [ref=f2e573]:
+                      - generic [ref=f2e574]: P1
+                      - generic [ref=f2e575]: 功能
+                      - generic [ref=f2e576]: 中算力
+                      - generic [ref=f2e577]: 已确认
+                      - generic [ref=f2e578]: 必须串行
+                    - paragraph [ref=f2e579]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e580]:
+                    - generic [ref=f2e581]:
+                      - strong [ref=f2e582]: 用推进轨迹替换首页执行工作台
+                      - generic [ref=f2e583]: 执行中
+                    - generic [ref=f2e585]:
+                      - generic [ref=f2e586]: P1
+                      - generic [ref=f2e587]: 功能
+                      - generic [ref=f2e588]: 中算力
+                      - generic [ref=f2e589]: 已确认
+                      - generic [ref=f2e590]: 必须串行
+                    - paragraph [ref=f2e591]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e592]:
+                - generic [ref=f2e593]:
+                  - generic [ref=f2e594]:
+                    - generic [ref=f2e595]: S6
+                    - heading "S6 生产化与可靠发布" [level=4] [ref=f2e596]
+                  - generic [ref=f2e597]: 计划
+                - generic [ref=f2e598]:
+                  - article [ref=f2e599]:
+                    - generic [ref=f2e600]:
+                      - strong [ref=f2e601]: 建立端到端浏览器回归与发布门禁
+                      - generic [ref=f2e602]:
+                        - button "设为星标" [ref=f2e603] [cursor=pointer]:
+                          - generic [ref=f2e604]: ☆
+                        - generic [ref=f2e605]: 计划
+                    - generic [ref=f2e606]:
+                      - generic [ref=f2e607]: P0
+                      - generic [ref=f2e608]: 审查
+                      - generic [ref=f2e609]: 中算力
+                      - generic [ref=f2e610]: 已确认
+                    - paragraph [ref=f2e611]: Codex · 高推理 · V1 · independent-review · 35 分钟与实现上下文隔离审查，先报告可验证问题再决定修改。
+                  - article [ref=f2e612]:
+                    - generic [ref=f2e613]:
+                      - strong [ref=f2e614]: 迁移 PostgreSQL Repository 并完成恢复演练
+                      - generic [ref=f2e615]:
+                        - button "设为星标" [ref=f2e616] [cursor=pointer]:
+                          - generic [ref=f2e617]: ☆
+                        - generic [ref=f2e618]: 计划
+                    - generic [ref=f2e619]:
+                      - generic [ref=f2e620]: P1
+                      - generic [ref=f2e621]: 运维
+                      - generic [ref=f2e622]: 低算力
+                      - generic [ref=f2e623]: 可调整
+                    - paragraph [ref=f2e624]: Shell · 中推理 · V0 · safe-automation · 1 小时 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                  - article [ref=f2e625]:
+                    - generic [ref=f2e626]:
+                      - strong [ref=f2e627]: 接入 Temporal、真实 Executor 与模型路由
+                      - generic [ref=f2e628]:
+                        - button "设为星标" [ref=f2e629] [cursor=pointer]:
+                          - generic [ref=f2e630]: ☆
+                        - generic [ref=f2e631]: 计划
+                    - generic [ref=f2e632]:
+                      - generic [ref=f2e633]: P1
+                      - generic [ref=f2e634]: 功能
+                      - generic [ref=f2e635]: 低算力
+                      - generic [ref=f2e636]: 可调整
+                    - paragraph [ref=f2e637]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e638]:
+                    - generic [ref=f2e639]:
+                      - strong [ref=f2e640]: 迁移 React 应用并完成灰度切换
+                      - generic [ref=f2e641]:
+                        - button "设为星标" [ref=f2e642] [cursor=pointer]:
+                          - generic [ref=f2e643]: ☆
+                        - generic [ref=f2e644]: 计划
+                    - generic [ref=f2e645]:
+                      - generic [ref=f2e646]: P2
+                      - generic [ref=f2e647]: 运维
+                      - generic [ref=f2e648]: 低算力
+                      - generic [ref=f2e649]: 可调整
+                    - paragraph [ref=f2e650]: Shell · 中推理 · V0 · safe-automation · 1 小时 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+          - article [ref=f2e651]:
+            - button "打开 Tumor 项目详情" [ref=f2e652] [cursor=pointer]:
+              - generic [ref=f2e653]:
+                - generic [ref=f2e654]:
+                  - generic [ref=f2e655]: P1
+                  - generic [ref=f2e656]: 02 / 07
+                - heading "Tumor" [level=3] [ref=f2e657]
+                - strong [ref=f2e658]: 肿瘤报告系统的前后端、知识库与医院对接持续交付
+                - paragraph [ref=f2e659]: 统一管理 tumor_api、tumor_html 与 drf_somatic_biomeddb。覆盖报告变量、变异分析、知识库、江苏省肿瘤医院对接、实验任务和生产发布；数据库迁移由用户执行，开发遵循短分支 PR 主线流程。
+                - generic [ref=f2e660]: 查看全部任务 →
+              - generic [ref=f2e661]:
+                - generic [ref=f2e662]:
+                  - generic [ref=f2e663]: 1 个阶段
+                  - generic [ref=f2e664]: 1 项待推进
+                - generic "已验证进度 86%" [ref=f2e665]
+                - generic [ref=f2e667]:
+                  - generic [ref=f2e668]: 已验证进度
+                  - strong [ref=f2e669]: 86%
+            - generic "Tumor 的阶段进度" [ref=f2e670]:
+              - generic [ref=f2e671]:
+                - generic [ref=f2e672]:
+                  - generic [ref=f2e673]:
+                    - generic [ref=f2e674]: S1
+                    - heading "当前迭代与生产排查" [level=4] [ref=f2e675]
+                  - generic [ref=f2e676]: 正在推进
+                - generic [ref=f2e677]:
+                  - article [ref=f2e678]:
+                    - generic [ref=f2e679]:
+                      - strong [ref=f2e680]: 排查 somatic_clinical 中 CRKL 扩增重复
+                      - generic [ref=f2e681]: 已验证
+                    - generic [ref=f2e683]:
+                      - generic [ref=f2e684]: P1
+                      - generic [ref=f2e685]: Bug
+                      - generic [ref=f2e686]: 高算力
+                      - generic [ref=f2e687]: 已确认
+                      - generic [ref=f2e688]: 必须串行
+                    - paragraph [ref=f2e689]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e690]:
+                    - generic [ref=f2e691]:
+                      - strong [ref=f2e692]: 收口证据中心与肉瘤知识导入
+                      - generic [ref=f2e693]: 已验证
+                    - generic [ref=f2e695]:
+                      - generic [ref=f2e696]: P1
+                      - generic [ref=f2e697]: 功能
+                      - generic [ref=f2e698]: 高算力
+                      - generic [ref=f2e699]: 可调整
+                      - generic [ref=f2e700]: 必须串行
+                    - paragraph [ref=f2e701]: Codex · 高推理 · V3 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e702]:
+                    - generic [ref=f2e703]:
+                      - strong [ref=f2e704]: 收口江苏 CNV 与融合临床意义修复
+                      - generic [ref=f2e705]:
+                        - button "设为星标" [ref=f2e706] [cursor=pointer]:
+                          - generic [ref=f2e707]: ☆
+                        - generic [ref=f2e708]: 待排期
+                    - generic [ref=f2e709]:
+                      - generic [ref=f2e710]: P1
+                      - generic [ref=f2e711]: Bug
+                      - generic [ref=f2e712]: 高算力
+                      - generic [ref=f2e713]: 可调整
+                      - generic [ref=f2e714]: 必须串行
+                    - paragraph [ref=f2e715]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                    - button "校验并就绪" [ref=f2e717] [cursor=pointer]
+                  - article [ref=f2e718]:
+                    - generic [ref=f2e719]:
+                      - strong [ref=f2e720]: 扩展江苏 HRD 项目识别条件
+                      - generic [ref=f2e721]: 已验证
+                    - generic [ref=f2e723]:
+                      - generic [ref=f2e724]: P1
+                      - generic [ref=f2e725]: 功能
+                      - generic [ref=f2e726]: 中算力
+                      - generic [ref=f2e727]: 已确认
+                      - generic [ref=f2e728]: 必须串行
+                    - paragraph [ref=f2e729]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e730]:
+                    - generic [ref=f2e731]:
+                      - strong [ref=f2e732]: 支持 qPCR 页面修改肿瘤细胞含量并记录审计日志
+                      - generic [ref=f2e733]: 已验证
+                    - generic [ref=f2e735]:
+                      - generic [ref=f2e736]: P1
+                      - generic [ref=f2e737]: 功能
+                      - generic [ref=f2e738]: 高算力
+                      - generic [ref=f2e739]: 已确认
+                      - generic [ref=f2e740]: 必须串行
+                    - paragraph [ref=f2e741]: Codex · 高推理 · V3 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e742]:
+                    - generic [ref=f2e743]:
+                      - strong [ref=f2e744]: 任务排期导出时候， 去掉 癌种分类 列
+                      - generic [ref=f2e745]:
+                        - generic "星标任务": ★
+                        - generic [ref=f2e746]: 已验证
+                    - generic [ref=f2e747]:
+                      - generic [ref=f2e748]: P1
+                      - generic [ref=f2e749]: 功能
+                      - generic [ref=f2e750]: 低算力
+                      - generic [ref=f2e751]: 可调整
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e752]: 待关联 Issue
+                    - paragraph [ref=f2e753]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+          - article [ref=f2e754]:
+            - button "打开 EchoMe 项目详情" [ref=f2e755] [cursor=pointer]:
+              - generic [ref=f2e756]:
+                - generic [ref=f2e757]:
+                  - generic [ref=f2e758]: P1
+                  - generic [ref=f2e759]: 03 / 07
+                - heading "EchoMe" [level=3] [ref=f2e760]
+                - strong [ref=f2e761]: 换一个 AI，工作也能接着往下做
+                - paragraph [ref=f2e762]: 让偏好、规则和项目背景跟着你流转。AI 先理解你，再开始工作，少重复解释，也少因上下文丢失返工。
+                - generic [ref=f2e763]: 查看全部任务 →
+              - generic [ref=f2e764]:
+                - generic [ref=f2e765]:
+                  - generic [ref=f2e766]: 6 个阶段
+                  - generic [ref=f2e767]: 4 项待推进
+                - generic "已验证进度 73%" [ref=f2e768]
+                - generic [ref=f2e770]:
+                  - generic [ref=f2e771]: 已验证进度
+                  - strong [ref=f2e772]: 73%
+            - generic "EchoMe 的阶段进度" [ref=f2e773]:
+              - generic [ref=f2e774]:
+                - generic [ref=f2e775]:
+                  - generic [ref=f2e776]:
+                    - generic [ref=f2e777]: S1
+                    - heading "S1 让记忆跨 AI 接续" [level=4] [ref=f2e778]
+                  - generic [ref=f2e779]: 已验证
+                - generic [ref=f2e780]:
+                  - article [ref=f2e781]:
+                    - generic [ref=f2e782]:
+                      - strong [ref=f2e783]: 完成架构、记忆模型、API/MCP 规范与路线图
+                      - generic [ref=f2e784]: 已验证
+                    - generic [ref=f2e786]:
+                      - generic [ref=f2e787]: P0
+                      - generic [ref=f2e788]: 功能
+                      - generic [ref=f2e789]: 低算力
+                      - generic [ref=f2e790]: 已确认
+                    - paragraph [ref=f2e791]: Luna Worker · 中推理 · V1 · agentic-coding · 20 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e792]:
+                    - generic [ref=f2e793]:
+                      - strong [ref=f2e794]: 建立 Hub、CLI、MCP Server 与迁移骨架
+                      - generic [ref=f2e795]: 已验证
+                    - generic [ref=f2e797]:
+                      - generic [ref=f2e798]: P0
+                      - generic [ref=f2e799]: 功能
+                      - generic [ref=f2e800]: 低算力
+                      - generic [ref=f2e801]: 已确认
+                    - paragraph [ref=f2e802]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e803]:
+                    - generic [ref=f2e804]:
+                      - strong [ref=f2e805]: 建立 Vue Web Console 与 Docker 部署入口
+                      - generic [ref=f2e806]: 已验证
+                    - generic [ref=f2e808]:
+                      - generic [ref=f2e809]: P1
+                      - generic [ref=f2e810]: 功能
+                      - generic [ref=f2e811]: 低算力
+                      - generic [ref=f2e812]: 可调整
+                    - paragraph [ref=f2e813]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e814]:
+                - generic [ref=f2e815]:
+                  - generic [ref=f2e816]:
+                    - generic [ref=f2e817]: S2
+                    - heading "S2 成为可用的多人产品" [level=4] [ref=f2e818]
+                  - generic [ref=f2e819]: 已验证
+                - generic [ref=f2e820]:
+                  - article [ref=f2e821]:
+                    - generic [ref=f2e822]:
+                      - strong [ref=f2e823]: 完成多用户认证、数据隔离与 Market
+                      - generic [ref=f2e824]: 已验证
+                    - generic [ref=f2e826]:
+                      - generic [ref=f2e827]: P0
+                      - generic [ref=f2e828]: 功能
+                      - generic [ref=f2e829]: 低算力
+                      - generic [ref=f2e830]: 已确认
+                    - paragraph [ref=f2e831]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e832]:
+                    - generic [ref=f2e833]:
+                      - strong [ref=f2e834]: 完成管理、速率限制、安全加固与多语言体验
+                      - generic [ref=f2e835]: 已验证
+                    - generic [ref=f2e837]:
+                      - generic [ref=f2e838]: P1
+                      - generic [ref=f2e839]: Bug
+                      - generic [ref=f2e840]: 中算力
+                      - generic [ref=f2e841]: 可调整
+                    - paragraph [ref=f2e842]: Luna Worker · 中推理 · V2 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                  - article [ref=f2e843]:
+                    - generic [ref=f2e844]:
+                      - strong [ref=f2e845]: 建立 PyPI、CI/CD、doctor/version 并发布 v1.0
+                      - generic [ref=f2e846]: 已发布
+                    - generic [ref=f2e848]:
+                      - generic [ref=f2e849]: P1
+                      - generic [ref=f2e850]: 运维
+                      - generic [ref=f2e851]: 低算力
+                      - generic [ref=f2e852]: 可调整
+                    - paragraph [ref=f2e853]: Shell · 中推理 · V0 · safe-automation · 45 分钟优先使用确定性脚本，高风险动作保留人工审批。
+              - generic [ref=f2e854]:
+                - generic [ref=f2e855]:
+                  - generic [ref=f2e856]:
+                    - generic [ref=f2e857]: S3
+                    - heading "S3 降低记忆使用成本" [level=4] [ref=f2e858]
+                  - generic [ref=f2e859]: 已验证
+                - generic [ref=f2e860]:
+                  - article [ref=f2e861]:
+                    - generic [ref=f2e862]:
+                      - strong [ref=f2e863]: 默认分发 MCP、增加 seed 并完成 v1.1.x 稳定修复
+                      - generic [ref=f2e864]: 已发布
+                    - generic [ref=f2e866]:
+                      - generic [ref=f2e867]: P1
+                      - generic [ref=f2e868]: 功能
+                      - generic [ref=f2e869]: 低算力
+                      - generic [ref=f2e870]: 可调整
+                    - paragraph [ref=f2e871]: Luna Worker · 中推理 · V1 · agentic-coding · 45 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e872]:
+                    - generic [ref=f2e873]:
+                      - strong [ref=f2e874]: 建立 summary-first 检索工作流
+                      - generic [ref=f2e875]: 已发布
+                    - generic [ref=f2e877]:
+                      - generic [ref=f2e878]: P1
+                      - generic [ref=f2e879]: 功能
+                      - generic [ref=f2e880]: 低算力
+                      - generic [ref=f2e881]: 可调整
+                    - paragraph [ref=f2e882]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e883]:
+                    - generic [ref=f2e884]:
+                      - strong [ref=f2e885]: 完成 Memory Sleep 与可观测性
+                      - generic [ref=f2e886]: 已发布
+                    - generic [ref=f2e888]:
+                      - generic [ref=f2e889]: P1
+                      - generic [ref=f2e890]: 功能
+                      - generic [ref=f2e891]: 低算力
+                      - generic [ref=f2e892]: 可调整
+                    - paragraph [ref=f2e893]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e894]:
+                - generic [ref=f2e895]:
+                  - generic [ref=f2e896]:
+                    - generic [ref=f2e897]: S4
+                    - heading "S4 让记忆可解释" [level=4] [ref=f2e898]
+                  - generic [ref=f2e899]: 已验证
+                - generic [ref=f2e900]:
+                  - article [ref=f2e901]:
+                    - generic [ref=f2e902]:
+                      - strong [ref=f2e903]: 增加 graph explain、feedback 和 retrieval debug
+                      - generic [ref=f2e904]: 已验证
+                    - generic [ref=f2e906]:
+                      - generic [ref=f2e907]: P1
+                      - generic [ref=f2e908]: 功能
+                      - generic [ref=f2e909]: 低算力
+                      - generic [ref=f2e910]: 可调整
+                    - paragraph [ref=f2e911]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e912]:
+                    - generic [ref=f2e913]:
+                      - strong [ref=f2e914]: 增加图工具、能力指南并改善检索相关性
+                      - generic [ref=f2e915]: 已验证
+                    - generic [ref=f2e917]:
+                      - generic [ref=f2e918]: P2
+                      - generic [ref=f2e919]: 调研
+                      - generic [ref=f2e920]: 低算力
+                      - generic [ref=f2e921]: 可调整
+                    - paragraph [ref=f2e922]: Luna Worker · 中推理 · V1 · research-synthesis · 45 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+              - generic [ref=f2e923]:
+                - generic [ref=f2e924]:
+                  - generic [ref=f2e925]:
+                    - generic [ref=f2e926]: S5
+                    - heading "S5 让项目知识可治理" [level=4] [ref=f2e927]
+                  - generic [ref=f2e928]: 正在推进
+                - generic [ref=f2e929]:
+                  - article [ref=f2e930]:
+                    - generic [ref=f2e931]:
+                      - strong [ref=f2e932]: 建立 Artifact 修订、Constraint 版本和影响关系
+                      - generic [ref=f2e933]:
+                        - button "设为星标" [ref=f2e934] [cursor=pointer]:
+                          - generic [ref=f2e935]: ☆
+                        - generic [ref=f2e936]: 待排期
+                    - generic [ref=f2e937]:
+                      - generic [ref=f2e938]: P0
+                      - generic [ref=f2e939]: 功能
+                      - generic [ref=f2e940]: 低算力
+                      - generic [ref=f2e941]: 已确认
+                    - paragraph [ref=f2e942]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e944] [cursor=pointer]
+                  - article [ref=f2e945]:
+                    - generic [ref=f2e946]:
+                      - strong [ref=f2e947]: 完成 Project Workspace、MCP context/impact/index 闭环
+                      - generic [ref=f2e948]:
+                        - button "设为星标" [ref=f2e949] [cursor=pointer]:
+                          - generic [ref=f2e950]: ☆
+                        - generic [ref=f2e951]: 待排期
+                    - generic [ref=f2e952]:
+                      - generic [ref=f2e953]: P0
+                      - generic [ref=f2e954]: 功能
+                      - generic [ref=f2e955]: 低算力
+                      - generic [ref=f2e956]: 已确认
+                    - paragraph [ref=f2e957]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e959] [cursor=pointer]
+                  - article [ref=f2e960]:
+                    - generic [ref=f2e961]:
+                      - strong [ref=f2e962]: 完成迁移、回归、文档同步与发布评审
+                      - generic [ref=f2e963]:
+                        - button "设为星标" [ref=f2e964] [cursor=pointer]:
+                          - generic [ref=f2e965]: ☆
+                        - generic [ref=f2e966]: 待排期
+                    - generic [ref=f2e967]:
+                      - generic [ref=f2e968]: P1
+                      - generic [ref=f2e969]: 审查
+                      - generic [ref=f2e970]: 中算力
+                      - generic [ref=f2e971]: 可调整
+                    - paragraph [ref=f2e972]: Codex · 高推理 · V1 · independent-review · 35 分钟与实现上下文隔离审查，先报告可验证问题再决定修改。
+                    - button "校验并就绪" [ref=f2e974] [cursor=pointer]
+              - generic [ref=f2e975]:
+                - generic [ref=f2e976]:
+                  - generic [ref=f2e977]:
+                    - generic [ref=f2e978]: S6
+                    - heading "S6 持续提高命中质量" [level=4] [ref=f2e979]
+                  - generic [ref=f2e980]: 待排期
+                - article [ref=f2e982]:
+                  - generic [ref=f2e983]:
+                    - strong [ref=f2e984]: 建立固定检索评测集和版本间回归报告
+                    - generic [ref=f2e985]:
+                      - button "设为星标" [ref=f2e986] [cursor=pointer]:
+                        - generic [ref=f2e987]: ☆
+                      - generic [ref=f2e988]: 待排期
+                  - generic [ref=f2e989]:
+                    - generic [ref=f2e990]: P2
+                    - generic [ref=f2e991]: 调研
+                    - generic [ref=f2e992]: 低算力
+                    - generic [ref=f2e993]: 可调整
+                  - paragraph [ref=f2e994]: Luna Worker · 中推理 · V1 · research-synthesis · 20 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+                  - button "校验并就绪" [ref=f2e996] [cursor=pointer]
+          - article [ref=f2e997]:
+            - button "打开 LogWood 项目详情" [ref=f2e998] [cursor=pointer]:
+              - generic [ref=f2e999]:
+                - generic [ref=f2e1000]:
+                  - generic [ref=f2e1001]: P1
+                  - generic [ref=f2e1002]: 04 / 07
+                - heading "LogWood" [level=3] [ref=f2e1003]
+                - strong [ref=f2e1004]: 把零散灵感淘洗成可追溯的个人知识资产
+                - paragraph [ref=f2e1005]: 空心树洞：围绕找灵感、收藏室或废品站、吐槽室或洞笔记的生命周期，管理灵感、Skill、工具、视觉收藏、主观判断和长期经验沉淀。生命周期信息架构重构已完成本地实现与验证，待推送、合并和生产发布。
+                - generic [ref=f2e1006]: 查看全部任务 →
+              - generic [ref=f2e1007]:
+                - generic [ref=f2e1008]:
+                  - generic [ref=f2e1009]: 3 个阶段
+                  - generic [ref=f2e1010]: 6 项待推进
+                - generic "已验证进度 0%" [ref=f2e1011]
+                - generic [ref=f2e1012]:
+                  - generic [ref=f2e1013]: 已验证进度
+                  - strong [ref=f2e1014]: 0%
+            - generic "LogWood 的阶段进度" [ref=f2e1015]:
+              - generic [ref=f2e1016]:
+                - generic [ref=f2e1017]:
+                  - generic [ref=f2e1018]:
+                    - generic [ref=f2e1019]: S1
+                    - heading "Phase 1：统一生命周期体验并发布" [level=4] [ref=f2e1020]
+                  - generic [ref=f2e1021]: 正在推进
+                - generic [ref=f2e1022]:
+                  - article [ref=f2e1023]:
+                    - generic [ref=f2e1024]:
+                      - strong [ref=f2e1025]: 完成生命周期信息架构与兼容展示层
+                      - generic [ref=f2e1026]:
+                        - button "设为星标" [ref=f2e1027] [cursor=pointer]:
+                          - generic [ref=f2e1028]: ☆
+                        - generic [ref=f2e1029]: 待排期
+                    - generic [ref=f2e1030]:
+                      - generic [ref=f2e1031]: P0
+                      - generic [ref=f2e1032]: 功能
+                      - generic [ref=f2e1033]: 高算力
+                      - generic [ref=f2e1034]: 已确认
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e1035]: 待关联 Issue
+                    - paragraph [ref=f2e1036]: Codex · 高推理 · V3 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e1038] [cursor=pointer]
+                  - article [ref=f2e1039]:
+                    - generic [ref=f2e1040]:
+                      - strong [ref=f2e1041]: 合并生命周期重构到远端 main
+                      - generic [ref=f2e1042]:
+                        - button "设为星标" [ref=f2e1043] [cursor=pointer]:
+                          - generic [ref=f2e1044]: ☆
+                        - generic [ref=f2e1045]: 待排期
+                    - generic [ref=f2e1046]:
+                      - generic [ref=f2e1047]: P0
+                      - generic [ref=f2e1048]: 运维
+                      - generic [ref=f2e1049]: 低算力
+                      - generic [ref=f2e1050]: 已确认
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e1051]: 待关联 Issue
+                    - paragraph [ref=f2e1052]: Shell · 中推理 · V3 · safe-automation · 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                    - button "校验并就绪" [ref=f2e1054] [cursor=pointer]
+                  - article [ref=f2e1055]:
+                    - generic [ref=f2e1056]:
+                      - strong [ref=f2e1057]: 部署生产并完成生命周期烟雾验收
+                      - generic [ref=f2e1058]:
+                        - button "设为星标" [ref=f2e1059] [cursor=pointer]:
+                          - generic [ref=f2e1060]: ☆
+                        - generic [ref=f2e1061]: 待排期
+                    - generic [ref=f2e1062]:
+                      - generic [ref=f2e1063]: P0
+                      - generic [ref=f2e1064]: 运维
+                      - generic [ref=f2e1065]: 低算力
+                      - generic [ref=f2e1066]: 已确认
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e1067]: 待关联 Issue
+                    - paragraph [ref=f2e1068]: Shell · 中推理 · V3 · safe-automation · 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                    - button "校验并就绪" [ref=f2e1070] [cursor=pointer]
+              - generic [ref=f2e1071]:
+                - generic [ref=f2e1072]:
+                  - generic [ref=f2e1073]:
+                    - generic [ref=f2e1074]: S2
+                    - heading "Phase 2：补全生命周期与来源关系" [level=4] [ref=f2e1075]
+                  - generic [ref=f2e1076]: 待排期
+                - generic [ref=f2e1077]:
+                  - article [ref=f2e1078]:
+                    - generic [ref=f2e1079]:
+                      - strong [ref=f2e1080]: 设计并审计增量关系回填
+                      - generic [ref=f2e1081]:
+                        - button "设为星标" [ref=f2e1082] [cursor=pointer]:
+                          - generic [ref=f2e1083]: ☆
+                        - generic [ref=f2e1084]: 待排期
+                    - generic [ref=f2e1085]:
+                      - generic [ref=f2e1086]: P2
+                      - generic [ref=f2e1087]: 调研
+                      - generic [ref=f2e1088]: 高算力
+                      - generic [ref=f2e1089]: 可调整
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e1090]: 待关联 Issue
+                    - paragraph [ref=f2e1091]: Codex · 高推理 · V3 · research-synthesis · 40 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+                    - button "校验并就绪" [ref=f2e1093] [cursor=pointer]
+                  - article [ref=f2e1094]:
+                    - generic [ref=f2e1095]:
+                      - strong [ref=f2e1096]: 实现可回滚的 Phase 2 数据关系
+                      - generic [ref=f2e1097]:
+                        - button "设为星标" [ref=f2e1098] [cursor=pointer]:
+                          - generic [ref=f2e1099]: ☆
+                        - generic [ref=f2e1100]: 待排期
+                    - generic [ref=f2e1101]:
+                      - generic [ref=f2e1102]: P2
+                      - generic [ref=f2e1103]: 功能
+                      - generic [ref=f2e1104]: 高算力
+                      - generic [ref=f2e1105]: 可调整
+                      - generic "可从任务编辑器补充仓库 Issue" [ref=f2e1106]: 待关联 Issue
+                    - paragraph [ref=f2e1107]: Codex · 高推理 · V3 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e1109] [cursor=pointer]
+              - generic [ref=f2e1110]:
+                - generic [ref=f2e1111]:
+                  - generic [ref=f2e1112]:
+                    - generic [ref=f2e1113]: S3
+                    - heading "Phase 3：评估物理模型收口" [level=4] [ref=f2e1114]
+                  - generic [ref=f2e1115]: 待排期
+                - article [ref=f2e1117]:
+                  - generic [ref=f2e1118]:
+                    - strong [ref=f2e1119]: 评估 Resource 主表与双写迁移
+                    - generic [ref=f2e1120]:
+                      - button "设为星标" [ref=f2e1121] [cursor=pointer]:
+                        - generic [ref=f2e1122]: ☆
+                      - generic [ref=f2e1123]: 待排期
+                  - generic [ref=f2e1124]:
+                    - generic [ref=f2e1125]: P3
+                    - generic [ref=f2e1126]: 调研
+                    - generic [ref=f2e1127]: 高算力
+                    - generic [ref=f2e1128]: 可调整
+                    - generic "可从任务编辑器补充仓库 Issue" [ref=f2e1129]: 待关联 Issue
+                  - paragraph [ref=f2e1130]: Codex · 高推理 · V3 · research-synthesis · 40 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+                  - button "校验并就绪" [ref=f2e1132] [cursor=pointer]
+          - article [ref=f2e1133]:
+            - button "打开 Tumor Agent 项目详情" [ref=f2e1134] [cursor=pointer]:
+              - generic [ref=f2e1135]:
+                - generic [ref=f2e1136]:
+                  - generic [ref=f2e1137]: P1
+                  - generic [ref=f2e1138]: 05 / 07
+                - heading "Tumor Agent" [level=3] [ref=f2e1139]
+                - strong [ref=f2e1140]: 肿瘤 AI 助手、模板治理与知识检索服务
+                - paragraph [ref=f2e1141]: 独立管理 tumor_agent 的助手会话、OncoKB/文献知识、模板治理、翻译和 DNA/RNA 变异质量辅助分析。API 与 worker 随镜像发布，生产发布可自动执行本服务 migration。
+                - generic [ref=f2e1142]: 查看全部任务 →
+              - generic [ref=f2e1143]:
+                - generic [ref=f2e1144]:
+                  - generic [ref=f2e1145]: 1 个阶段
+                  - generic [ref=f2e1146]: 2 项待推进
+                - generic "已验证进度 0%" [ref=f2e1147]
+                - generic [ref=f2e1148]:
+                  - generic [ref=f2e1149]: 已验证进度
+                  - strong [ref=f2e1150]: 0%
+            - generic "Tumor Agent 的阶段进度" [ref=f2e1151]:
+              - generic [ref=f2e1152]:
+                - generic [ref=f2e1153]:
+                  - generic [ref=f2e1154]:
+                    - generic [ref=f2e1155]: S1
+                    - heading "服务基线与下一轮迭代" [level=4] [ref=f2e1156]
+                  - generic [ref=f2e1157]: 正在推进
+                - generic [ref=f2e1158]:
+                  - article [ref=f2e1159]:
+                    - generic [ref=f2e1160]:
+                      - strong [ref=f2e1161]: 核对并收口本地 Vite 配置改动
+                      - generic [ref=f2e1162]:
+                        - button "设为星标" [ref=f2e1163] [cursor=pointer]:
+                          - generic [ref=f2e1164]: ☆
+                        - generic [ref=f2e1165]: 待排期
+                    - generic [ref=f2e1166]:
+                      - generic [ref=f2e1167]: P2
+                      - generic [ref=f2e1168]: 运维
+                      - generic [ref=f2e1169]: 低算力
+                      - generic [ref=f2e1170]: 可调整
+                      - generic [ref=f2e1171]: 必须串行
+                    - paragraph [ref=f2e1172]: Shell · 中推理 · V2 · safe-automation · 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                    - button "校验并就绪" [ref=f2e1174] [cursor=pointer]
+                  - article [ref=f2e1175]:
+                    - generic [ref=f2e1176]:
+                      - strong [ref=f2e1177]: 建立 AI 服务发布前健康核验
+                      - generic [ref=f2e1178]:
+                        - button "设为星标" [ref=f2e1179] [cursor=pointer]:
+                          - generic [ref=f2e1180]: ☆
+                        - generic [ref=f2e1181]: 待排期
+                    - generic [ref=f2e1182]:
+                      - generic [ref=f2e1183]: P2
+                      - generic [ref=f2e1184]: 运维
+                      - generic [ref=f2e1185]: 低算力
+                      - generic [ref=f2e1186]: 可调整
+                      - generic [ref=f2e1187]: 必须串行
+                    - paragraph [ref=f2e1188]: Shell · 中推理 · V3 · safe-automation · 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                    - button "校验并就绪" [ref=f2e1190] [cursor=pointer]
+          - article [ref=f2e1191]:
+            - button "打开 BioWorkflowManage 项目详情" [ref=f2e1192] [cursor=pointer]:
+              - generic [ref=f2e1193]:
+                - generic [ref=f2e1194]:
+                  - generic [ref=f2e1195]: P2
+                  - generic [ref=f2e1196]: 06 / 07
+                - heading "BioWorkflowManage" [level=3] [ref=f2e1197]
+                - strong [ref=f2e1198]: 把历史 WDL、工具与流程沉淀为可追溯、可复用的生信资产
+                - paragraph [ref=f2e1199]: 生物信息学 Workflow 编译与资产管理平台。当前已具备 ToolSpec、可视化 DAG、Compiler IR、WDL 1.0 编译、不可变版本、子流程复用，以及历史多文件 WDL 工作台、审计、标签、导入导出和基础认证。当前工作区存在尚未提交的 WDL 工作台与生产登录修复，下一阶段优先完成发布收口、历史 WDL 质量治理和前端工程化。
+                - generic [ref=f2e1200]: 查看全部任务 →
+              - generic [ref=f2e1201]:
+                - generic [ref=f2e1202]:
+                  - generic [ref=f2e1203]: 2 个阶段
+                  - generic [ref=f2e1204]: 7 项待推进
+                - generic "已验证进度 0%" [ref=f2e1205]
+                - generic [ref=f2e1206]:
+                  - generic [ref=f2e1207]: 已验证进度
+                  - strong [ref=f2e1208]: 0%
+            - generic "BioWorkflowManage 的阶段进度" [ref=f2e1209]:
+              - generic [ref=f2e1210]:
+                - generic [ref=f2e1211]:
+                  - generic [ref=f2e1212]:
+                    - generic [ref=f2e1213]: S1
+                    - heading "历史 WDL 工作台发布收口" [level=4] [ref=f2e1214]
+                  - generic [ref=f2e1215]: 正在推进
+                - generic [ref=f2e1216]:
+                  - article [ref=f2e1217]:
+                    - generic [ref=f2e1218]:
+                      - strong [ref=f2e1219]: 审查并固化当前实现基线
+                      - generic [ref=f2e1220]:
+                        - button "取消星标" [pressed] [ref=f2e1221] [cursor=pointer]:
+                          - generic [ref=f2e1222]: ★
+                        - generic [ref=f2e1223]: 待排期
+                    - generic [ref=f2e1224]:
+                      - generic [ref=f2e1225]: P0
+                      - generic [ref=f2e1226]: 审查
+                      - generic [ref=f2e1227]: 高算力
+                      - generic [ref=f2e1228]: 已确认
+                      - generic [ref=f2e1229]: 必须串行
+                    - paragraph [ref=f2e1230]: Codex · 高推理 · V3 · independent-review · 35 分钟与实现上下文隔离审查，先报告可验证问题再决定修改。
+                    - button "校验并就绪" [ref=f2e1232] [cursor=pointer]
+                  - article [ref=f2e1233]:
+                    - generic [ref=f2e1234]:
+                      - strong [ref=f2e1235]: 治理 Solid 与 Blood 历史 WDL 诊断
+                      - generic [ref=f2e1236]:
+                        - button "设为星标" [ref=f2e1237] [cursor=pointer]:
+                          - generic [ref=f2e1238]: ☆
+                        - generic [ref=f2e1239]: 待排期
+                    - generic [ref=f2e1240]:
+                      - generic [ref=f2e1241]: P1
+                      - generic [ref=f2e1242]: Bug
+                      - generic [ref=f2e1243]: 高算力
+                      - generic [ref=f2e1244]: 已确认
+                      - generic [ref=f2e1245]: 必须串行
+                    - paragraph [ref=f2e1246]: Codex · 高推理 · V3 · code-repair · 45 分钟先复现并补回归测试，再做最小修复。
+                    - button "校验并就绪" [ref=f2e1248] [cursor=pointer]
+                  - article [ref=f2e1249]:
+                    - generic [ref=f2e1250]:
+                      - strong [ref=f2e1251]: 建立历史 Task 拆解迁移清单
+                      - generic [ref=f2e1252]:
+                        - button "设为星标" [ref=f2e1253] [cursor=pointer]:
+                          - generic [ref=f2e1254]: ☆
+                        - generic [ref=f2e1255]: 待排期
+                    - generic [ref=f2e1256]:
+                      - generic [ref=f2e1257]: P1
+                      - generic [ref=f2e1258]: 功能
+                      - generic [ref=f2e1259]: 中算力
+                      - generic [ref=f2e1260]: 已确认
+                      - generic [ref=f2e1261]: 允许并行
+                    - paragraph [ref=f2e1262]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e1264] [cursor=pointer]
+                  - article [ref=f2e1265]:
+                    - generic [ref=f2e1266]:
+                      - strong [ref=f2e1267]: 完成生产发布冒烟与回滚手册
+                      - generic [ref=f2e1268]:
+                        - button "取消星标" [pressed] [ref=f2e1269] [cursor=pointer]:
+                          - generic [ref=f2e1270]: ★
+                        - generic [ref=f2e1271]: 待排期
+                    - generic [ref=f2e1272]:
+                      - generic [ref=f2e1273]: P1
+                      - generic [ref=f2e1274]: 运维
+                      - generic [ref=f2e1275]: 低算力
+                      - generic [ref=f2e1276]: 已确认
+                      - generic [ref=f2e1277]: 必须串行
+                    - paragraph [ref=f2e1278]: Shell · 中推理 · V3 · safe-automation · 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                    - button "校验并就绪" [ref=f2e1280] [cursor=pointer]
+              - generic [ref=f2e1281]:
+                - generic [ref=f2e1282]:
+                  - generic [ref=f2e1283]:
+                    - generic [ref=f2e1284]: S2
+                    - heading "工程化与可维护性" [level=4] [ref=f2e1285]
+                  - generic [ref=f2e1286]: 待排期
+                - generic [ref=f2e1287]:
+                  - article [ref=f2e1288]:
+                    - generic [ref=f2e1289]:
+                      - strong [ref=f2e1290]: 继续拆分前端巨型 index.vue
+                      - generic [ref=f2e1291]:
+                        - button "取消星标" [pressed] [ref=f2e1292] [cursor=pointer]:
+                          - generic [ref=f2e1293]: ★
+                        - generic [ref=f2e1294]: 待排期
+                    - generic [ref=f2e1295]:
+                      - generic [ref=f2e1296]: P1
+                      - generic [ref=f2e1297]: 功能
+                      - generic [ref=f2e1298]: 中算力
+                      - generic [ref=f2e1299]: 已确认
+                      - generic [ref=f2e1300]: 必须串行
+                    - paragraph [ref=f2e1301]: Codex · 中推理 · V2 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e1303] [cursor=pointer]
+                  - article [ref=f2e1304]:
+                    - generic [ref=f2e1305]:
+                      - strong [ref=f2e1306]: 同步实现、Schema 与开发文档
+                      - generic [ref=f2e1307]:
+                        - button "设为星标" [ref=f2e1308] [cursor=pointer]:
+                          - generic [ref=f2e1309]: ☆
+                        - generic [ref=f2e1310]: 待排期
+                    - generic [ref=f2e1311]:
+                      - generic [ref=f2e1312]: P1
+                      - generic [ref=f2e1313]: 审查
+                      - generic [ref=f2e1314]: 高算力
+                      - generic [ref=f2e1315]: 已确认
+                      - generic [ref=f2e1316]: 允许并行
+                    - paragraph [ref=f2e1317]: Codex · 高推理 · V2 · independent-review · 35 分钟与实现上下文隔离审查，先报告可验证问题再决定修改。
+                    - button "校验并就绪" [ref=f2e1319] [cursor=pointer]
+                  - article [ref=f2e1320]:
+                    - generic [ref=f2e1321]:
+                      - strong [ref=f2e1322]: 补齐 WDL 并发编辑冲突保护
+                      - generic [ref=f2e1323]:
+                        - button "设为星标" [ref=f2e1324] [cursor=pointer]:
+                          - generic [ref=f2e1325]: ☆
+                        - generic [ref=f2e1326]: 待排期
+                    - generic [ref=f2e1327]:
+                      - generic [ref=f2e1328]: P1
+                      - generic [ref=f2e1329]: 功能
+                      - generic [ref=f2e1330]: 高算力
+                      - generic [ref=f2e1331]: 已确认
+                      - generic [ref=f2e1332]: 必须串行
+                    - paragraph [ref=f2e1333]: Codex · 高推理 · V3 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e1335] [cursor=pointer]
+          - article [ref=f2e1336]:
+            - button "打开 Totemora 项目详情" [ref=f2e1337] [cursor=pointer]:
+              - generic [ref=f2e1338]:
+                - generic [ref=f2e1339]:
+                  - generic [ref=f2e1340]: P2
+                  - generic [ref=f2e1341]: 07 / 07
+                - heading "Totemora" [level=3] [ref=f2e1342]
+                - strong [ref=f2e1343]: 把复杂工作，交给一支会协作的 AI 团队
+                - paragraph [ref=f2e1344]: 强模型负责判断，专长成员并行执行，过程、成本和结果全程可追踪。少盯过程，也能稳定拿到可验收的结果。
+                - generic [ref=f2e1345]: 查看全部任务 →
+              - generic [ref=f2e1346]:
+                - generic [ref=f2e1347]:
+                  - generic [ref=f2e1348]: 6 个阶段
+                  - generic [ref=f2e1349]: 4 项待推进
+                - generic "已验证进度 76%" [ref=f2e1350]
+                - generic [ref=f2e1352]:
+                  - generic [ref=f2e1353]: 已验证进度
+                  - strong [ref=f2e1354]: 76%
+            - generic "Totemora 的阶段进度" [ref=f2e1355]:
+              - generic [ref=f2e1356]:
+                - generic [ref=f2e1357]:
+                  - generic [ref=f2e1358]:
+                    - generic [ref=f2e1359]: S1
+                    - heading "S1 点燃第一支部落" [level=4] [ref=f2e1360]
+                  - generic [ref=f2e1361]: 已验证
+                - generic [ref=f2e1362]:
+                  - article [ref=f2e1363]:
+                    - generic [ref=f2e1364]:
+                      - strong [ref=f2e1365]: 固化产品边界与 TUI/Runtime/Web Observatory 路线
+                      - generic [ref=f2e1366]: 已验证
+                    - generic [ref=f2e1368]:
+                      - generic [ref=f2e1369]: P0
+                      - generic [ref=f2e1370]: 功能
+                      - generic [ref=f2e1371]: 低算力
+                      - generic [ref=f2e1372]: 已确认
+                    - paragraph [ref=f2e1373]: Luna Worker · 中推理 · V1 · agentic-coding · 20 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1374]:
+                    - generic [ref=f2e1375]:
+                      - strong [ref=f2e1376]: 建立 Bun workspace 与配置类型、loader、validation
+                      - generic [ref=f2e1377]: 已验证
+                    - generic [ref=f2e1379]:
+                      - generic [ref=f2e1380]: P0
+                      - generic [ref=f2e1381]: 功能
+                      - generic [ref=f2e1382]: 低算力
+                      - generic [ref=f2e1383]: 已确认
+                    - paragraph [ref=f2e1384]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1385]:
+                    - generic [ref=f2e1386]:
+                      - strong [ref=f2e1387]: 加入示例 tribe 和 CLI inspection 命令
+                      - generic [ref=f2e1388]: 已验证
+                    - generic [ref=f2e1390]:
+                      - generic [ref=f2e1391]: P1
+                      - generic [ref=f2e1392]: 功能
+                      - generic [ref=f2e1393]: 低算力
+                      - generic [ref=f2e1394]: 可调整
+                    - paragraph [ref=f2e1395]: Luna Worker · 中推理 · V1 · agentic-coding · 45 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e1396]:
+                - generic [ref=f2e1397]:
+                  - generic [ref=f2e1398]:
+                    - generic [ref=f2e1399]: S2
+                    - heading "S2 让部落真正接活" [level=4] [ref=f2e1400]
+                  - generic [ref=f2e1401]: 已验证
+                - generic [ref=f2e1402]:
+                  - article [ref=f2e1403]:
+                    - generic [ref=f2e1404]:
+                      - strong [ref=f2e1405]: 建立 Provider、只读 Runtime、Trace 和任务分析
+                      - generic [ref=f2e1406]: 已验证
+                    - generic [ref=f2e1408]:
+                      - generic [ref=f2e1409]: P0
+                      - generic [ref=f2e1410]: 功能
+                      - generic [ref=f2e1411]: 低算力
+                      - generic [ref=f2e1412]: 已确认
+                    - paragraph [ref=f2e1413]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1414]:
+                    - generic [ref=f2e1415]:
+                      - strong [ref=f2e1416]: 建立常驻 Gateway、Web Playground 与持续任务入口
+                      - generic [ref=f2e1417]: 已验证
+                    - generic [ref=f2e1419]:
+                      - generic [ref=f2e1420]: P0
+                      - generic [ref=f2e1421]: 功能
+                      - generic [ref=f2e1422]: 低算力
+                      - generic [ref=f2e1423]: 已确认
+                    - paragraph [ref=f2e1424]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1425]:
+                    - generic [ref=f2e1426]:
+                      - strong [ref=f2e1427]: 完成受控 Git Flow 专业服务与 MCP 提案闭环
+                      - generic [ref=f2e1428]: 已验证
+                    - generic [ref=f2e1430]:
+                      - generic [ref=f2e1431]: P1
+                      - generic [ref=f2e1432]: 功能
+                      - generic [ref=f2e1433]: 低算力
+                      - generic [ref=f2e1434]: 可调整
+                    - paragraph [ref=f2e1435]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e1436]:
+                - generic [ref=f2e1437]:
+                  - generic [ref=f2e1438]:
+                    - generic [ref=f2e1439]: S3
+                    - heading "S3 让成员持续生活" [level=4] [ref=f2e1440]
+                  - generic [ref=f2e1441]: 已验证
+                - generic [ref=f2e1442]:
+                  - article [ref=f2e1443]:
+                    - generic [ref=f2e1444]:
+                      - strong [ref=f2e1445]: 建立 Living Tribe Member 和 Intelligence Watch
+                      - generic [ref=f2e1446]: 已验证
+                    - generic [ref=f2e1448]:
+                      - generic [ref=f2e1449]: P1
+                      - generic [ref=f2e1450]: 功能
+                      - generic [ref=f2e1451]: 低算力
+                      - generic [ref=f2e1452]: 可调整
+                    - paragraph [ref=f2e1453]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1454]:
+                    - generic [ref=f2e1455]:
+                      - strong [ref=f2e1456]: 建立任务历史、成员画像与可归因经验
+                      - generic [ref=f2e1457]: 已验证
+                    - generic [ref=f2e1459]:
+                      - generic [ref=f2e1460]: P1
+                      - generic [ref=f2e1461]: 调研
+                      - generic [ref=f2e1462]: 低算力
+                      - generic [ref=f2e1463]: 可调整
+                    - paragraph [ref=f2e1464]: Luna Worker · 中推理 · V1 · research-synthesis · 1 小时 30 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+              - generic [ref=f2e1465]:
+                - generic [ref=f2e1466]:
+                  - generic [ref=f2e1467]:
+                    - generic [ref=f2e1468]: S4
+                    - heading "S4 建立情报与成长闭环" [level=4] [ref=f2e1469]
+                  - generic [ref=f2e1470]: 已验证
+                - generic [ref=f2e1471]:
+                  - article [ref=f2e1472]:
+                    - generic [ref=f2e1473]:
+                      - strong [ref=f2e1474]: 完成候选情报管线、Bark 派发与反馈校正
+                      - generic [ref=f2e1475]: 已验证
+                    - generic [ref=f2e1477]:
+                      - generic [ref=f2e1478]: P1
+                      - generic [ref=f2e1479]: 功能
+                      - generic [ref=f2e1480]: 低算力
+                      - generic [ref=f2e1481]: 可调整
+                    - paragraph [ref=f2e1482]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1483]:
+                    - generic [ref=f2e1484]:
+                      - strong [ref=f2e1485]: 完成人物画像、受治理演化与专业服务
+                      - generic [ref=f2e1486]: 已验证
+                    - generic [ref=f2e1488]:
+                      - generic [ref=f2e1489]: P1
+                      - generic [ref=f2e1490]: 功能
+                      - generic [ref=f2e1491]: 低算力
+                      - generic [ref=f2e1492]: 可调整
+                    - paragraph [ref=f2e1493]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                  - article [ref=f2e1494]:
+                    - generic [ref=f2e1495]:
+                      - strong [ref=f2e1496]: 将 JSON 状态迁移到 SQLite 持久层
+                      - generic [ref=f2e1497]: 已验证
+                    - generic [ref=f2e1499]:
+                      - generic [ref=f2e1500]: P0
+                      - generic [ref=f2e1501]: 运维
+                      - generic [ref=f2e1502]: 低算力
+                      - generic [ref=f2e1503]: 已确认
+                    - paragraph [ref=f2e1504]: Shell · 中推理 · V0 · safe-automation · 1 小时 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                  - article [ref=f2e1505]:
+                    - generic [ref=f2e1506]:
+                      - strong [ref=f2e1507]: 增加 Web Observatory v2 与 benchmark CLI 骨架
+                      - generic [ref=f2e1508]: 已验证
+                    - generic [ref=f2e1510]:
+                      - generic [ref=f2e1511]: P1
+                      - generic [ref=f2e1512]: 功能
+                      - generic [ref=f2e1513]: 低算力
+                      - generic [ref=f2e1514]: 可调整
+                    - paragraph [ref=f2e1515]: Luna Worker · 中推理 · V1 · agentic-coding · 45 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+              - generic [ref=f2e1516]:
+                - generic [ref=f2e1517]:
+                  - generic [ref=f2e1518]:
+                    - generic [ref=f2e1519]: S5
+                    - heading "S5 证明部落确有收益" [level=4] [ref=f2e1520]
+                  - generic [ref=f2e1521]: 正在推进
+                - generic [ref=f2e1522]:
+                  - article [ref=f2e1523]:
+                    - generic [ref=f2e1524]:
+                      - strong [ref=f2e1525]: 跑通 3 个只读 smoke benchmark
+                      - generic [ref=f2e1526]: 已验证
+                    - generic [ref=f2e1528]:
+                      - generic [ref=f2e1529]: P1
+                      - generic [ref=f2e1530]: 扫描
+                      - generic [ref=f2e1531]: 低算力
+                      - generic [ref=f2e1532]: 可调整
+                    - paragraph [ref=f2e1533]: Luna Worker · 低推理 · V0 · repository-scan · 20 分钟先跑确定性检查，只把异常和高价值区域交给模型分析。
+                  - article [ref=f2e1534]:
+                    - generic [ref=f2e1535]:
+                      - strong [ref=f2e1536]: 扩展为 10–20 个真实任务和稳定价格快照
+                      - generic [ref=f2e1537]:
+                        - button "设为星标" [ref=f2e1538] [cursor=pointer]:
+                          - generic [ref=f2e1539]: ☆
+                        - generic [ref=f2e1540]: 待排期
+                    - generic [ref=f2e1541]:
+                      - generic [ref=f2e1542]: P1
+                      - generic [ref=f2e1543]: 调研
+                      - generic [ref=f2e1544]: 低算力
+                      - generic [ref=f2e1545]: 可调整
+                    - paragraph [ref=f2e1546]: Luna Worker · 中推理 · V1 · research-synthesis · 20 分钟先快速铺开证据，再用强推理收敛分歧和方案。
+                    - button "校验并就绪" [ref=f2e1548] [cursor=pointer]
+                  - article [ref=f2e1549]:
+                    - generic [ref=f2e1550]:
+                      - strong [ref=f2e1551]: 增加代码变更类隔离 scorer
+                      - generic [ref=f2e1552]:
+                        - button "设为星标" [ref=f2e1553] [cursor=pointer]:
+                          - generic [ref=f2e1554]: ☆
+                        - generic [ref=f2e1555]: 待排期
+                    - generic [ref=f2e1556]:
+                      - generic [ref=f2e1557]: P1
+                      - generic [ref=f2e1558]: 功能
+                      - generic [ref=f2e1559]: 低算力
+                      - generic [ref=f2e1560]: 可调整
+                    - paragraph [ref=f2e1561]: Luna Worker · 中推理 · V1 · agentic-coding · 1 小时 30 分钟先确认范围和依赖，再完成一个可独立验收的纵向切片。
+                    - button "校验并就绪" [ref=f2e1563] [cursor=pointer]
+                  - article [ref=f2e1564]:
+                    - generic [ref=f2e1565]:
+                      - strong [ref=f2e1566]: 对比单强、单廉价、部落三策略并作停止/继续决策
+                      - generic [ref=f2e1567]:
+                        - button "设为星标" [ref=f2e1568] [cursor=pointer]:
+                          - generic [ref=f2e1569]: ☆
+                        - generic [ref=f2e1570]: 待排期
+                    - generic [ref=f2e1571]:
+                      - generic [ref=f2e1572]: P0
+                      - generic [ref=f2e1573]: 审查
+                      - generic [ref=f2e1574]: 中算力
+                      - generic [ref=f2e1575]: 已确认
+                    - paragraph [ref=f2e1576]: Codex · 高推理 · V1 · independent-review · 30 分钟与实现上下文隔离审查，先报告可验证问题再决定修改。
+                    - button "校验并就绪" [ref=f2e1578] [cursor=pointer]
+              - generic [ref=f2e1579]:
+                - generic [ref=f2e1580]:
+                  - generic [ref=f2e1581]:
+                    - generic [ref=f2e1582]: S6
+                    - heading "S6 收紧受控执行" [level=4] [ref=f2e1583]
+                  - generic [ref=f2e1584]: 待排期
+                - article [ref=f2e1586]:
+                  - generic [ref=f2e1587]:
+                    - strong [ref=f2e1588]: 统一命令策略、pre/post hooks、OS sandbox 与 action journal
+                    - generic [ref=f2e1589]:
+                      - button "设为星标" [ref=f2e1590] [cursor=pointer]:
+                        - generic [ref=f2e1591]: ☆
+                      - generic [ref=f2e1592]: 待排期
+                  - generic [ref=f2e1593]:
+                    - generic [ref=f2e1594]: P1
+                    - generic [ref=f2e1595]: 运维
+                    - generic [ref=f2e1596]: 低算力
+                    - generic [ref=f2e1597]: 可调整
+                  - paragraph [ref=f2e1598]: Shell · 中推理 · V0 · safe-automation · 1 小时 30 分钟优先使用确定性脚本，高风险动作保留人工审批。
+                  - button "校验并就绪" [ref=f2e1600] [cursor=pointer]
+    - region [ref=f2e33]:
+      - generic [ref=f2e34]:
+        - generic [ref=f2e35]:
+          - paragraph [ref=f2e36]: 真实上报，不演戏
+          - heading "算力花去哪，一眼见底。" [level=2] [ref=f2e37]
+          - paragraph [ref=f2e38]: 按项目还原真实完成顺序、时间重叠和未记录推进；不追踪 Agent 的内部思考。
+        - generic "推进轨迹时间范围" [ref=f2e39]:
+          - button "24 小时" [pressed] [ref=f2e40] [cursor=pointer]
+          - button "7 天" [ref=f2e41] [cursor=pointer]
+          - button "30 天" [ref=f2e42] [cursor=pointer]
+      - generic "推进轨迹概况" [ref=f2e43]:
+        - generic "真实 Agent 任务区间的并集占当前窗口的比例" [ref=f2e1713]:
+          - generic [ref=f2e1714]: 推进覆盖
+          - strong [ref=f2e1715]: 14%
+        - generic "Agent 在当前窗口内上报完成的任务结果" [ref=f2e1716]:
+          - generic [ref=f2e1717]: 完成上报
+          - strong [ref=f2e1718]: 27 次
+        - generic "真实任务区间发生重叠时的最高并行数" [ref=f2e1719]:
+          - generic [ref=f2e1720]: 并发峰值
+          - strong [ref=f2e1721]: 10 路
+        - generic "没有收到任务完成上报的时间，不等同于用户空闲" [ref=f2e1722]:
+          - generic [ref=f2e1723]: 未记录推进
+          - strong [ref=f2e1724]: 20 小时 43 分
+      - generic [ref=f2e44]:
+        - generic [ref=f2e1725]:
+          - strong [ref=f2e1726]: 推进脉冲
+          - generic [ref=f2e1727]: 亮色是已上报区间，灰色是未记录推进
+        - generic "真实推进覆盖 14%" [ref=f2e1728]:
+          - generic "未记录推进 · 5 小时 33 分" [ref=f2e1729]
+          - generic "未记录推进 · 7 分钟" [ref=f2e1730]
+          - generic "未记录推进 · 2 分钟" [ref=f2e1731]
+          - generic "未记录推进 · 2 分钟" [ref=f2e1732]
+          - generic "未记录推进 · 少于 1 分钟" [ref=f2e1733]
+          - generic "未记录推进 · 3 分钟" [ref=f2e1734]
+          - generic "未记录推进 · 2 分钟" [ref=f2e1735]
+          - generic "未记录推进 · 2 分钟" [ref=f2e1736]
+          - generic "未记录推进 · 10 小时 2 分" [ref=f2e1737]
+          - generic "未记录推进 · 2 小时 22 分" [ref=f2e1738]
+          - generic "未记录推进 · 5 分钟" [ref=f2e1739]
+          - generic "未记录推进 · 3 分钟" [ref=f2e1740]
+          - generic "未记录推进 · 1 小时 41 分" [ref=f2e1741]
+          - generic "未记录推进 · 30 分钟" [ref=f2e1742]
+          - generic "未记录推进 · 少于 1 分钟" [ref=f2e1743]
+          - generic "未记录推进 · 少于 1 分钟" [ref=f2e1744]
+          - generic "未记录推进 · 10 分钟" [ref=f2e1745]
+      - generic [ref=f2e45]:
+        - generic [ref=f2e1748]:
+          - time [ref=f2e1749]: 08/02 13:29
+          - time [ref=f2e1750]: 08/03 01:29
+          - time [ref=f2e1751]: 08/03 13:29
+        - generic [ref=f2e1752]:
+          - article [ref=f2e1753]:
+            - generic [ref=f2e1754]:
+              - strong [ref=f2e1755]: Lifeline
+              - generic [ref=f2e1756]: 23 次真实上报
+            - generic "Lifeline 推进时间轴" [ref=f2e1757]:
+              - button "信息录入样式调整 · 2026/08/02 19:02 至 2026/08/02 19:10" [ref=f2e1758] [cursor=pointer]: 信息录入样式调整
+              - button "Agent 完成后自动进入复核并更新项目进度 · 2026/08/02 19:04 至 2026/08/02 19:11" [ref=f2e1760] [cursor=pointer]: Agent 完成后自动进入复核并更新项目进度
+              - button "新增重要任务可以加上星标状态，并调整排期日期在任务执行的优先级 · 2026/08/02 19:18 至 2026/08/02 19:28" [ref=f2e1762] [cursor=pointer]: 新增重要任务可以加上星标状态，并调整排期日期在任务执行的优先级
+              - button "补齐扫描提案与指纹去重 MCP · 2026/08/02 19:30 至 2026/08/02 19:37" [ref=f2e1764] [cursor=pointer]: 补齐扫描提案与指纹去重 MCP
+              - button "展开项目全部任务并支持键盘/拖拽排序 · 2026/08/02 19:39 至 2026/08/02 19:43" [ref=f2e1766] [cursor=pointer]: 展开项目全部任务并支持键盘/拖拽排序
+              - button "加入依赖校验与可并行任务展示 · 2026/08/02 19:43 至 2026/08/02 19:59" [ref=f2e1768] [cursor=pointer]: 加入依赖校验与可并行任务展示
+              - button "桌面与移动端真实渲染验收 · 2026/08/02 20:02 至 2026/08/02 20:02" [ref=f2e1770] [cursor=pointer]: 桌面与移动端真实渲染验收
+              - button "自动识别多任务并行处理 · 2026/08/02 20:04 至 2026/08/02 20:07" [ref=f2e1772] [cursor=pointer]: 自动识别多任务并行处理
+              - button "样式优化，项目详情页面的信息编辑 · 2026/08/02 20:09 至 2026/08/02 20:22" [ref=f2e1774] [cursor=pointer]: 样式优化，项目详情页面的信息编辑
+              - button "防止 Agent 使用 mock executor 绕过 REVIEW 门禁 · 2026/08/03 10:21 至 2026/08/03 10:46" [ref=f2e1776] [cursor=pointer]: 防止 Agent 使用 mock executor 绕过 REVIEW 门禁
+              - button "跨阶段移动后校验全项目依赖拓扑 · 2026/08/03 10:21 至 2026/08/03 10:46" [ref=f2e1778] [cursor=pointer]: 跨阶段移动后校验全项目依赖拓扑
+              - button "修复 EchoMe 无 Run 的 RUNNING 任务 · 2026/08/03 10:21 至 2026/08/03 10:47" [ref=f2e1780] [cursor=pointer]: 修复 EchoMe 无 Run 的 RUNNING 任务
+              - button "任务验证后同步最新进度指针 · 2026/08/03 10:21 至 2026/08/03 10:47" [ref=f2e1782] [cursor=pointer]: 任务验证后同步最新进度指针
+              - button "校正 Portfolio 模板历史状态并提供幂等校准 · 2026/08/03 10:21 至 2026/08/03 10:47" [ref=f2e1784] [cursor=pointer]: 校正 Portfolio 模板历史状态并提供幂等校准
+              - button "避免 MCP planId 派生幂等键超长 · 2026/08/03 10:22 至 2026/08/03 10:47" [ref=f2e1786] [cursor=pointer]: 避免 MCP planId 派生幂等键超长
+              - button "修复大板筛选导致泳道重建与滚动归零 · 2026/08/03 10:22 至 2026/08/03 10:47" [ref=f2e1788] [cursor=pointer]: 修复大板筛选导致泳道重建与滚动归零
+              - button "将任务星标操作收进右上角图标 · 2026/08/03 10:22 至 2026/08/03 10:47" [ref=f2e1790] [cursor=pointer]: 将任务星标操作收进右上角图标
+              - button "任务标题最多显示两行并可悬浮查看全文 · 2026/08/03 10:22 至 2026/08/03 10:47" [ref=f2e1792] [cursor=pointer]: 任务标题最多显示两行并可悬浮查看全文
+              - button "按风险分档模型并批次化验收 · 2026/08/03 10:22 至 2026/08/03 10:47" [ref=f2e1794] [cursor=pointer]: 按风险分档模型并批次化验收
+              - button "强化项目、阶段与任务卡片的视觉层级 · 2026/08/03 12:28 至 2026/08/03 12:33" [ref=f2e1796] [cursor=pointer]: 强化项目、阶段与任务卡片的视觉层级
+              - button "收敛为单次真实任务结果上报 · 2026/08/03 13:03 至 2026/08/03 13:08" [ref=f2e1798] [cursor=pointer]: 收敛为单次真实任务结果上报
+              - button "停止 Mock Run 并隔离历史模拟数据 · 2026/08/03 13:08 至 2026/08/03 13:16" [ref=f2e1800] [cursor=pointer]: 停止 Mock Run 并隔离历史模拟数据
+              - button "聚合项目推进轨迹与推进覆盖率 · 2026/08/03 13:17 至 2026/08/03 13:19" [active] [ref=f2e1802] [cursor=pointer]: 聚合项目推进轨迹与推进覆盖率
+          - article [ref=f2e1804]:
+            - generic [ref=f2e1805]:
+              - strong [ref=f2e1806]: Tumor
+              - generic [ref=f2e1807]: 4 次真实上报
+            - generic "Tumor 推进时间轴" [ref=f2e1808]:
+              - button "扩展江苏 HRD 项目识别条件 · 2026/08/03 06:25 至 2026/08/03 06:29" [ref=f2e1809] [cursor=pointer]: 扩展江苏 HRD 项目识别条件
+              - button "收口证据中心与肉瘤知识导入 · 2026/08/03 08:51 至 2026/08/03 08:52" [ref=f2e1811] [cursor=pointer]: 收口证据中心与肉瘤知识导入
+              - button "支持 qPCR 页面修改肿瘤细胞含量并记录审计日志 · 2026/08/03 08:56 至 2026/08/03 10:17" [ref=f2e1813] [cursor=pointer]: 支持 qPCR 页面修改肿瘤细胞含量并记录审计日志
+              - button "任务排期导出时候， 去掉 癌种分类 列 · 2026/08/03 10:16 至 2026/08/03 10:18" [ref=f2e1815] [cursor=pointer]: 任务排期导出时候， 去掉 癌种分类 列
+        - generic [ref=f2e1817]:
+          - generic [ref=f2e1818]: 已验证
+          - generic [ref=f2e1820]: 待复核
+          - generic [ref=f2e1822]: 失败 / 阻塞
+          - generic [ref=f2e1824]: 轨迹只来自 Agent 的真实结果上报
+  - status
