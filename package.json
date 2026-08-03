@@ -16,7 +16,9 @@
     "reconcile:lifeline-schedule": "node scripts/reconcile-lifeline-schedule.mjs",
     "repair:agent-run": "node scripts/repair-agent-run-autocomplete.mjs",
     "mcp": "node src/mcp-server.js",
+    "pretest": "node scripts/ensure-test-dependencies.mjs",
     "test": "node --test",
+    "precheck": "node scripts/ensure-test-dependencies.mjs",
     "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/service.js && node --check src/server.js && node --check src/mcp-server.js && node --test"
   },
   "dependencies": {

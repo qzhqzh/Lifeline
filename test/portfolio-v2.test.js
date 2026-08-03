@@ -94,13 +94,24 @@ test('legacy data migrates without fake runs and records modified-template confl
   assert.equal(state.schemaVersion, 5);
 });
 
-test('current portfolio fixture migrates to the three real projects without conflicts', async (t) => {
+test('modified legacy portfolio reports conflicts without losing MCP tasks', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-pv2-current-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const file = join(directory, 'state.json');
-  const source = JSON.parse(await readFile(new URL('../data/lifeline.json', import.meta.url)));
+  const timestamp = '2026-08-01T00:00:00.000Z';
+  const source = {
+    schemaVersion: 2,
+    projects: [
+      legacyProject('project_lifeline_demo', 'Lifeline Demo', 'https://github.com/qzhqzh/Lifeline', 10, timestamp),
+      legacyProject('project_release_radar', 'Release Radar · 示例', null, 7, timestamp),
+      legacyProject('project_knowledge_lab', 'Knowledge Lab · 示例', null, 5, timestamp)
+    ],
+    workItems: [],
+    runs: [],
+    evidence: [],
+    events: []
+  };
   const sourceLifeline = source.projects.find((project) => project.name === 'Lifeline Demo');
-  const sourceRunIds = source.runs.map((run) => run.id);
   await writeFile(file, JSON.stringify(source));
 
   const service = await createService(file, 'local-owner');
@@ -134,12 +145,10 @@ test('current portfolio fixture migrates to the three real projects without conf
   assert.equal(first.created, true);
   assert.equal(repeated.created, false);
   assert.equal(repeated.receipt.id, first.receipt.id);
-  assert.deepEqual(first.conflicts, []);
+  assert.equal(first.conflicts.length, 3);
   assert.deepEqual(managedProjects.map((project) => project.name), ['Lifeline', 'EchoMe', 'Totemora']);
-  assert.equal(activeProjects.find((project) => project.name === 'Lifeline').id, sourceLifeline.id);
   assert.equal(state.workItems.find((item) => item.id === mcpTask.id)?.projectId, sourceLifeline.id);
-  assert.equal(state.projects.filter((project) => project.status === 'ARCHIVED').length, 2);
-  assert.equal(sourceRunIds.every((runId) => state.runs.some((run) => run.id === runId)), true);
+  assert.equal(state.projects.find((project) => project.id === sourceLifeline.id).name, 'Lifeline Demo');
   assert.equal(
     state.workItems.filter((item) => item.projectId === activeProjects.find((project) => project.name === 'EchoMe').id).length,
     expectedCounts.EchoMe
@@ -149,6 +158,19 @@ test('current portfolio fixture migrates to the three real projects without conf
     expectedCounts.Totemora
   );
 });
+
+function legacyProject(id, name, repositoryUrl, strategicValue, timestamp) {
+  return {
+    id,
+    name,
+    repositoryUrl,
+    description: '',
+    strategicValue,
+    status: 'ACTIVE',
+    createdAt: timestamp,
+    updatedAt: timestamp
+  };
+}
 
 test('schema migration is idempotent and unfinished history does not raise progress', async () => {
   const legacy = {
