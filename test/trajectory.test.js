@@ -83,6 +83,7 @@ test('trajectory aggregates only real Agent results and calculates coverage, gap
     'First real result', 'Failed real result', 'Overlapping real result'
   ]);
   assert.equal(trajectory.projects[0].intervals[0].verificationStatus, 'VERIFIED');
+  assert.equal(trajectory.projects[0].intervals[1].verificationStatus, 'NOT_APPLICABLE');
   assert.deepEqual(trajectory.projects[0].intervals[0].evidence.map((entry) => entry.type), ['TEST_COMMAND', 'VERIFICATION']);
   assert.equal(trajectory.gaps.length, 3);
   assert.ok(trajectory.gaps.every((gap) => gap.label === '未记录推进'));

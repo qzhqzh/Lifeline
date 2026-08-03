@@ -520,7 +520,7 @@ function registerWriteTools(server, service, identity) {
     'lifeline_submit_completion',
     {
       title: 'Submit Agent completion',
-      description: 'Report one real task result. Without a prior Run, include startedAt, completedAt, and modelRef; COMPLETED moves only to REVIEW, while FAILED or BLOCKED leaves the task blocked. This never verifies the task.',
+      description: 'Report one real task result. Without a prior Run, include startedAt, completedAt, and modelRef; elapsed time is derived from those timestamps. COMPLETED moves only to REVIEW, while FAILED or BLOCKED leaves the task blocked. This never verifies the task.',
       inputSchema: z.object({
         taskId: z.string().trim().min(3).max(160),
         runId: z.string().trim().min(3).max(160).optional(),

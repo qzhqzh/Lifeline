@@ -593,7 +593,7 @@ function openTrajectoryRecord(recordId) {
       <div><dt>持续</dt><dd>${escapeHtml(formatElapsedMs(interval.durationMs))}</dd></div>
       <div><dt>模型</dt><dd>${escapeHtml(interval.modelRef || '未记录')}</dd></div>
       <div><dt>推理强度</dt><dd>${escapeHtml(effortLabel(interval.reasoningEffort))}</dd></div>
-      <div><dt>复核状态</dt><dd>${escapeHtml(interval.verificationStatus === 'VERIFIED' ? '已验证' : '待复核')}</dd></div>
+      <div><dt>复核状态</dt><dd>${escapeHtml(trajectoryVerificationLabel(interval.verificationStatus))}</dd></div>
     </dl>
     <details class="trajectory-details">
       <summary>证据明细 <span>${interval.evidence.length}</span></summary>
@@ -653,6 +653,10 @@ function effortLabel(effort) {
 
 function evidenceLabel(type) {
   return { TEST_COMMAND: '测试', TEST: '测试', VERIFICATION: '验证', REVIEW: '复核' }[type] ?? type;
+}
+
+function trajectoryVerificationLabel(status) {
+  return { VERIFIED: '已验证', REVIEW: '待复核', NOT_APPLICABLE: '不适用，需重新推进' }[status] ?? status;
 }
 
 function renderBoardToolbar() {

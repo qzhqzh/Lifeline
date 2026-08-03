@@ -821,13 +821,18 @@ export class LifelineService {
       const workItemIndex = findIndexOrThrow(state.workItems, workItemId, 'work item');
       let workItem = state.workItems[workItemIndex];
       const outcome = normalizeCompletionOutcome(input?.outcome);
-      const runId = input?.runId ?? workItem.currentRunId;
+      const currentRun = workItem.currentRunId
+        ? state.runs.find((entry) => entry.id === workItem.currentRunId)
+        : null;
+      const runId = input?.runId ?? (currentRun?.status === RUN_STATUS.RUNNING ? currentRun.id : null);
       const completedAt = normalizeIsoTimestamp(input?.completedAt ?? nowIso(), 'completedAt');
       let run = runId ? requireEntity(state.runs, runId, 'run') : null;
       if (run && run.workItemId !== workItemId) {
         throw new DomainError('run does not belong to task', 'INVALID_INPUT');
       }
       if (!run) {
+        validateReadyContract(workItem);
+        assertDependenciesSatisfied(state, workItem);
         const startedAt = normalizeIsoTimestamp(input?.startedAt, 'startedAt', true);
         if (Date.parse(startedAt) > Date.parse(completedAt)) {
           throw new DomainError('startedAt must not be after completedAt', 'INVALID_INPUT');
@@ -889,7 +894,7 @@ export class LifelineService {
       if (Date.parse(startedAt) > Date.parse(completedAt)) {
         throw new DomainError('startedAt must not be after completedAt', 'INVALID_INPUT');
       }
-      const durationMs = input?.durationMs ?? Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
+      const durationMs = Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
       const completionRecord = createCompletionRecord({
         taskId: workItemId,
         runId: run.id,
@@ -1114,7 +1119,9 @@ export class LifelineService {
         modelRef: record.modelRef ?? run.modelRef ?? null,
         reasoningEffort: record.reasoningEffort ?? run.reasoningEffort ?? null,
         resultSummary: record.resultSummary ?? '',
-        verificationStatus: record.verifiedAt ? 'VERIFIED' : 'REVIEW',
+        verificationStatus: (record.outcome ?? 'COMPLETED') === 'COMPLETED'
+          ? record.verifiedAt ? 'VERIFIED' : 'REVIEW'
+          : 'NOT_APPLICABLE',
         verifiedAt: record.verifiedAt ?? null,
         artifactUris: [...(record.artifactUris ?? [])],
         evidence

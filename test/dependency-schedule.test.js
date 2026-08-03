@@ -67,6 +67,15 @@ test('an incomplete dependency blocks markReady and startTask', async (t) => {
     service.startTask(dependent.id, { modelRef: 'gpt-dependency-test' }),
     (error) => error.code === 'UNSATISFIED_TASK_DEPENDENCIES'
   );
+  await assert.rejects(
+    service.submitCompletion(dependent.id, {
+      startedAt: '2026-08-03T10:00:00.000Z',
+      completedAt: '2026-08-03T10:01:00.000Z',
+      modelRef: 'gpt-dependency-test',
+      resultSummary: 'This result must be rejected while its dependency is incomplete.'
+    }),
+    (error) => error.code === 'UNSATISFIED_TASK_DEPENDENCIES'
+  );
   assert.equal((await service.getWorkItem(dependent.id)).status, 'PLANNED');
 });
 

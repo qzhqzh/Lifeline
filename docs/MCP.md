@@ -10,7 +10,7 @@ Lifeline 现在提供一个本地 stdio MCP，让 Codex 在实现复杂需求前
 - 单步小修、只读问答、探索性诊断和实现细节：默认不入板，避免任务噪声；
 - 同一目标恢复或微调时复用稳定 `planId`，不会重复创建 Phase/Task；
 - 周期扫描发现先调用 `lifeline_propose_scan_finding`，稳定指纹会去重；只有 `lifeline_review_scan_proposal` 接受后才进入正式排期；
-- 已跟踪任务在执行前调用 `lifeline_start_task`，实现后调用 `lifeline_submit_completion`；
+- 默认只在工作结束时调用一次 `lifeline_submit_completion`；确需在大板实时显示 `RUNNING` 时，才提前调用 `lifeline_start_task`；
 - Agent 上报只能进入 `REVIEW`。只有通过确定性测试或不同 actor 的独立复核，才允许调用 `lifeline_verify_task` 进入 `VERIFIED`。
 
 主 Agent 仍负责判断是否需要排期，不需要用户在每条提示词里明确要求调用 MCP。
@@ -23,7 +23,6 @@ Lifeline 现在提供一个本地 stdio MCP，让 Codex 在实现复杂需求前
 [mcp_servers.lifeline]
 command = "docker"
 args = ["compose", "exec", "-T", "-e", "LIFELINE_LOCAL_USER_ID=local-owner", "-e", "LIFELINE_MCP_CLIENT_NAME=codex", "lifeline", "node", "src/mcp-server.js"]
-cwd = "/home/zhuqin/star/app/Lifeline"
 required = false
 startup_timeout_sec = 15
 tool_timeout_sec = 60
@@ -69,11 +68,13 @@ lifeline://runs/{runId}
 | `lifeline_reorder_tasks` | 原子替换一个 Phase 内所有可移动任务的顺序 |
 | `lifeline_cancel_task` | 将未执行任务移出活跃排期并保留取消原因与审计记录 |
 | `lifeline_sync_plan` | 用稳定 `planId` 一次同步一个 Phase 和多项有序 Task |
-| `lifeline_start_task` | 建立持久 Agent Run 并进入 `RUNNING` |
-| `lifeline_submit_completion` | 写入真实执行信息和证据，只进入 `REVIEW` |
+| `lifeline_start_task` | 可选：建立持久 Agent Run 并提前显示 `RUNNING` |
+| `lifeline_submit_completion` | 一次写入真实起止时间、模型、结果和证据；完成进入 `REVIEW`，失败或阻塞如实记录 |
 | `lifeline_verify_task` | 通过确定性测试或独立复核后进入 `VERIFIED` |
 
 所有写工具要求 `idempotencyKey`；编辑、排序和取消还要求先读取并回传 `expectedScheduleVersion`，旧版本写入会返回冲突而不是静默覆盖。MCP 返回 `structuredContent`，同时保留 JSON text 兼容旧 Host。
+
+完成上报的耗时由 `startedAt` 与 `completedAt` 推导，避免调用方传入的时长与真实时间轴矛盾。失败、阻塞或周期任务下一次上报会建立新的 Run，不会复用已经终止的尝试。
 
 Task 可选传入 `dependsOnTaskIds` 和 `parallelPolicy`（`AUTO`、`SEQUENTIAL`、`PARALLEL_ALLOWED`）。依赖必须属于同一项目、位于当前 Task 之前且保持无环；前置任务未完成时不能进入执行，仍被其他活跃任务依赖的 Task 也不能取消。界面从同一依赖图推导每个 Phase 的可并行槽位，不增加第三层业务结构。`issue` 仍是独立的可空关联字段，不影响依赖、验收或其他任务字段。
 

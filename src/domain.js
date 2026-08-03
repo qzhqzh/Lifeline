@@ -274,9 +274,6 @@ export function validateReadyContract(workItem) {
   if (!Array.isArray(workItem.acceptanceCriteria) || workItem.acceptanceCriteria.length === 0) {
     violations.push('at least one acceptance criterion is required');
   }
-  if (!Array.isArray(workItem.testCommands) || workItem.testCommands.length === 0) {
-    violations.push('at least one test command is required');
-  }
   if (!RISK_TIERS.includes(workItem.riskTier)) violations.push('risk tier is invalid');
   if (!workItem.resourceProfile) violations.push('resource profile is required');
 

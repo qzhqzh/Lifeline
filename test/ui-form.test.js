@@ -121,6 +121,7 @@ test('home replaces Mock Run replay with a stable real-result trajectory', async
   assert.match(app, /function assignTrajectoryLanes/);
   assert.match(app, /未记录推进/);
   assert.match(app, /lifeline_submit_completion/);
+  assert.match(app, /NOT_APPLICABLE: '不适用，需重新推进'/);
   assert.doesNotMatch(app, /\/api\/work-items\/\$\{encodeURIComponent\(workItemId\)\}\/queue/);
   assert.doesNotMatch(app, /evidenceScore/);
   assert.match(styles, /\.trajectory-board\s*\{[^}]*min-height:/);

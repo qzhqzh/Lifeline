@@ -28,6 +28,7 @@ test('first vertical slice persists events, evidence, and verified progress', as
   const reported = await service.submitCompletion(item.id, {
     startedAt: '2026-08-03T10:00:00.000Z',
     completedAt: '2026-08-03T10:12:00.000Z',
+    durationMs: 999999999,
     modelRef: 'gpt-agent-test',
     resultSummary: 'The real Agent workflow completed successfully.',
     evidence: [{ type: 'TEST_COMMAND', summary: 'Focused workflow test passed.', metadata: { exitCode: 0 } }]
@@ -83,6 +84,17 @@ test('a real Agent failure blocks the work item without synthetic evidence', asy
   assert.equal((await service.getWorkItem(item.id)).status, 'BLOCKED');
   assert.deepEqual(run.evidence, []);
   assert.equal(run.error.code, 'AGENT_REPORTED_FAILURE');
+
+  const retried = await service.submitCompletion(item.id, {
+    startedAt: '2026-08-03T10:05:00.000Z',
+    completedAt: '2026-08-03T10:07:00.000Z',
+    modelRef: 'gpt-agent-test',
+    resultSummary: 'The retry resolved the focused failure.',
+    evidence: [{ type: 'TEST_COMMAND', summary: 'Retry passed.', metadata: { exitCode: 0 } }]
+  });
+  assert.notEqual(retried.run.id, run.id);
+  assert.equal(retried.run.attempt, 2);
+  assert.equal(retried.task.status, 'REVIEW');
 });
 
 test('recurring work creates a new run for every verified cycle', async (t) => {
@@ -108,9 +120,10 @@ test('recurring work creates a new run for every verified cycle', async (t) => {
     task.recurrence = { enabled: true };
   });
 
-  const firstStarted = await service.startTask(item.id, { modelRef: 'gpt-agent-test' });
   const firstReported = await service.submitCompletion(item.id, {
-    runId: firstStarted.run.id,
+    startedAt: '2026-08-03T10:00:00.000Z',
+    completedAt: '2026-08-03T10:01:00.000Z',
+    modelRef: 'gpt-agent-test',
     resultSummary: 'First repository scan completed.',
     evidence: [{ type: 'TEST_COMMAND', summary: 'First scan passed.', metadata: { exitCode: 0 } }]
   });
@@ -119,11 +132,12 @@ test('recurring work creates a new run for every verified cycle', async (t) => {
     verificationMethod: 'DETERMINISTIC_TEST',
     summary: 'First scan verified.'
   });
-  const first = await service.getRun(firstStarted.run.id);
+  const first = await service.getRun(firstReported.run.id);
   assert.equal((await service.getWorkItem(item.id)).status, 'RECURRING');
-  const secondStarted = await service.startTask(item.id, { modelRef: 'gpt-agent-test' });
   const secondReported = await service.submitCompletion(item.id, {
-    runId: secondStarted.run.id,
+    startedAt: '2026-08-03T11:00:00.000Z',
+    completedAt: '2026-08-03T11:01:00.000Z',
+    modelRef: 'gpt-agent-test',
     resultSummary: 'Second repository scan completed.',
     evidence: [{ type: 'TEST_COMMAND', summary: 'Second scan passed.', metadata: { exitCode: 0 } }]
   });
@@ -132,7 +146,7 @@ test('recurring work creates a new run for every verified cycle', async (t) => {
     verificationMethod: 'DETERMINISTIC_TEST',
     summary: 'Second scan verified.'
   });
-  const second = await service.getRun(secondStarted.run.id);
+  const second = await service.getRun(secondReported.run.id);
 
   assert.notEqual(first.id, second.id);
   assert.equal(first.attempt, 1);
@@ -200,6 +214,8 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
   const projectId = 'project_resume';
   const workItemId = 'work_resume';
   const runId = 'run_resume';
+  const detachedWorkItemId = 'work_detached_verified';
+  const detachedRunId = 'run_detached_mock';
   const timestamp = new Date().toISOString();
   const { writeFile } = await import('node:fs/promises');
 
@@ -230,6 +246,21 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
       currentRunId: runId,
       createdAt: timestamp,
       updatedAt: timestamp
+    }, {
+      id: detachedWorkItemId,
+      projectId,
+      title: 'Detached mock verification',
+      objective: 'Remove a legacy mock-only verification even when currentRunId is absent.',
+      nonGoals: [],
+      acceptanceCriteria: ['The task returns to planned'],
+      testCommands: ['npm test'],
+      riskTier: 'low',
+      weight: 1,
+      resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 1 },
+      status: 'VERIFIED',
+      currentRunId: null,
+      createdAt: timestamp,
+      updatedAt: timestamp
     }],
     runs: [{
       id: runId,
@@ -243,11 +274,34 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
       startedAt: null,
       finishedAt: null,
       updatedAt: timestamp
+    }, {
+      id: detachedRunId,
+      workItemId: detachedWorkItemId,
+      executor: 'mock',
+      status: 'SUCCEEDED',
+      stage: 4,
+      attempt: 1,
+      error: null,
+      createdAt: timestamp,
+      startedAt: timestamp,
+      finishedAt: timestamp,
+      updatedAt: timestamp
     }],
     evidence: [
       { id: 'e1', key: `${runId}:PLAN`, runId, workItemId, type: 'PLAN', score: 0.15, summary: 'Plan', metadata: {}, createdAt: timestamp },
       { id: 'e2', key: `${runId}:BRANCH`, runId, workItemId, type: 'BRANCH', score: 0.35, summary: 'Branch', metadata: {}, createdAt: timestamp }
     ],
+    completionRecords: [{
+      id: 'completion_detached_mock',
+      taskId: detachedWorkItemId,
+      workItemId: detachedWorkItemId,
+      runId: detachedRunId,
+      completionMethod: 'AGENT_RUN',
+      outcome: 'COMPLETED',
+      startedAt: timestamp,
+      completedAt: timestamp,
+      verifiedAt: timestamp
+    }],
     events: []
   }, null, 2));
 
@@ -256,6 +310,7 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
   await service.start();
   const run = await service.getRun(runId);
   const task = await service.getWorkItem(workItemId);
+  const detachedTask = await service.getWorkItem(detachedWorkItemId);
   const firstState = await store.read();
   assert.equal(run.status, 'CANCELLED');
   assert.equal(run.kind, 'INTERNAL_MOCK');
@@ -265,14 +320,17 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
   assert.equal(task.status, 'PLANNED');
   assert.equal(task.currentRunId, null);
   assert.deepEqual(task.legacyMockRunIds, [runId]);
+  assert.equal(detachedTask.status, 'PLANNED');
+  assert.equal(detachedTask.currentRunId, null);
+  assert.deepEqual(detachedTask.legacyMockRunIds, [detachedRunId]);
   assert.equal((await service.dashboard()).projects[0].verifiedProgress, 0);
-  assert.equal(firstState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 1);
+  assert.equal(firstState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 2);
 
   const restartedStore = new JsonStore(file);
   const restarted = new LifelineService({ store: restartedStore, logger: silentLogger });
   await restarted.start();
   const secondState = await restartedStore.read();
-  assert.equal(secondState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 1);
+  assert.equal(secondState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 2);
 });
 
 test('portfolio demo is idempotent and ordered by strategic value', async (t) => {

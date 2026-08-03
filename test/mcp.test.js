@@ -194,7 +194,7 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
     title: 'Add an MCP timeout regression',
     objective: 'Keep an MCP request from waiting forever when its downstream executor disconnects.',
     acceptanceCriteria: ['The timed request exits with a structured timeout error'],
-    testCommands: ['node --test test/mcp.test.js'],
+    testCommands: [],
     issue: 'https://github.com/example/lifeline/issues/44',
     idempotencyKey: 'goal:mcp-test:scan:1'
   };
@@ -328,8 +328,8 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
     phaseId: firstPlan.phase.id,
     title: 'Report a blocked result once',
     objective: 'Record a truthful blocked outcome without a separate start call.',
-    acceptanceCriteria: [],
-    testCommands: [],
+    acceptanceCriteria: ['The external blocker is recorded truthfully.'],
+    testCommands: ['node --test test/mcp.test.js'],
     riskTier: 'low',
     resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 1 },
     planning: { phaseId: firstPlan.phase.id, taskOrder: 3, kind: 'feature', priority: 'P1', commitment: 'COMMITTED' }

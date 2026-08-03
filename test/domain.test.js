@@ -43,7 +43,7 @@ test('deferred work stays adjustable and recurring work returns after review', (
   assert.equal(recurring.status, WORK_ITEM_STATUS.QUEUED);
 });
 
-test('ready contract requires acceptance criteria and test commands', () => {
+test('ready contract requires acceptance criteria but allows no test command', () => {
   const item = createWorkItem({
     ...validWorkItemInput(),
     acceptanceCriteria: [],
@@ -51,7 +51,7 @@ test('ready contract requires acceptance criteria and test commands', () => {
   });
   assert.throws(
     () => validateReadyContract(item),
-    (error) => error.code === 'INVALID_EXECUTION_CONTRACT' && error.details.violations.length === 2
+    (error) => error.code === 'INVALID_EXECUTION_CONTRACT' && error.details.violations.length === 1
   );
 });
 

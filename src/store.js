@@ -196,15 +196,22 @@ function isolateLegacyMockRuns(state) {
     .map((record) => record.taskId ?? record.workItemId));
 
   for (const task of state.workItems) {
+    const taskMockRuns = state.runs.filter((run) => run.workItemId === task.id && mockRunIds.has(run.id));
     const mockRun = mockRunIds.has(task.currentRunId) ? runsById.get(task.currentRunId) : null;
-    if (!mockRun) continue;
+    const mockOnlyVerified = task.status === WORK_ITEM_STATUS.VERIFIED
+      && taskMockRuns.length > 0
+      && !realVerifiedTaskIds.has(task.id);
+    if (!mockRun && !mockOnlyVerified) continue;
     const beforeStatus = task.status;
-    const beforeRunId = task.currentRunId;
-    task.legacyMockRunIds = [...new Set([...(task.legacyMockRunIds ?? []), mockRun.id])];
-    task.currentRunId = null;
+    const beforeRunId = task.currentRunId ?? null;
+    task.legacyMockRunIds = [...new Set([
+      ...(task.legacyMockRunIds ?? []),
+      ...taskMockRuns.map((run) => run.id)
+    ])];
+    if (mockRun) task.currentRunId = null;
     if ([WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.RUNNING].includes(task.status)) {
       task.status = WORK_ITEM_STATUS.PLANNED;
-    } else if (task.status === WORK_ITEM_STATUS.VERIFIED && !realVerifiedTaskIds.has(task.id)) {
+    } else if (mockOnlyVerified) {
       task.status = WORK_ITEM_STATUS.PLANNED;
     }
     changedProjectIds.add(task.projectId);

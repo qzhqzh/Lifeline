@@ -13,23 +13,20 @@ Lifeline 是一套面向个人与小型研发团队的 **AI 项目操作系统**
 首个端到端垂直切片已经实现：
 
 ```text
-创建项目与工作包
-→ 校验执行契约
-→ 进入确定性状态机
-→ 持久化排队并运行 Mock Executor
-→ 保存每个执行检查点
-→ 产生计划、分支、测试和审查证据
-→ 自动计算项目已验证进度
-→ 通过浏览器实时回放运行事件
+创建并排期 Project → Phase → Task
+→ Agent 完成工作后一次提交真实结果
+→ 完成进入 REVIEW，失败或阻塞则如实保留
+→ 通过测试、独立复核或用户批准后进入 VERIFIED
+→ 首页聚合 24h / 7d / 30d 的真实推进轨迹
 ```
 
 当前实现还包含：
 
 - 原子 JSON 持久化和进程重启恢复；
-- 工作包重复排队保护；
+- 重复完成上报保护，以及失败后再次推进的独立尝试记录；
 - 失败后保留已有证据并进入 `BLOCKED`；
-- REST API、OpenAPI 文档和 SSE 运行事件流；
-- 按优先级排序的项目 × Phase × Task 组合排期大板、执行工作台和运行回放界面；
+- REST API、OpenAPI 文档和真实推进轨迹查询；
+- 按优先级排序的项目 × Phase × Task 组合排期大板和跨项目推进轨迹；
 - 可安全迁移旧数据的 Lifeline、EchoMe、Totemora 真实项目排期，以及每用户一次、跨重启有效的载入 receipt；
 - 可被 Codex 自动发现的本地 MCP：查询排期、幂等拆分录入 Phase/Task、记录真实 Agent Run/Completion/Evidence，并通过验证门禁更新完成状态；
 - Node 原生测试、Docker Compose 和 GitHub Actions CI。
@@ -87,6 +84,7 @@ npm run dev:docker:down
 ```text
 GET  /api/health
 GET  /api/dashboard
+GET  /api/trajectory?window=24h
 GET  /api/bootstrap/portfolio-v2
 POST /api/bootstrap/portfolio-v2
 POST /api/projects
@@ -97,7 +95,6 @@ PATCH /api/projects/:id/schedule
 PATCH /api/work-items/:id
 DELETE /api/work-items/:id
 POST /api/work-items/:id/ready
-POST /api/work-items/:id/queue
 GET  /api/runs/:id
 GET  /api/runs/:id/stream
 GET  /api/openapi.json
@@ -113,7 +110,7 @@ GET  /api/openapi.json
 - **资源调度**：统一管理模型并发、API 预算、CPU/GPU、CI 和人工审查；
 - **集中突破**：在指定时间、预算和并发下集中推进某个项目；
 - **隔离执行**：每个代码任务使用独立分支、worktree 和容器；
-- **运行回放**：记录模型、工具、命令、成本、产物、错误和审批；
+- **推进轨迹**：按真实上报时间聚合项目、任务、模型、结果、证据与未记录时段；
 - **持续评测**：依据真实任务统计不同模型的成功率与单位成本。
 
 ## 架构原则
