@@ -65,7 +65,7 @@ lifeline://runs/{runId}
 | `lifeline_list_scan_proposals` | 按项目和复核状态查询扫描提案 |
 | `lifeline_propose_scan_finding` | 以稳定指纹提交扫描发现，重复发现只累计次数、不创建任务 |
 | `lifeline_review_scan_proposal` | 接受提案并生成正式 Bug Task，或驳回并保留审计原因 |
-| `lifeline_update_task` | 按 `expectedScheduleVersion` 编辑未执行任务或调整所属阶段 |
+| `lifeline_update_task` | 按 `expectedScheduleVersion` 编辑未执行任务或调整所属阶段；锁定历史仅允许单独更新 Issue 引用 |
 | `lifeline_reorder_tasks` | 原子替换一个 Phase 内所有可移动任务的顺序 |
 | `lifeline_cancel_task` | 将未执行任务移出活跃排期并保留取消原因与审计记录 |
 | `lifeline_sync_plan` | 用稳定 `planId` 一次同步一个 Phase 和多项有序 Task |

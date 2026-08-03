@@ -173,6 +173,15 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
     idempotencyKey: 'goal:mcp-test:cancel:temporary'
   });
   assert.equal(cancelled.status, 'CANCELLED');
+  const scheduleAfterCancel = await callTool(client, 'lifeline_get_schedule', { projectId: project.id });
+  const linkedCancelled = await callTool(client, 'lifeline_update_task', {
+    taskId: cancelled.id,
+    issue: 'https://github.com/example/lifeline/issues/99',
+    expectedScheduleVersion: scheduleAfterCancel.scheduleVersion,
+    idempotencyKey: 'goal:mcp-test:update:cancelled-issue:1'
+  });
+  assert.equal(linkedCancelled.status, 'CANCELLED');
+  assert.equal(linkedCancelled.issue, 'https://github.com/example/lifeline/issues/99');
   assert.equal((await callTool(client, 'lifeline_get_schedule', { projectId: project.id })).totalTasks, 2);
   assert.equal((await callTool(client, 'lifeline_get_task', { taskId: removable.id })).task.status, 'CANCELLED');
 

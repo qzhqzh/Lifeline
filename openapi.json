@@ -79,7 +79,7 @@
         "responses": { "200": { "description": "Work item" }, "404": { "description": "Work item not found" } }
       },
       "patch": {
-        "summary": "Edit an unfinished work item contract",
+        "summary": "Edit an unfinished work item contract, or update only Issue metadata on locked history",
         "parameters": [
           { "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } },
           { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }

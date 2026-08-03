@@ -442,12 +442,42 @@ export class LifelineService {
       const workItem = state.workItems[index];
       const replay = findIdempotentAuditEvent(state, 'work_item.updated', context, workItemId);
       if (replay) return workItem;
-      if (!EDITABLE_WORK_ITEM_STATUSES.has(workItem.status)) {
+      const issueReferenceOnly = isIssueReferenceOnlyUpdate(input);
+      if (!EDITABLE_WORK_ITEM_STATUSES.has(workItem.status) && !issueReferenceOnly) {
         throw new DomainError(`Task cannot be edited while ${workItem.status}`, 'TASK_NOT_EDITABLE');
       }
 
       const project = requireEntity(state.projects, workItem.projectId, 'project');
       const beforeVersion = assertExpectedScheduleVersion(project, input?.expectedScheduleVersion);
+      if (!EDITABLE_WORK_ITEM_STATUSES.has(workItem.status)) {
+        const validatedIssue = validateWorkItemInput({ ...workItem, issue: input.issue }).issue;
+        const beforeIssue = workItem.issue ?? null;
+        if (beforeIssue === validatedIssue) return workItem;
+        const source = mutationSource(input, options);
+        const editedAt = nowIso();
+        Object.assign(workItem, {
+          issue: validatedIssue,
+          editedBy: context.actor,
+          lastMutationSource: source,
+          updatedAt: editedAt
+        });
+        const afterVersion = bumpScheduleVersion(project);
+        state.events.push(createAuditEvent({
+          type: 'work_item.updated',
+          message: 'Task issue reference updated',
+          workItemId,
+          metadata: auditMetadata(context, {
+            projectId: project.id,
+            phaseId: workItem.phaseId ?? workItem.planning?.phaseId ?? null,
+            beforeVersion,
+            afterVersion,
+            source,
+            before: { issue: beforeIssue },
+            after: { issue: validatedIssue }
+          })
+        }, nextGlobalSequence(state)));
+        return workItem;
+      }
       const phaseId = input?.phaseId ?? input?.planning?.phaseId ?? workItem.phaseId ?? workItem.planning?.phaseId;
       const phase = requireEntity(state.phases, phaseId, 'phase');
       if (phase.projectId !== project.id || phase.status === 'CANCELLED') {
@@ -1285,6 +1315,12 @@ const EDITABLE_WORK_ITEM_STATUSES = new Set([
   WORK_ITEM_STATUS.READY,
   WORK_ITEM_STATUS.BLOCKED
 ]);
+
+function isIssueReferenceOnlyUpdate(input = {}) {
+  if (!Object.prototype.hasOwnProperty.call(input, 'issue')) return false;
+  const metadataFields = new Set(['expectedScheduleVersion', 'issue', 'source']);
+  return Object.entries(input).every(([key, value]) => value === undefined || metadataFields.has(key));
+}
 
 const REORDERABLE_WORK_ITEM_STATUSES = new Set([
   WORK_ITEM_STATUS.DISCOVERED,

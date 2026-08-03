@@ -379,7 +379,7 @@ function registerWriteTools(server, service, identity) {
     'lifeline_update_task',
     {
       title: 'Update a planned task',
-      description: 'Edit an unfinished task contract or move it to another Phase using optimistic schedule version checks.',
+      description: 'Edit an unfinished task contract or move it to another Phase using optimistic schedule version checks; Issue metadata may also be linked to locked history without changing its status.',
       inputSchema: taskUpdateSchema.extend({
         taskId: z.string().trim().min(3).max(160),
         phaseId: z.string().trim().min(3).max(160).optional(),

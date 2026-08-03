@@ -135,6 +135,29 @@ test('issue reference can be added and cleared without changing the rest of the 
   assert.equal(cleared.objective, originalObjective);
   assert.deepEqual(cleared.acceptanceCriteria, task.acceptanceCriteria);
   assert.equal(cleared.provenance.edits.length, 0, 'link metadata must not masquerade as a content edit');
+
+  const cancelled = await service.cancelWorkItem(task.id, {
+    expectedScheduleVersion: (await service.getSchedule(project.id)).scheduleVersion,
+    reason: 'Keep the finding as locked review history.'
+  });
+  const linked = await service.updateWorkItem(cancelled.id, {
+    expectedScheduleVersion: (await service.getProject(project.id)).scheduleVersion,
+    issue: 'https://github.com/example/lifeline/issues/8'
+  });
+  assert.equal(linked.status, 'CANCELLED');
+  assert.equal(linked.issue, 'https://github.com/example/lifeline/issues/8');
+  assert.equal(linked.objective, originalObjective);
+  assert.deepEqual(linked.acceptanceCriteria, task.acceptanceCriteria);
+  assert.equal(linked.provenance.edits.length, 0, 'locked issue metadata must not become a content edit');
+
+  await assert.rejects(
+    service.updateWorkItem(linked.id, {
+      expectedScheduleVersion: (await service.getProject(project.id)).scheduleVersion,
+      issue: 'https://github.com/example/lifeline/issues/9',
+      title: 'Unsafe cancelled edit'
+    }),
+    (error) => error.code === 'TASK_NOT_EDITABLE'
+  );
 });
 
 test('dashboard recommendation prioritizes stars, scheduled dates, and human tasks without reordering the phase', async (t) => {
