@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lifeline 算力余量</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header><strong>Lifeline 算力余量</strong><span>只上报额度，不读取 Cookie</span></header>
+      <form id="pairForm">
+        <label>Lifeline 地址<input id="baseUrl" value="http://192.168.124.2:8019" placeholder="192.168.124.2:8019" required /></label>
+        <label>浏览器 Profile 名称<input id="profileName" placeholder="例如：工作账号" maxlength="80" required /></label>
+        <label>一次性配对码<input id="pairingToken" autocomplete="off" maxlength="40" required /></label>
+        <button type="submit">连接这个账号</button>
+      </form>
+      <p id="message" role="status"></p>
+      <section><h2>采集连接</h2><div id="connections"></div></section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

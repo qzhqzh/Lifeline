@@ -2,9 +2,14 @@ services:
   lifeline:
     build: .
     ports:
-      - "3000:3000"
+      - "41000:3000"
+      - "8019:3000"
     environment:
-      MOCK_STEP_DELAY_MS: "250"
+      LIFELINE_AGENT_TOKEN: "${LIFELINE_AGENT_TOKEN:-}"
+      LIFELINE_AGENT_TOKENS: "${LIFELINE_AGENT_TOKENS:-}"
+      LIFELINE_AGENT_SCOPES: "${LIFELINE_AGENT_SCOPES:-portfolio:read,schedule:write,task:claim,completion:write,verification:write}"
+      LIFELINE_AGENT_CLIENT_ID: "${LIFELINE_AGENT_CLIENT_ID:-lifeline-lan-agent}"
+      LIFELINE_MCP_ALLOWED_ORIGINS: "${LIFELINE_MCP_ALLOWED_ORIGINS:-}"
     volumes:
       - lifeline-data:/app/data
     restart: unless-stopped

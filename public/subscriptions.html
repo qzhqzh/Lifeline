@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="统一查看 Codex、Gemini、Cursor、Grok 与小云雀的订阅余量和数据新鲜度。" />
+    <title>Lifeline · 算力余量</title>
+    <link rel="icon" type="image/png" href="/assets/lifeline-logo-64.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/subscriptions.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand subscription-brand" href="/" aria-label="返回 Lifeline 首页">
+        <img class="brand-mark" src="/assets/lifeline-logo.webp" alt="" width="36" height="36" />
+        <div><strong>Lifeline</strong><span>算力余量</span></div>
+      </a>
+      <div class="topbar-actions">
+        <a class="button quiet topbar-button" href="/">返回项目大板</a>
+        <span class="health online" id="subscriptionHealth">本地采集器状态</span>
+        <button class="button quiet topbar-button" id="refreshSubscriptions" type="button">刷新 · 10s</button>
+      </div>
+    </header>
+
+    <main class="subscription-main">
+      <section class="subscription-intro">
+        <div>
+          <p class="context-line">别让额度耗尽，打断正在发生的野心</p>
+          <h1>每一份算力，还剩多少底气。</h1>
+          <p>只展示平台真实可见的余额、窗口和状态。没有可靠总量时宁可标记未知，也不拼出一个虚假的总百分比。</p>
+        </div>
+        <div class="freshness-note"><strong id="lastUpdated">尚无采集记录</strong><span>额度页关闭后保留最后值，并明确标记过期。</span></div>
+      </section>
+
+      <section class="subscription-summary" id="subscriptionSummary" aria-label="算力余量概况"></section>
+
+      <section class="subscription-shell">
+        <header class="subscription-toolbar">
+          <div>
+            <h2>六个账号，各自说真话。</h2>
+            <p>会员额度、积分和动态窗口分开呈现；异常不清零，历史不丢失。</p>
+          </div>
+          <div class="subscription-controls">
+            <div class="filter-group" id="subscriptionFilters" aria-label="状态筛选">
+              <button class="filter-button active" type="button" data-status="ALL" aria-pressed="true">全部</button>
+              <button class="filter-button" type="button" data-status="AVAILABLE" aria-pressed="false">可用</button>
+              <button class="filter-button" type="button" data-status="LOW" aria-pressed="false">低余额</button>
+              <button class="filter-button" type="button" data-status="LIMITED" aria-pressed="false">已触顶</button>
+              <button class="filter-button" type="button" data-status="STALE" aria-pressed="false">已过期</button>
+            </div>
+            <div class="history-switch" id="historySwitch" aria-label="趋势范围">
+              <button type="button" data-window="7d" aria-pressed="true">7 天</button>
+              <button type="button" data-window="30d" aria-pressed="false">30 天</button>
+              <button type="button" data-window="90d" aria-pressed="false">90 天</button>
+            </div>
+          </div>
+        </header>
+        <div class="subscription-grid" id="subscriptionGrid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <div class="toast" id="subscriptionToast" role="status" aria-live="polite"></div>
+    <script type="module" src="/subscriptions.js"></script>
+  </body>
+</html>

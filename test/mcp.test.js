@@ -30,15 +30,19 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
   const listed = await client.listTools();
   assert.deepEqual(listed.tools.map((tool) => tool.name).sort(), [
     'lifeline_cancel_task',
+    'lifeline_claim_next_task',
     'lifeline_create_phase',
     'lifeline_create_project',
     'lifeline_create_task',
+    'lifeline_extend_task_lease',
+    'lifeline_get_dispatch_board',
     'lifeline_get_schedule',
     'lifeline_get_task',
     'lifeline_list_projects',
     'lifeline_list_scan_proposals',
     'lifeline_propose_scan_finding',
     'lifeline_reorder_tasks',
+    'lifeline_restore_task',
     'lifeline_review_scan_proposal',
     'lifeline_start_task',
     'lifeline_submit_completion',
@@ -140,6 +144,27 @@ test('MCP syncs a plan idempotently and enforces completion verification', async
     idempotencyKey: 'goal:mcp-test:update:clear-issue:1'
   });
   assert.equal(clearedIssueTask.issue, null);
+
+  const scheduleBeforeDefer = await callTool(client, 'lifeline_get_schedule', { projectId: project.id });
+  const deferredTask = await callTool(client, 'lifeline_update_task', {
+    taskId: firstPlan.tasks[1].id,
+    status: 'DEFERRED',
+    reason: 'Hold until a low-compute window is available.',
+    expectedScheduleVersion: scheduleBeforeDefer.scheduleVersion,
+    idempotencyKey: 'goal:mcp-test:update:defer:1'
+  });
+  assert.equal(deferredTask.status, 'DEFERRED');
+  assert.equal(deferredTask.deferReason, 'Hold until a low-compute window is available.');
+  const scheduleBeforeResume = await callTool(client, 'lifeline_get_schedule', { projectId: project.id });
+  const resumedTask = await callTool(client, 'lifeline_update_task', {
+    taskId: firstPlan.tasks[1].id,
+    status: 'PLANNED',
+    reason: 'Capacity returned, so resume the task.',
+    expectedScheduleVersion: scheduleBeforeResume.scheduleVersion,
+    idempotencyKey: 'goal:mcp-test:update:resume:1'
+  });
+  assert.equal(resumedTask.status, 'PLANNED');
+  assert.equal(resumedTask.resumeReason, 'Capacity returned, so resume the task.');
 
   const scheduleAfterUpdate = await callTool(client, 'lifeline_get_schedule', { projectId: project.id });
   const reordered = await callTool(client, 'lifeline_reorder_tasks', {
@@ -428,7 +453,213 @@ test('STDIO serving entry exposes the Lifeline tools', async (t) => {
   });
 
   const listed = await client.listTools();
-  assert.equal(listed.tools.length, 17);
+  assert.equal(listed.tools.length, 21);
+});
+
+test('MCP Agent scopes allow portfolio reads and reject unauthorized schedule writes', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-scopes-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  await service.createProject({ name: 'Scoped Agent project' });
+  const server = createLifelineMcpServer({
+    service,
+    actor: 'read-only-agent',
+    clientName: 'streamable-http-test',
+    scopes: ['portfolio:read']
+  });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'lifeline-scoped-client', version: '1.0.0' });
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  t.after(async () => {
+    await client.close();
+    await server.close();
+  });
+
+  const board = await callTool(client, 'lifeline_get_dispatch_board', {});
+  assert.equal(board.summary.projectCount, 1);
+  const denied = await client.callTool({
+    name: 'lifeline_create_project',
+    arguments: { name: 'Must not be created', idempotencyKey: 'scope-denied-create' }
+  });
+  assert.equal(denied.isError, true);
+  assert.match(denied.content[0].text, /schedule:write/);
+  assert.equal((await service.listProjects()).length, 1);
+});
+
+test('scoped MCP token identity cannot claim work as another Agent', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-identity-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const server = createLifelineMcpServer({
+    service,
+    actor: 'executor-a',
+    clientName: 'streamable-http-test',
+    scopes: ['task:claim']
+  });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'lifeline-identity-client', version: '1.0.0' });
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  t.after(async () => {
+    await client.close();
+    await server.close();
+  });
+
+  const denied = await client.callTool({
+    name: 'lifeline_claim_next_task',
+    arguments: {
+      agentId: 'reviewer-b',
+      modelRef: 'gpt-test',
+      idempotencyKey: 'identity-mismatch-claim'
+    }
+  });
+  assert.equal(denied.isError, true);
+  assert.match(denied.content[0].text, /cannot act as reviewer-b/);
+});
+
+test('scoped MCP completion binds an omitted agentId to the token identity', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-completion-identity-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const project = await service.createProject({ name: 'Completion identity project' });
+  const phase = await service.createPhase({ projectId: project.id, title: 'Identity boundary' });
+  const task = await service.createWorkItem({
+    projectId: project.id,
+    phaseId: phase.id,
+    title: 'Protect claimed completion',
+    objective: 'Prevent another scoped token from completing a claimed task.',
+    acceptanceCriteria: ['The claimed Agent identity remains authoritative'],
+    testCommands: [],
+    riskTier: 'medium',
+    resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 5 },
+    planning: { phaseId: phase.id, taskOrder: 1, kind: 'feature', priority: 'P0', commitment: 'COMMITTED' }
+  });
+  const claim = await service.claimNextTask({
+    agentId: 'executor-a',
+    modelRef: 'gpt-test'
+  }, { actor: 'executor-a', idempotencyKey: 'completion-identity-claim' });
+
+  const server = createLifelineMcpServer({
+    service,
+    actor: 'executor-b',
+    clientName: 'streamable-http-test',
+    scopes: ['completion:write']
+  });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'lifeline-completion-identity-client', version: '1.0.0' });
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  t.after(async () => {
+    await client.close();
+    await server.close();
+  });
+
+  const denied = await client.callTool({
+    name: 'lifeline_submit_completion',
+    arguments: {
+      taskId: task.id,
+      runId: claim.run.id,
+      outcome: 'COMPLETED',
+      resultSummary: 'Attempted completion without reporting an Agent identity.',
+      idempotencyKey: 'completion-identity-omitted'
+    }
+  });
+  assert.equal(denied.isError, true);
+  assert.match(denied.content[0].text, /another Agent claim/i);
+  assert.equal((await service.getWorkItem(task.id)).status, 'RUNNING');
+});
+
+test('scoped MCP cannot bypass execution or review claims through legacy tools', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-claim-gate-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const project = await service.createProject({ name: 'Claim gate project' });
+  const phase = await service.createPhase({ projectId: project.id, title: 'Claim gate' });
+  const draft = {
+    projectId: project.id,
+    phaseId: phase.id,
+    objective: 'Require a durable claim before a scoped remote Agent mutates execution state.',
+    acceptanceCriteria: ['Scoped remote mutations cannot bypass a ClaimLease'],
+    testCommands: [],
+    riskTier: 'medium',
+    resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 5 },
+    planning: { phaseId: phase.id, taskOrder: 1, kind: 'feature', priority: 'P0', commitment: 'COMMITTED' }
+  };
+  const planned = await service.createWorkItem({ ...draft, title: 'Reject legacy remote start' });
+  const review = await service.createWorkItem({
+    ...draft,
+    title: 'Reject unclaimed remote verification',
+    planning: { ...draft.planning, taskOrder: 2 }
+  });
+  await service.submitCompletion(review.id, {
+    outcome: 'COMPLETED',
+    resultSummary: 'Prepared a review fixture through the local compatibility path.',
+    agentId: 'executor-local',
+    modelRef: 'gpt-test',
+    startedAt: '2026-08-12T10:00:00.000Z',
+    completedAt: '2026-08-12T10:05:00.000Z'
+  }, { actor: 'executor-local', idempotencyKey: 'claim-gate-review-fixture' });
+
+  const server = createLifelineMcpServer({
+    service,
+    actor: 'remote-agent',
+    clientName: 'streamable-http-test',
+    scopes: ['task:claim', 'completion:write', 'verification:write']
+  });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'lifeline-claim-gate-client', version: '1.0.0' });
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  t.after(async () => {
+    await client.close();
+    await server.close();
+  });
+
+  for (const request of [
+    {
+      name: 'lifeline_start_task',
+      arguments: { taskId: planned.id, modelRef: 'gpt-test', idempotencyKey: 'legacy-start-denied' }
+    },
+    {
+      name: 'lifeline_submit_completion',
+      arguments: {
+        taskId: planned.id,
+        outcome: 'COMPLETED',
+        resultSummary: 'Legacy one-shot completion must be denied remotely.',
+        modelRef: 'gpt-test',
+        startedAt: '2026-08-12T10:00:00.000Z',
+        completedAt: '2026-08-12T10:05:00.000Z',
+        idempotencyKey: 'one-shot-completion-denied'
+      }
+    },
+    {
+      name: 'lifeline_verify_task',
+      arguments: {
+        taskId: review.id,
+        verificationMethod: 'INDEPENDENT_REVIEW',
+        summary: 'Unclaimed verification must be denied remotely.',
+        idempotencyKey: 'unclaimed-verification-denied'
+      }
+    }
+  ]) {
+    const denied = await client.callTool(request);
+    assert.equal(denied.isError, true);
+    assert.match(denied.content[0].text, /claim/i);
+  }
+  const forgedHumanApproval = await client.callTool({
+    name: 'lifeline_verify_task',
+    arguments: {
+      taskId: review.id,
+      verificationMethod: 'HUMAN_APPROVAL',
+      summary: 'A remote Agent must not impersonate the project owner.',
+      idempotencyKey: 'remote-human-approval-denied'
+    }
+  });
+  assert.equal(forgedHumanApproval.isError, true);
+  assert.match(forgedHumanApproval.content[0].text, /cannot declare HUMAN_APPROVAL/i);
+  assert.equal((await service.getWorkItem(planned.id)).status, 'PLANNED');
+  assert.equal((await service.getWorkItem(review.id)).status, 'REVIEW');
 });
 
 async function createService(file) {

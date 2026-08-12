@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { CURRENT_SCHEMA_VERSION } from '../src/domain.js';
 import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore, migrateState } from '../src/store.js';
@@ -11,7 +12,7 @@ const silentLogger = { error() {} };
 
 test('schema migration adds the durable scan proposal collection without discarding unknown data', () => {
   const migrated = migrateState({ schemaVersion: 3, projects: [], custom: { keep: true } }).state;
-  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.deepEqual(migrated.scanProposals, []);
   assert.deepEqual(migrated.custom, { keep: true });
 });

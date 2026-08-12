@@ -5,27 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Lifeline 榨干每一滴算力：高算力集中攻坚，低算力持续推进，把最重要的项目推到终点。" />
     <title>Lifeline · 榨干每一滴算力</title>
-    <link rel="icon" href="data:," />
+    <link rel="icon" type="image/png" href="/assets/lifeline-logo-64.png" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <!--
+      V3 visual contract: preserve the existing dark control-plane world, mint status light and 3D Lifeline emblem.
+      The first screen must prioritize live execution, the next high/low-compute choices, review pressure, stalled projects and free slots.
+      Project panels stay visually fixed while task lanes move; no new card-heavy visual language or third planning level.
+    -->
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
+        <img class="brand-mark" src="/assets/lifeline-logo.webp" alt="" width="36" height="36" />
         <div>
           <strong>Lifeline</strong>
           <span>多项目推进与验收</span>
         </div>
       </div>
       <div class="topbar-actions">
+        <a class="button quiet topbar-button subscription-summary-link" id="subscriptionSummaryLink" href="/subscriptions.html">
+          算力余量 · 等待同步
+        </a>
+        <div class="bootstrap-action" id="bootstrapAction">
+          <button class="button primary topbar-button" id="seedDemo" type="button" aria-describedby="bootstrapHint">
+            <span class="button-label-wide">载入本次项目排期</span>
+            <span class="button-label-compact">载入排期</span>
+          </button>
+          <small class="visually-hidden" id="bootstrapHint">为当前用户写入三个真实项目及历史任务，仅可执行一次</small>
+        </div>
+        <button class="button secondary topbar-button" id="openCreationDrawer" type="button">
+          <span class="button-label-wide">添加项目或任务</span>
+          <span class="button-label-compact">添加</span>
+        </button>
         <span class="health" id="health">正在连接控制平面…</span>
-        <button class="button quiet" id="refresh" type="button">刷新状态</button>
+        <button class="button quiet topbar-button" id="refresh" type="button">刷新状态</button>
       </div>
     </header>
 
     <main>
       <section class="page-intro" aria-labelledby="page-title">
-        <div>
+        <div class="intro-message">
           <p class="context-line">每一份投入，都必须换来进度</p>
           <h1 id="page-title">榨干每一滴算力，谁都别下班。</h1>
           <p class="intro-copy">
@@ -33,18 +52,24 @@
             推进轻量任务，让每一个重要项目始终逼近交付。
           </p>
         </div>
-        <div class="intro-actions">
-          <div class="bootstrap-action" id="bootstrapAction">
-            <button class="button primary" id="seedDemo" type="button" aria-describedby="bootstrapHint">载入本次项目排期</button>
-            <small id="bootstrapHint">为当前用户写入三个真实项目及历史任务，仅可执行一次</small>
-          </div>
-          <button class="button secondary" id="openCreationDrawer" type="button">添加项目或任务</button>
+        <div class="brand-3d">
+          <img class="brand-3d-fallback" src="/assets/lifeline-logo.webp" alt="" />
+          <iframe
+            src="/brand/lifeline-3d/index.html?embed=1"
+            title="Lifeline 交互式 3D 品牌标识"
+            loading="eager"
+          ></iframe>
         </div>
       </section>
 
       <section class="metrics" id="metrics" aria-label="组合概况"></section>
 
       <section class="next-action" id="nextAction" aria-live="polite"></section>
+
+      <details class="dispatch-explanation" id="dispatchExplanation">
+        <summary><span>为什么这样排</span><small>最近调度变化、规则依据与可恢复操作</small></summary>
+        <div class="dispatch-audit" id="dispatchAudit"></div>
+      </details>
 
       <section class="board-shell" aria-labelledby="portfolio-title">
         <div class="board-toolbar">
@@ -87,8 +112,11 @@
           </div>
         </div>
         <div class="trajectory-summary" id="trajectorySummary" aria-label="推进轨迹概况"></div>
-        <div class="trajectory-coverage" id="trajectoryCoverage"></div>
-        <div class="trajectory-board" id="trajectoryBoard" aria-live="polite"></div>
+        <details class="trajectory-disclosure" id="trajectoryDisclosure">
+          <summary><span>展开完整推进轨迹</span><small>复盘顺序、并发和未记录区间</small></summary>
+          <div class="trajectory-coverage" id="trajectoryCoverage"></div>
+          <div class="trajectory-board" id="trajectoryBoard" aria-live="polite"></div>
+        </details>
       </section>
     </main>
 
@@ -334,6 +362,19 @@
           <button class="button primary" id="taskEditorSubmit" type="submit">保存调整</button>
         </footer>
       </form>
+    </dialog>
+
+    <dialog class="side-drawer task-inspector" id="taskInspector" aria-labelledby="taskInspectorTitle">
+      <div class="drawer-shell">
+        <header class="drawer-header">
+          <div>
+            <p class="context-line" id="taskInspectorContext">调度与执行契约</p>
+            <h2 id="taskInspectorTitle">任务详情</h2>
+          </div>
+          <button class="button quiet compact" id="closeTaskInspector" type="button" aria-label="关闭任务详情">关闭</button>
+        </header>
+        <div class="drawer-body task-inspector-body" id="taskInspectorBody"></div>
+      </div>
     </dialog>
 
     <div class="task-tooltip" id="taskTooltip" role="tooltip" hidden></div>

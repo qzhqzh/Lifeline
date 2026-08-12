@@ -77,11 +77,31 @@ test('board filters keep lane DOM and horizontal scroll stable', async () => {
   assert.match(app, /data-project-track=/);
   assert.match(app, /function applyBoardFilter\(\)/);
   assert.match(app, /function restoreBoardScrollPositions\(\)/);
+  assert.match(app, /data-current-phase="true"/);
+  assert.match(app, /currentPhase\.offsetLeft/);
   const filterHandler = app.match(/elements\.boardFilters\.addEventListener\('click',[\s\S]*?\n\}\);/)?.[0] ?? '';
   assert.match(filterHandler, /applyBoardFilter\(\);/);
   assert.doesNotMatch(filterHandler, /renderBoard\(\);/);
   const viewHandler = app.match(/elements\.detailControls\.addEventListener\('click',[\s\S]*?\n\}\);/)?.[0] ?? '';
   assert.match(viewHandler, /renderBoard\(\);/);
+});
+
+test('detail card view uses a wider five-column grid without vertical overflow', async () => {
+  const [app, styles] = await Promise.all([
+    readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../public/styles.css', import.meta.url), 'utf8')
+  ]);
+  assert.match(styles, /\.detail-task-list\.view-card\s*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(230px, 280px\)\);[\s\S]*?grid-auto-rows: 228px;[\s\S]*?gap: var\(--space-2\);/);
+  assert.match(styles, /\.detail-task\.card\s*\{[\s\S]*?width: 100%;[\s\S]*?height: 228px;[\s\S]*?border: 1px solid var\(--line\);[\s\S]*?border-radius: var\(--radius-md\);/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.detail-task\.card, \.task-drop-placeholder\.card \{ width: 100%; \}/);
+  assert.match(styles, /\.detail-task\.card\s*\{[\s\S]*?overflow: hidden;/);
+  assert.match(styles, /grid-template-rows: minmax\(0, 1fr\) auto;/);
+  assert.match(styles, /\.detail-task\.card \.detail-task-content\s*\{[\s\S]*?grid-template-rows: auto auto auto minmax\(0, 1fr\) auto;/);
+  assert.match(styles, /\.detail-task\.card \.completion-line\s*\{[\s\S]*?display: none;/);
+  assert.match(styles, /\.detail-task\.card \.task-meta\s*\{[\s\S]*?max-height: 50px;[\s\S]*?overflow: hidden;/);
+  assert.match(app, /nearestTooltipEdge\(anchorRect, pointer\)/);
+  assert.match(app, /resolveTooltipPlacement\(anchorRect, tooltipRect, preferredDirection, gap\)/);
+  assert.match(app, /left: Math\.abs\(pointer\.x - rect\.left\)[\s\S]*?bottom: Math\.abs\(rect\.bottom - pointer\.y\)/);
 });
 
 test('task star actions use a compact top-right icon and titles clamp to two lines', async () => {
@@ -100,9 +120,39 @@ test('task star actions use a compact top-right icon and titles clamp to two lin
 
 test('routing labels expose Luna Worker and validation profiles', async () => {
   const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
-  assert.match(app, /recommendation\.executor === 'luna_worker'/);
+  assert.match(app, /actor === 'luna_worker'/);
   assert.match(app, /Luna Worker/);
   assert.match(app, /recommendation\.validationProfile/);
+});
+
+test('historical routing calibration reaches recommendations, cards, filters and task details', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /function effectiveTaskRouting\(task\)/);
+  assert.match(app, /decision\.recommendedModelRef/);
+  assert.match(app, /decision\.recommendationSource === 'HISTORY_CALIBRATED'/);
+  assert.match(app, /HISTORY_CALIBRATED_MODEL: '历史表现推荐模型'/);
+  assert.match(app, /const routing = effectiveTaskRouting\(item\)/);
+  assert.match(app, /const compute = effectiveTaskRouting\(item\)\.compute/);
+  assert.match(app, /推荐执行/);
+  assert.match(app, /历史结果校准/);
+});
+
+test('overview and detail consume the API-derived phase and project health state', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /groupPhases\(projectItems, project\.phases\)/);
+  assert.match(app, /phase\.computedStatus === 'COMPLETED'/);
+  assert.match(app, /phaseStatusView\(phase\.computedStatus\)/);
+  assert.match(app, /projectHealthView\(dashboardProject\.health/);
+  assert.match(app, /task\.decision\?\.recommendedModelRef/);
+});
+
+test('dispatch explanation can undo cancellation and resume deferred work', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /data-reverse-change=/);
+  assert.match(app, /change\.reversalAction === 'RESUME'/);
+  assert.match(app, /status: 'PLANNED'/);
+  assert.match(app, /work_item\.deferred/);
+  assert.match(app, /重新排入近期/);
 });
 
 test('home replaces Mock Run replay with a stable real-result trajectory', async () => {

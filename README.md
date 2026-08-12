@@ -1,6 +1,6 @@
 # Lifeline
 
-Lifeline 是一套面向个人与小型研发团队的 **AI 项目操作系统**。
+Lifeline 是一套面向单一项目所有者与多个 AI Agent 的 **自治推进控制平面**。
 
 它不是普通项目看板，也不是依赖单个长对话维持状态的超级 Agent。Lifeline 通过确定性的控制平面，统一管理多个项目的真实进度、未来排期、依赖、预算、算力、模型执行、代码审查和验收证据。
 
@@ -26,9 +26,12 @@ Lifeline 是一套面向个人与小型研发团队的 **AI 项目操作系统**
 - 重复完成上报保护，以及失败后再次推进的独立尝试记录；
 - 失败后保留已有证据并进入 `BLOCKED`；
 - REST API、OpenAPI 文档和真实推进轨迹查询；
+- Codex、Google AI Pro、Cursor、Grok 与小云雀个人订阅的本地余额总览、数据新鲜度和 90 天小时趋势；
 - 按优先级排序的项目 × Phase × Task 组合排期大板和跨项目推进轨迹；
 - 可安全迁移旧数据的 Lifeline、EchoMe、Totemora 真实项目排期，以及每用户一次、跨重启有效的载入 receipt；
 - 可被 Codex 自动发现的本地 MCP：查询排期、幂等拆分录入 Phase/Task、记录真实 Agent Run/Completion/Evidence，并通过验证门禁更新完成状态；
+- 面向多 Agent 的 NOW/NEXT/RESERVE/BACKLOG 动态批次、原子领取、限时租约、独立复核和局域网 Streamable HTTP MCP；
+- 基于真实历史的项目/任务类型/模型/算力效率指标，以及达到样本阈值后才启用的模型、算力和估时校准；
 - Node 原生测试、Docker Compose 和 GitHub Actions CI。
 
 详细边界和后续迁移见 [实现状态](docs/IMPLEMENTATION_STATUS.md)。
@@ -84,7 +87,12 @@ npm run dev:docker:down
 ```text
 GET  /api/health
 GET  /api/dashboard
+GET  /api/portfolio/dispatch
+POST /api/portfolio/rebalance
+POST /api/agent-runs/claim
 GET  /api/trajectory?window=24h
+GET  /api/subscriptions/summary
+GET  /api/subscriptions/accounts
 GET  /api/bootstrap/portfolio-v2
 POST /api/bootstrap/portfolio-v2
 POST /api/projects
@@ -95,7 +103,9 @@ PATCH /api/projects/:id/schedule
 PATCH /api/work-items/:id
 DELETE /api/work-items/:id
 POST /api/work-items/:id/ready
+POST /api/work-items/:id/restore
 GET  /api/runs/:id
+POST /api/runs/:id/lease
 GET  /api/runs/:id/stream
 GET  /api/openapi.json
 ```
@@ -139,6 +149,8 @@ GET  /api/openapi.json
 - [初始开发 Backlog](docs/INITIAL_BACKLOG.md)
 - [实现状态](docs/IMPLEMENTATION_STATUS.md)
 - [MCP 与 Codex 接入](docs/MCP.md)
+- [自治推进策略与恢复手册](docs/AUTONOMOUS_BOARD_OPERATIONS.md)
+- [算力余量与浏览器扩展接入](docs/SUBSCRIPTION_BALANCE_HUB.md)
 - [ADR-0001：控制平面优先](docs/adr/0001-control-plane-first.md)
 - [ADR-0002：首个可执行本地垂直切片](docs/adr/0002-executable-local-vertical-slice.md)
 

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Lifeline Energy Emblem · 3D Reconstruction</title>
+    <script>if (new URLSearchParams(location.search).get('embed') === '1') document.documentElement.classList.add('is-embedded');</script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="stage" aria-label="Lifeline 标志 3D 预览">
+        <img class="scene-fallback" src="./fallback-logo.webp" alt="Lifeline 品牌标识" />
+        <canvas id="scene"></canvas>
+        <div class="stage-glow" aria-hidden="true"></div>
+        <header class="stage-header">
+          <div>
+            <p class="eyebrow">IMG → PROCEDURAL THREE.JS</p>
+            <h1>Lifeline Energy Emblem</h1>
+          </div>
+          <div class="status"><span></span> REAL-TIME</div>
+        </header>
+        <div class="controls" aria-label="预览控制">
+          <button id="front-view" type="button">正面视图</button>
+          <button id="toggle-motion" type="button" aria-pressed="true">暂停旋转</button>
+        </div>
+        <p class="hint">拖动旋转 · 滚轮缩放 · 双击回正</p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

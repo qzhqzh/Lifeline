@@ -3,17 +3,95 @@
   "info": {
     "title": "Lifeline Control Plane API",
     "version": "0.1.0",
-    "description": "First evidence-driven project workflow vertical slice."
+    "description": "Evidence-driven autonomous multi-project and multi-Agent control plane. Streamable HTTP MCP is exposed separately at /mcp."
   },
-  "servers": [{ "url": "http://localhost:3000" }],
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Direct Node service" },
+    { "url": "http://localhost:8019", "description": "Docker Compose LAN entry" }
+  ],
+  "externalDocs": {
+    "description": "Autonomous board policy, Agent scopes and recovery runbook",
+    "url": "./docs/AUTONOMOUS_BOARD_OPERATIONS.md"
+  },
   "paths": {
     "/api/health": { "get": { "summary": "Health check", "responses": { "200": { "description": "Healthy" } } } },
     "/api/dashboard": { "get": { "summary": "Portfolio dashboard", "responses": { "200": { "description": "Dashboard snapshot" } } } },
+    "/api/portfolio/dispatch": {
+      "get": {
+        "summary": "Get derived project health, dynamic dispatch batches, capacity, reasons, and efficiency metrics",
+        "responses": { "200": { "description": "Autonomous dispatch board" } }
+      }
+    },
+    "/api/portfolio/rebalance": {
+      "post": {
+        "summary": "Recalculate and audit dispatch decisions, release expired leases, and reconcile derived Phase status",
+        "security": [{ "agentBearer": [] }],
+        "parameters": [{ "in": "header", "name": "Idempotency-Key", "required": true, "schema": { "type": "string", "maxLength": 256 } }],
+        "requestBody": {
+          "required": false,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RebalanceRequest" } } }
+        },
+        "responses": { "200": { "description": "Rebalanced autonomous dispatch board" }, "400": { "description": "Idempotency-Key missing or invalid" }, "401": { "description": "Agent token missing or invalid" }, "403": { "description": "Scope or LAN boundary rejected" }, "503": { "description": "Agent tokens are not configured" }, "422": { "description": "Invalid policy or timestamp" } }
+      }
+    },
+    "/api/agent-runs/claim": {
+      "post": {
+        "summary": "Atomically claim one NEXT execution or independent review task with a bounded lease",
+        "security": [{ "agentBearer": [] }],
+        "parameters": [{ "in": "header", "name": "Idempotency-Key", "required": true, "schema": { "type": "string", "maxLength": 256 } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AgentClaimRequest" } } }
+        },
+        "responses": { "201": { "description": "Claim result; task is null when no matching slot is available" }, "400": { "description": "Idempotency-Key missing or invalid" }, "401": { "description": "Agent token missing or invalid" }, "403": { "description": "Scope, identity, or LAN boundary rejected" }, "503": { "description": "Agent tokens are not configured" }, "422": { "description": "Invalid claim filters or task contract" } }
+      }
+    },
     "/api/trajectory": {
       "get": {
         "summary": "Get real Agent completion intervals and portfolio coverage",
         "parameters": [{ "in": "query", "name": "window", "required": false, "schema": { "type": "string", "enum": ["24h", "7d", "30d"], "default": "7d" } }],
         "responses": { "200": { "description": "Trajectory snapshot" }, "422": { "description": "Invalid window" } }
+      }
+    },
+    "/api/subscriptions/summary": {
+      "get": { "summary": "Get subscription availability and freshness counts", "responses": { "200": { "description": "Subscription summary" } } }
+    },
+    "/api/subscriptions/accounts": {
+      "get": { "summary": "List personal subscription accounts with their latest normalized snapshots", "responses": { "200": { "description": "Subscription accounts" } } }
+    },
+    "/api/subscriptions/accounts/{accountId}": {
+      "patch": {
+        "summary": "Update a subscription alias, stale threshold, or enabled state",
+        "security": [{ "agentBearer": [] }],
+        "parameters": [{ "in": "path", "name": "accountId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Updated account" }, "422": { "description": "Invalid account settings" } }
+      }
+    },
+    "/api/subscriptions/accounts/{accountId}/history": {
+      "get": {
+        "summary": "Get hourly normalized subscription snapshots",
+        "parameters": [
+          { "in": "path", "name": "accountId", "required": true, "schema": { "type": "string" } },
+          { "in": "query", "name": "window", "required": false, "schema": { "type": "string", "enum": ["7d", "30d", "90d"], "default": "7d" } }
+        ],
+        "responses": { "200": { "description": "Hourly snapshot history" }, "422": { "description": "Invalid window" } }
+      }
+    },
+    "/api/subscriptions/pairing-token": {
+      "post": { "summary": "Create a single-use ten-minute browser extension pairing token", "security": [{ "agentBearer": [] }], "responses": { "201": { "description": "Pairing token created" }, "401": { "description": "Management token missing or invalid" }, "403": { "description": "Same-origin or schedule:write boundary rejected" } } }
+    },
+    "/api/subscriptions/collectors/pair": {
+      "post": { "summary": "Exchange a pairing token from a Chrome extension origin", "responses": { "201": { "description": "Collector paired" }, "422": { "description": "Invalid or expired pairing token" } } }
+    },
+    "/api/subscriptions/snapshots": {
+      "post": { "summary": "Submit a normalized snapshot from a paired local collector", "responses": { "202": { "description": "Snapshot accepted or previous value preserved" }, "422": { "description": "Invalid snapshot, token, origin, or clock" } } }
+    },
+    "/api/subscriptions/collectors/{collectorId}": {
+      "delete": {
+        "summary": "Revoke a paired subscription collector",
+        "security": [{ "agentBearer": [] }, { "collectorBearer": [] }],
+        "parameters": [{ "in": "path", "name": "collectorId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Collector revoked" }, "404": { "description": "Collector not found" } }
       }
     },
     "/api/bootstrap/portfolio-v2": {
@@ -86,7 +164,7 @@
         "responses": { "200": { "description": "Work item" }, "404": { "description": "Work item not found" } }
       },
       "patch": {
-        "summary": "Edit an unfinished work item contract, or update only Issue metadata on locked history",
+        "summary": "Edit an unfinished work item contract, move it between PLANNED and DEFERRED with a reason, or update only Issue metadata on locked history",
         "parameters": [
           { "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } },
           { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
@@ -109,6 +187,27 @@
         "responses": { "200": { "description": "Ready work item" }, "422": { "description": "Contract validation failed" } }
       }
     },
+    "/api/work-items/{workItemId}/details": {
+      "get": {
+        "summary": "Get a task contract, current Run, CompletionRecords, Evidence, audit history and current dispatch decision",
+        "parameters": [{ "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Detailed task record" }, "404": { "description": "Task not found" } }
+      }
+    },
+    "/api/work-items/{workItemId}/restore": {
+      "post": {
+        "summary": "Restore one cancelled task to PLANNED while preserving its cancellation and restoration audit history",
+        "parameters": [
+          { "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RestoreTaskRequest" } } }
+        },
+        "responses": { "200": { "description": "Restored task" }, "409": { "description": "scheduleVersion conflict" }, "422": { "description": "Task or dependency cannot be restored" } }
+      }
+    },
     "/api/work-items/{workItemId}/queue": {
       "post": {
         "summary": "Deprecated Mock execution endpoint",
@@ -123,11 +222,106 @@
         "responses": { "200": { "description": "Run details" } }
       }
     },
+    "/api/runs/{runId}/lease": {
+      "post": {
+        "summary": "Extend an active Agent claim lease without adding heartbeat or progress events; total duration is capped at eight hours",
+        "security": [{ "agentBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "runId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": true, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExtendLeaseRequest" } } }
+        },
+        "responses": { "200": { "description": "Extended ClaimLease" }, "400": { "description": "Idempotency-Key missing or invalid" }, "401": { "description": "Agent token missing or invalid" }, "403": { "description": "Scope, identity, or LAN boundary rejected" }, "503": { "description": "Agent tokens are not configured" }, "422": { "description": "Lease is missing, expired, owned by another Agent, or reached the limit" } }
+      }
+    },
     "/api/runs/{runId}/stream": {
       "get": {
         "summary": "Stream run events over Server-Sent Events",
         "parameters": [{ "in": "path", "name": "runId", "required": true, "schema": { "type": "string" } }],
         "responses": { "200": { "description": "text/event-stream" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "agentBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "LAN Agent token scoped to the requested mutation"
+      },
+      "collectorBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Paired browser extension collector token, valid only from its bound chrome-extension Origin"
+      }
+    },
+    "schemas": {
+      "DispatchPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "executionSlots": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "high": { "type": "integer", "minimum": 0 },
+              "medium": { "type": "integer", "minimum": 0 },
+              "low": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "reviewSlots": { "type": "integer", "minimum": 0 },
+          "maxConcurrentChangesPerProject": { "type": "integer", "minimum": 1 },
+          "reviewRiskAfterMs": { "type": "number", "exclusiveMinimum": 0 },
+          "stalledAfterMs": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      },
+      "RebalanceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "now": { "type": "string", "format": "date-time" },
+          "applyPhaseStatus": { "type": "boolean", "default": true },
+          "policy": { "$ref": "#/components/schemas/DispatchPolicy" }
+        }
+      },
+      "AgentClaimRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["agentId", "modelRef"],
+        "properties": {
+          "mode": { "type": "string", "enum": ["EXECUTION", "REVIEW"], "default": "EXECUTION" },
+          "agentId": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "modelRef": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "executor": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "provider": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "modelSnapshot": { "type": "object" },
+          "reasoningEffort": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "capabilities": { "type": "array", "maxItems": 100, "items": { "type": "string", "minLength": 1, "maxLength": 1000 } },
+          "computeClasses": { "type": "array", "uniqueItems": true, "items": { "type": "string", "enum": ["low", "medium", "high"] } },
+          "riskTiers": { "type": "array", "uniqueItems": true, "items": { "type": "string", "enum": ["low", "medium", "high", "critical"] } },
+          "projectIds": { "type": "array", "maxItems": 100, "uniqueItems": true, "items": { "type": "string", "minLength": 3, "maxLength": 160 } }
+        }
+      },
+      "ExtendLeaseRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["agentId"],
+        "properties": {
+          "agentId": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "extensionMinutes": { "type": "integer", "minimum": 1, "maximum": 480, "default": 30 }
+        }
+      },
+      "RestoreTaskRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason", "expectedScheduleVersion"],
+        "properties": {
+          "reason": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "expectedScheduleVersion": { "type": "integer", "minimum": 0 }
+        }
       }
     }
   }

@@ -20,6 +20,10 @@ const EMPTY_STATE = Object.freeze({
   migrationConflicts: [],
   migrationSnapshots: [],
   scanProposals: [],
+  subscriptionAccounts: [],
+  subscriptionLatestSnapshots: [],
+  subscriptionHourlySnapshots: [],
+  subscriptionCollectors: [],
   events: []
 });
 
@@ -144,6 +148,10 @@ export function migrateState(input) {
     migrationConflicts: Array.isArray(source.migrationConflicts) ? structuredClone(source.migrationConflicts) : [],
     migrationSnapshots: Array.isArray(source.migrationSnapshots) ? structuredClone(source.migrationSnapshots) : [],
     scanProposals: Array.isArray(source.scanProposals) ? structuredClone(source.scanProposals) : [],
+    subscriptionAccounts: Array.isArray(source.subscriptionAccounts) ? structuredClone(source.subscriptionAccounts) : [],
+    subscriptionLatestSnapshots: Array.isArray(source.subscriptionLatestSnapshots) ? structuredClone(source.subscriptionLatestSnapshots) : [],
+    subscriptionHourlySnapshots: Array.isArray(source.subscriptionHourlySnapshots) ? structuredClone(source.subscriptionHourlySnapshots) : [],
+    subscriptionCollectors: Array.isArray(source.subscriptionCollectors) ? structuredClone(source.subscriptionCollectors) : [],
     events: Array.isArray(source.events) ? structuredClone(source.events) : []
   };
 

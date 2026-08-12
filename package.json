@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "build:logo-3d": "npm --prefix artifacts/img2threejs-lifeline-logo run build:lifeline",
     "dev": "LIFELINE_SEED_DEMO=1 LIFELINE_DEV_RELOAD=1 node --watch --watch-path=src --watch-path=public --watch-path=openapi.json src/server.js",
     "dev:docker": "docker compose -f compose.yaml -f compose.dev.yaml up --build",
     "dev:docker:down": "docker compose -f compose.yaml -f compose.dev.yaml down",
@@ -16,10 +17,11 @@
     "reconcile:lifeline-schedule": "node scripts/reconcile-lifeline-schedule.mjs",
     "repair:agent-run": "node scripts/repair-agent-run-autocomplete.mjs",
     "mcp": "node src/mcp-server.js",
+    "agent-token": "node scripts/generate-agent-token.mjs",
     "pretest": "node scripts/ensure-test-dependencies.mjs",
     "test": "node --test",
     "precheck": "node scripts/ensure-test-dependencies.mjs",
-    "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/service.js && node --check src/server.js && node --check src/mcp-server.js && node --test"
+    "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/autonomous-board.js && node --check src/agent-auth.js && node --check src/service.js && node --check src/subscriptions.js && node --check src/server.js && node --check src/mcp-server.js && node --check scripts/generate-agent-token.mjs && node --check public/app.js && node --check public/subscriptions.js && node --check extension/adapters.js && node --check extension/background.js && node --check extension/content.js && node --check extension/popup.js && node --test"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "^2.0.0",

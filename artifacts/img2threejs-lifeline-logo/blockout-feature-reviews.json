@@ -1,0 +1,32 @@
+[
+  {
+    "id": "crystal-silhouette",
+    "score": 0.78,
+    "visible": true,
+    "notes": "Pointed crystal and axial seam read clearly; facet widths and upper shoulder angles remain simpler than the reference."
+  },
+  {
+    "id": "orbit-depth-route",
+    "score": 0.74,
+    "visible": true,
+    "notes": "Wide orbit and front/back ordering are coherent; reference has a stronger upward-right tilt and a flatter lower-front arc."
+  },
+  {
+    "id": "ecg-linework",
+    "score": 0.76,
+    "visible": true,
+    "notes": "Both ECG systems are present with correct peak/trough intent; exact vertex spacing remains approximate."
+  },
+  {
+    "id": "node-system",
+    "score": 0.82,
+    "visible": true,
+    "notes": "Three-node count, cyan/orange roles, glossy shells, and offset cores match the reference hierarchy."
+  },
+  {
+    "id": "emissive-lookdev",
+    "score": 0.79,
+    "visible": true,
+    "notes": "Navy structure remains legible under cyan/white/orange emission after bloom correction."
+  }
+]
