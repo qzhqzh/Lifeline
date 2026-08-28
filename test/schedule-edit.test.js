@@ -3,11 +3,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
-
-const silentLogger = { error() {} };
 
 test('task contracts support versioned edit, in-phase reorder, and audited cancellation', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-schedule-edit-'));
@@ -63,6 +60,8 @@ test('task contracts support versioned edit, in-phase reorder, and audited cance
 
   const details = await service.getTaskDetails(second.id);
   assert.equal(details.task.cancelReason, 'Removed after reprioritization.');
+  assert.deepEqual(details.runs, []);
+  assert.equal(details.reviewRun, null);
   assert.equal(details.auditEvents.at(-1).type, 'work_item.cancelled');
 
   const replay = await service.cancelWorkItem(second.id, {
@@ -88,6 +87,38 @@ test('new tasks cannot target a cancelled phase', async (t) => {
     service.createWorkItem(taskInput(project.id, phase.id, 'Hidden task', 1)),
     (error) => error.code === 'INVALID_INPUT' && error.message.includes('cancelled')
   );
+});
+
+test('the latest task reorder exposes a version-safe reversal until the order changes again', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-reorder-reversal-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const service = await createService(join(directory, 'state.json'));
+  const project = await service.createProject({ name: 'Reversible reorder' });
+  const phase = await service.createPhase({ projectId: project.id, title: 'Delivery', phaseOrder: 1 });
+  const first = await service.createWorkItem(taskInput(project.id, phase.id, 'First task', 1));
+  const second = await service.createWorkItem(taskInput(project.id, phase.id, 'Second task', 2));
+  let schedule = await service.getSchedule(project.id);
+
+  await service.reorderPhaseTasks(project.id, {
+    phaseId: phase.id,
+    orderedTaskIds: [second.id, first.id],
+    expectedScheduleVersion: schedule.scheduleVersion
+  }, { actor: 'editor', idempotencyKey: 'reorder-for-undo' });
+  const change = (await service.getDispatchBoard()).recentChanges.find((entry) => (
+    entry.type === 'schedule.reordered' && entry.projectId === project.id
+  ));
+  assert.equal(change.reversible, true);
+  assert.equal(change.reversalAction, 'REORDER');
+  assert.deepEqual(change.reversalOrder, [first.id, second.id]);
+
+  schedule = await service.getSchedule(project.id);
+  const restored = await service.reorderPhaseTasks(project.id, {
+    phaseId: change.phaseId,
+    orderedTaskIds: change.reversalOrder,
+    expectedScheduleVersion: schedule.scheduleVersion,
+    reason: 'Undo the previous reorder'
+  }, { actor: 'editor', idempotencyKey: 'undo-reorder' });
+  assert.deepEqual(restored.phases[0].tasks.map((task) => task.id), [first.id, second.id]);
 });
 
 test('deferred tasks remain editable and cancellable', async (t) => {
@@ -395,9 +426,7 @@ function taskInput(projectId, phaseId, title, taskOrder) {
 async function createService(file, store = new JsonStore(file)) {
   const service = new LifelineService({
     store,
-    executor: new MockExecutor({ delayMs: 0 }),
-    localUserId: 'local-owner',
-    logger: silentLogger
+    localUserId: 'local-owner'
   });
   await service.start();
   return service;

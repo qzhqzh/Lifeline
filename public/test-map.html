@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Lifeline 项目测试地图：以场景线路组织真实自动化测试。" />
+    <title>Lifeline · 项目测试地图</title>
+    <link rel="icon" type="image/png" href="/assets/lifeline-logo-64.png" />
+    <link rel="stylesheet" href="/client.css" />
+    <link rel="stylesheet" href="/test-map.css" />
+  </head>
+  <body class="test-map-page">
+    <!--
+    THESIS: Tests form a navigable transit system; this surface refuses the conventional table of filenames and status badges.
+    OWN-WORLD: Lifeline navy field, thin cartographic boundaries, saturated scenario routes, compact square controls, and luminous interchange stations.
+    STORY: See the whole test landscape, isolate a domain or route, locate one real test, then inspect its source and cross-scenario role.
+    FIRST VIEWPORT: Shared project bar above a full-height three-part atlas: filters left, dominant WebGL map center, focused test inspector right; search is the primary action.
+    FORM: Approved scheme H, bird's-eye infinite transit map, seed lifeline-test-map-sigma-v1.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <header class="client-topbar test-map-topbar">
+      <a class="client-brand" href="/" aria-label="返回 Lifeline 控制平面">
+        <img src="/assets/lifeline-logo.webp" alt="" width="34" height="34" />
+        <strong>Lifeline</strong>
+      </a>
+
+      <label class="project-picker">
+        <span class="visually-hidden">切换项目</span>
+        <select id="projectSelect" aria-label="切换测试地图项目"></select>
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m6 8 4 4 4-4" /></svg>
+      </label>
+
+      <nav class="client-nav" aria-label="客户项目导航">
+        <a id="projectProgressNavLink" href="/client.html">项目进度</a>
+        <a class="active" id="testMapNavLink" href="/test-map.html" aria-current="page">测试地图</a>
+        <a id="canvasNavLink" href="/canvas.html">协作画布</a>
+      </nav>
+
+      <div class="client-topbar-actions" aria-hidden="true"></div>
+    </header>
+
+    <main class="test-map-workspace" aria-live="polite">
+      <aside class="test-map-sidebar" id="testMapSidebar" aria-label="测试地图筛选">
+        <div class="test-map-sidebar-head">
+          <div>
+            <h1>测试地图</h1>
+            <p id="catalogStamp"></p>
+          </div>
+          <button class="map-icon-button sidebar-close" id="closeFilters" type="button" aria-label="关闭筛选">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+
+        <div class="test-search">
+          <label for="testSearch">查找测试</label>
+          <div class="test-search-field">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>
+            <input id="testSearch" type="search" autocomplete="off" placeholder="标题、文件或场景" aria-controls="testSearchResults" />
+            <kbd>/</kbd>
+          </div>
+          <div class="test-search-results" id="testSearchResults" role="listbox" hidden></div>
+        </div>
+
+        <dl class="catalog-summary" id="catalogSummary" aria-label="测试目录摘要"></dl>
+
+        <section class="map-filter-section" aria-labelledby="domainFilterTitle">
+          <header>
+            <h2 id="domainFilterTitle">领域</h2>
+            <button class="text-button" id="toggleDomains" type="button">清空</button>
+          </header>
+          <div class="domain-filters" id="domainFilters"></div>
+        </section>
+
+        <section class="map-filter-section route-filter-section" aria-labelledby="routeFilterTitle">
+          <header>
+            <h2 id="routeFilterTitle">场景线路</h2>
+            <button class="text-button active" id="showAllRoutes" type="button">全部</button>
+          </header>
+          <div class="route-filters" id="routeFilters"></div>
+        </section>
+      </aside>
+
+      <section class="test-map-stage" aria-label="测试线路地图">
+        <div class="map-toolbar" role="toolbar" aria-label="地图操作">
+          <button class="map-tool-button mobile-panel-button" id="openFilters" type="button" aria-controls="testMapSidebar" aria-expanded="false">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4" /></svg>
+            筛选
+          </button>
+          <span class="map-toolbar-title" id="mapToolbarTitle">全部测试</span>
+          <span class="map-toolbar-count" id="visibleTestCount"></span>
+          <div class="map-layout-switch" id="layoutSwitcher" role="group" aria-label="切换地图布局实验">
+            <button type="button" data-layout-mode="islands" aria-pressed="true" disabled>轨道星域</button>
+            <button type="button" data-layout-mode="elk" aria-pressed="false" disabled>ELK 规整</button>
+          </div>
+          <details class="map-display-settings" id="displaySettings">
+            <summary class="map-tool-button map-display-summary" aria-label="显示设置">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="10" /></svg>
+              <span>显示</span>
+            </summary>
+            <div class="map-display-panel">
+              <div class="map-display-field">
+                <div class="map-display-field-head">
+                  <label for="nodeSpread">离散度</label>
+                  <output id="nodeSpreadValue" for="nodeSpread">120%</output>
+                </div>
+                <input id="nodeSpread" type="range" min="0.85" max="1.5" step="0.05" value="1.2" aria-label="领域内节点离散度" disabled />
+              </div>
+              <div class="map-display-field map-display-style-field">
+                <span>节点</span>
+                <div class="map-node-style-switch" id="nodeStyleSwitcher" role="group" aria-label="节点样式">
+                  <button type="button" data-node-style="solid" aria-pressed="true" disabled>实心</button>
+                  <button type="button" data-node-style="rings" aria-pressed="false" disabled>同心</button>
+                </div>
+              </div>
+            </div>
+          </details>
+          <div class="map-toolbar-actions">
+            <button class="map-icon-button" id="zoomOut" type="button" aria-label="缩小地图">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 12h10" /></svg>
+            </button>
+            <button class="map-icon-button" id="zoomIn" type="button" aria-label="放大地图">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 7v10M7 12h10" /></svg>
+            </button>
+            <button class="map-tool-button" id="resetView" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 8V4h4M5 4l4 4M19 16v4h-4M19 20l-4-4" /></svg>
+              全图
+            </button>
+          </div>
+        </div>
+
+        <div class="test-map-surface" id="testMapSurface">
+          <canvas class="test-route-layer" id="testRouteLayer" aria-hidden="true"></canvas>
+          <div class="test-graph" id="testGraph" tabindex="0" aria-label="可拖拽和缩放的测试节点地图；按斜杠键搜索测试"></div>
+
+          <div class="map-state" id="mapState" data-state="loading">
+            <span class="map-state-mark" aria-hidden="true"></span>
+            <strong id="mapStateTitle">正在整理测试线路</strong>
+            <p id="mapStateDetail"></p>
+            <button class="button primary compact" id="retryTestMap" type="button" hidden>重新载入</button>
+          </div>
+
+          <div class="map-key" id="mapKey" hidden>
+            <span><i class="station-key"></i>真实测试</span>
+            <span><i class="transfer-key"></i>换乘测试</span>
+            <span><i class="unobserved-key"></i>未采集结果</span>
+          </div>
+
+          <button class="test-minimap" id="testMinimapButton" type="button" aria-label="鸟瞰图，点击定位附近测试" hidden>
+            <canvas id="testMinimap" aria-hidden="true"></canvas>
+            <span>鸟瞰</span>
+          </button>
+        </div>
+
+        <footer class="map-statusbar">
+          <span id="mapStatus">拖拽浏览 · 滚轮缩放 · 点击站点查看</span>
+          <span id="mapEngine">Sigma.js · WebGL</span>
+        </footer>
+      </section>
+
+      <aside class="test-inspector" id="testInspector" aria-label="测试详情">
+        <div class="inspector-empty" id="inspectorEmpty">
+          <svg aria-hidden="true" viewBox="0 0 48 48"><path d="M8 31c7-13 14-18 24-11s5 17 8 20M8 31h10m10-11v10m0 0h10" /><circle cx="18" cy="31" r="4" /><circle cx="28" cy="20" r="4" /><circle cx="38" cy="30" r="4" /></svg>
+          <strong>选择一个测试站点</strong>
+        </div>
+        <div class="inspector-content" id="inspectorContent" hidden></div>
+      </aside>
+    </main>
+
+    <div class="map-backdrop" id="mapBackdrop" hidden></div>
+    <div class="client-toast" id="testMapToast" role="status" aria-live="polite"></div>
+    <script type="module" src="/quality-map.bundle.js"></script>
+  </body>
+</html>

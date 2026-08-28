@@ -1,13 +1,50 @@
 services:
   lifeline:
     build: .
+    depends_on:
+      whiteboard:
+        condition: service_healthy
     ports:
-      - "3000:3000"
+      - "8019:3000"
     environment:
-      MOCK_STEP_DELAY_MS: "250"
+      LIFELINE_AGENT_TOKEN: "${LIFELINE_AGENT_TOKEN:-}"
+      LIFELINE_AGENT_TOKENS: "${LIFELINE_AGENT_TOKENS:-}"
+      LIFELINE_AGENT_SCOPES: "${LIFELINE_AGENT_SCOPES:-portfolio:read,schedule:write,task:claim,completion:write,verification:write}"
+      LIFELINE_AGENT_CLIENT_ID: "${LIFELINE_AGENT_CLIENT_ID:-lifeline-lan-agent}"
+      LIFELINE_MCP_ALLOWED_ORIGINS: "${LIFELINE_MCP_ALLOWED_ORIGINS:-}"
+      LIFELINE_CANVAS_UPSTREAM_URL: "http://whiteboard:80"
+      LIFELINE_CANVAS_BASE_PATH: "/whiteboard"
+      LIFELINE_CANVAS_SESSION_TTL_SECONDS: "${LIFELINE_CANVAS_SESSION_TTL_SECONDS:-28800}"
+      WBO_AUTH_SECRET_KEY: "${WBO_AUTH_SECRET_KEY:?Run npm run canvas:secret before docker compose up}"
     volumes:
       - lifeline-data:/app/data
     restart: unless-stopped
 
+  whiteboard:
+    image: "lovasoa/wbo:v2.17.0@sha256:6a8afba36eb1e12d5c583391aa4bf1dd9a0c6618776e1fbeb13a79b51dd65b75"
+    environment:
+      AUTH_SECRET_KEY: "${WBO_AUTH_SECRET_KEY:?Run npm run canvas:secret before docker compose up}"
+      WBO_BASE_PATH: "/whiteboard"
+      WBO_HISTORY_DIR: "/opt/app/server-data"
+      WBO_IP_SOURCE: "X-Forwarded-For"
+    expose:
+      - "80"
+    volumes:
+      - lifeline-whiteboard-data:/opt/app/server-data
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "const socket=require('net').connect(80,'127.0.0.1');socket.setTimeout(2000);socket.once('connect',()=>{socket.destroy();process.exit(0)});socket.once('timeout',()=>{socket.destroy();process.exit(1)});socket.once('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
 volumes:
   lifeline-data:
+  lifeline-whiteboard-data:

@@ -1,0 +1,6814 @@
+{
+  "version": 1,
+  "configured": true,
+  "generatedAt": "2026-08-28T20:36:22.327Z",
+  "project": {
+    "name": "Lifeline",
+    "repositoryUrl": "https://github.com/qzhqzh/Lifeline"
+  },
+  "source": {
+    "adapter": "node-test-static-v1",
+    "root": "test",
+    "executionStatus": "UNOBSERVED",
+    "executionStatusLabel": "未采集运行结果"
+  },
+  "summary": {
+    "testCount": 188,
+    "fileCount": 32,
+    "domainCount": 7,
+    "scenarioCount": 13,
+    "transferCount": 114,
+    "observedCount": 0
+  },
+  "domains": [
+    {
+      "id": "scheduling",
+      "label": "调度与依赖",
+      "color": "#f1b73b",
+      "testCount": 60
+    },
+    {
+      "id": "agent-execution",
+      "label": "Agent 执行与复核",
+      "color": "#9c6cff",
+      "testCount": 32
+    },
+    {
+      "id": "client-experience",
+      "label": "客户界面",
+      "color": "#43a9ff",
+      "testCount": 29
+    },
+    {
+      "id": "mcp-integration",
+      "label": "MCP 与集成",
+      "color": "#62d3d8",
+      "testCount": 27
+    },
+    {
+      "id": "subscriptions",
+      "label": "订阅余量",
+      "color": "#e879b5",
+      "testCount": 21
+    },
+    {
+      "id": "storage-projects",
+      "label": "存储与项目",
+      "color": "#39d39a",
+      "testCount": 13
+    },
+    {
+      "id": "collaborative-canvas",
+      "label": "协作画布",
+      "color": "#f06c6c",
+      "testCount": 6
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "client-board",
+      "label": "客户面板拖动",
+      "color": "#43a9ff",
+      "testCount": 9
+    },
+    {
+      "id": "state-flow",
+      "label": "状态流转",
+      "color": "#39d39a",
+      "testCount": 37
+    },
+    {
+      "id": "run-lifecycle",
+      "label": "Run 生命周期",
+      "color": "#9c6cff",
+      "testCount": 35
+    },
+    {
+      "id": "data-consistency",
+      "label": "数据一致性",
+      "color": "#f1b73b",
+      "testCount": 33
+    },
+    {
+      "id": "task-scheduling",
+      "label": "任务排期",
+      "color": "#ff8b62",
+      "testCount": 53
+    },
+    {
+      "id": "dependency-order",
+      "label": "依赖顺序",
+      "color": "#d5d86e",
+      "testCount": 18
+    },
+    {
+      "id": "agent-dispatch",
+      "label": "Agent 调度",
+      "color": "#b779ef",
+      "testCount": 35
+    },
+    {
+      "id": "evidence-review",
+      "label": "证据与复核",
+      "color": "#63d5aa",
+      "testCount": 30
+    },
+    {
+      "id": "client-interface",
+      "label": "客户交互",
+      "color": "#6a9cff",
+      "testCount": 22
+    },
+    {
+      "id": "mcp-contract",
+      "label": "MCP 契约",
+      "color": "#58c7d8",
+      "testCount": 31
+    },
+    {
+      "id": "subscription-data",
+      "label": "额度采集",
+      "color": "#e879b5",
+      "testCount": 25
+    },
+    {
+      "id": "project-storage",
+      "label": "项目与存储",
+      "color": "#76c98f",
+      "testCount": 36
+    },
+    {
+      "id": "canvas-sync",
+      "label": "画布协作",
+      "color": "#f06c6c",
+      "testCount": 6
+    }
+  ],
+  "tests": [
+    {
+      "id": "test_713f3f4e4032d2",
+      "title": "dispatch excludes incomplete contracts and unmet dependencies before applying capacity",
+      "file": "test/autonomous-board.test.js",
+      "line": 14,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "agent-dispatch",
+        "dependency-order"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_96395ba73531f2",
+      "title": "deferred and blocked work stay in BACKLOG while an already claimed task stays only in NOW",
+      "file": "test/autonomous-board.test.js",
+      "line": 54,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_d6e6d933906727",
+      "title": "an expired claim is immediately presented as READY without waiting for a write mutation",
+      "file": "test/autonomous-board.test.js",
+      "line": 83,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_c21467ab0aedf8",
+      "title": "hard deadlines and stars are explicit ranking signals",
+      "file": "test/autonomous-board.test.js",
+      "line": 110,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_67662cd4e5951a",
+      "title": "dispatch enforces one change task per project unless parallel work is explicitly allowed",
+      "file": "test/autonomous-board.test.js",
+      "line": 127,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "agent-dispatch",
+        "dependency-order",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_9bdd97fad68ae0",
+      "title": "phase and project states are derived from task truth and progress age",
+      "file": "test/autonomous-board.test.js",
+      "line": 146,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_fd3db569c90ead",
+      "title": "a portfolio with only deferred work is dormant instead of falsely stalled",
+      "file": "test/autonomous-board.test.js",
+      "line": 171,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_336fe6e86b137b",
+      "title": "an empty project is dormant instead of falsely complete",
+      "file": "test/autonomous-board.test.js",
+      "line": 190,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_464234fa743ac8",
+      "title": "risk participates in explainable ordering when other scheduling signals tie",
+      "file": "test/autonomous-board.test.js",
+      "line": 198,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_c7695299c26370",
+      "title": "review age follows completion time even when later metadata edits changed updatedAt",
+      "file": "test/autonomous-board.test.js",
+      "line": 216,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow",
+        "run-lifecycle",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_6fbb9ce5cde79e",
+      "title": "recent Mock completion cannot hide an overdue real review",
+      "file": "test/autonomous-board.test.js",
+      "line": 238,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow",
+        "run-lifecycle",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_00a2a8adb6ebfd",
+      "title": "derivePhaseStatus reports blocked and active phases consistently",
+      "file": "test/autonomous-board.test.js",
+      "line": 256,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_116ae089c30ac8",
+      "title": "efficiency metrics ignore Mock history and withhold calibration below the sample threshold",
+      "file": "test/autonomous-board.test.js",
+      "line": 262,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_66875bd7ebd5d9",
+      "title": "portfolio saturation includes active real runs but not active Mock or time after lease expiry",
+      "file": "test/autonomous-board.test.js",
+      "line": 300,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "run-lifecycle",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_ce7972b9053dff",
+      "title": "latest verified progress follows verification time, not the next dispatch candidate",
+      "file": "test/autonomous-board.test.js",
+      "line": 321,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_ca831e10dd4d78",
+      "title": "latest verified fallback follows schedule order and ignores later metadata edits",
+      "file": "test/autonomous-board.test.js",
+      "line": 338,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_5684acaf58f09f",
+      "title": "Mock completion history cannot become latest verified progress or hide a stalled project",
+      "file": "test/autonomous-board.test.js",
+      "line": 358,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow",
+        "run-lifecycle",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_e04c6094fbcedb",
+      "title": "five real samples calibrate model, compute and estimate for the same task kind",
+      "file": "test/autonomous-board.test.js",
+      "line": 385,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_4f11f879c76581",
+      "title": "five failed samples are enough to measure but never enough to recommend that route",
+      "file": "test/autonomous-board.test.js",
+      "line": 445,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/autonomous-board.js"
+      ]
+    },
+    {
+      "id": "test_549b19eae97b8d",
+      "title": "dependency and parallel policy fields default for legacy task inputs",
+      "file": "test/dependency-schedule.test.js",
+      "line": 9,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_1d651a08276b61",
+      "title": "same-project dependencies and explicit parallel policies persist in the schedule",
+      "file": "test/dependency-schedule.test.js",
+      "line": 26,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order",
+        "data-consistency",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_d0fae973ce950e",
+      "title": "an incomplete dependency blocks markReady and startTask",
+      "file": "test/dependency-schedule.test.js",
+      "line": 49,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_326649a64ff99c",
+      "title": "a completed dependency allows markReady and startTask",
+      "file": "test/dependency-schedule.test.js",
+      "line": 80,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_cde90b73ded816",
+      "title": "dependencies cannot cross projects",
+      "file": "test/dependency-schedule.test.js",
+      "line": 113,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_fcbbcbb0ece212",
+      "title": "a task cannot depend on itself",
+      "file": "test/dependency-schedule.test.js",
+      "line": 131,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_a588fbc9c66205",
+      "title": "dependency updates reject a DAG cycle",
+      "file": "test/dependency-schedule.test.js",
+      "line": 149,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_9f6965e8f666a9",
+      "title": "a dependency must appear before its dependent task",
+      "file": "test/dependency-schedule.test.js",
+      "line": 170,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_cd423611d44f7e",
+      "title": "moving a prerequisite across phases cannot invalidate an existing dependent",
+      "file": "test/dependency-schedule.test.js",
+      "line": 186,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归",
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_9bef08d3820be7",
+      "title": "in-phase reorder cannot place a dependent before its dependency",
+      "file": "test/dependency-schedule.test.js",
+      "line": 222,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_b24e8bea61db6f",
+      "title": "cancelling a task with active dependents is rejected",
+      "file": "test/dependency-schedule.test.js",
+      "line": 244,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "dependency-order"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_2ddfd8624da14c",
+      "title": "state machine accepts the execution happy path",
+      "file": "test/domain.test.js",
+      "line": 14,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_2f8e1e98e1e211",
+      "title": "state machine rejects an unverifiable shortcut",
+      "file": "test/domain.test.js",
+      "line": 24,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_c91b2bfd3eab76",
+      "title": "deferred work stays adjustable and recurring work returns after review",
+      "file": "test/domain.test.js",
+      "line": 32,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_06a39c14dcf0cf",
+      "title": "ready contract requires acceptance criteria but allows no test command",
+      "file": "test/domain.test.js",
+      "line": 47,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_4b88354d3cc6dc",
+      "title": "ready contract and dispatch share one strict execution contract",
+      "file": "test/domain.test.js",
+      "line": 59,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_87ff81fb210991",
+      "title": "project progress uses weighted maximum evidence score",
+      "file": "test/domain.test.js",
+      "line": 72,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "evidence-review",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_ef057da511d91e",
+      "title": "recurring work counts as complete while deferred work remains future scope",
+      "file": "test/domain.test.js",
+      "line": 85,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_1be31fe128f4e9",
+      "title": "work items receive a two-level schedule and routing recommendation",
+      "file": "test/domain.test.js",
+      "line": 93,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_4087a59c014455",
+      "title": "high-risk work routes to the main model and a release-grade validation profile",
+      "file": "test/domain.test.js",
+      "line": 122,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_ab7224802f55a8",
+      "title": "legacy automatic routing is recalibrated without losing its estimate",
+      "file": "test/domain.test.js",
+      "line": 134,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_2785d272080cbe",
+      "title": "legacy work items hydrate with backward-compatible planning defaults",
+      "file": "test/domain.test.js",
+      "line": 151,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_385571d9e18c3a",
+      "title": "work item dependency metadata is normalized without adding another schedule level",
+      "file": "test/domain.test.js",
+      "line": 161,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "dependency-order",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_0fa2298c16548a",
+      "title": "work item issue reference is optional and normalized independently",
+      "file": "test/domain.test.js",
+      "line": 179,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "dependency-order"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_807a2870c66e78",
+      "title": "work item star and scheduled date are optional scheduling signals",
+      "file": "test/domain.test.js",
+      "line": 190,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "state-flow",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js"
+      ]
+    },
+    {
+      "id": "test_1e80d9476f786a",
+      "title": "updating a phase bumps the schedule, syncs task labels, and records before/after audit data",
+      "file": "test/phase-edit.test.js",
+      "line": 9,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_9a229f550dfe26",
+      "title": "phase edits reject stale schedule versions",
+      "file": "test/phase-edit.test.js",
+      "line": 61,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_a22e307f140dd4",
+      "title": "replaying a phase update with the same idempotency key does not bump the schedule again",
+      "file": "test/phase-edit.test.js",
+      "line": 96,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "恢复路径"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_a7809adafaa32a",
+      "title": "cancelled phases cannot be edited",
+      "file": "test/phase-edit.test.js",
+      "line": 127,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_f550cd13cd7ede",
+      "title": "schema migration adds the durable scan proposal collection without discarding unknown data",
+      "file": "test/scan-proposal.test.js",
+      "line": 10,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "evidence-review"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_42aba23608b0e8",
+      "title": "scan findings deduplicate before review and only accepted proposals become planned tasks",
+      "file": "test/scan-proposal.test.js",
+      "line": 17,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "evidence-review",
+        "state-flow"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_94453ce1583918",
+      "title": "task contracts support versioned edit, in-phase reorder, and audited cancellation",
+      "file": "test/schedule-edit.test.js",
+      "line": 9,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "data-consistency",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_0f1c7a76e6cabd",
+      "title": "new tasks cannot target a cancelled phase",
+      "file": "test/schedule-edit.test.js",
+      "line": 74,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_3443d9200a139b",
+      "title": "the latest task reorder exposes a version-safe reversal until the order changes again",
+      "file": "test/schedule-edit.test.js",
+      "line": 92,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_1eaf2b5f8f59dc",
+      "title": "deferred tasks remain editable and cancellable",
+      "file": "test/schedule-edit.test.js",
+      "line": 124,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_ae94dc680c7af1",
+      "title": "issue reference can be added and cleared without changing the rest of the task contract",
+      "file": "test/schedule-edit.test.js",
+      "line": 149,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_53415b184eb2f3",
+      "title": "locked issue no-op records an idempotent receipt without overwriting a later update",
+      "file": "test/schedule-edit.test.js",
+      "line": 199,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_bbd7d9b524d9fa",
+      "title": "dashboard recommendation prioritizes stars, scheduled dates, and human tasks without reordering the phase",
+      "file": "test/schedule-edit.test.js",
+      "line": 236,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_ec0592df7ac898",
+      "title": "running and historical tasks stay protected from contract edits and removal",
+      "file": "test/schedule-edit.test.js",
+      "line": 274,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_526073635b7c12",
+      "title": "every active or terminal locked status rejects content edits, cancellation, and reordering",
+      "file": "test/schedule-edit.test.js",
+      "line": 294,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling",
+        "state-flow"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_8895ad7061b05f",
+      "title": "task provenance distinguishes human and AI creation without treating reorder as content editing",
+      "file": "test/schedule-edit.test.js",
+      "line": 343,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "scheduling",
+      "scenarioIds": [
+        "task-scheduling"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归",
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_52c03de4f1f17a",
+      "title": "Agent bearer token authenticates with an explicit scope set",
+      "file": "test/agent-auth.test.js",
+      "line": 16,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/agent-auth.js"
+      ]
+    },
+    {
+      "id": "test_f91bfff2e2f8fd",
+      "title": "missing configuration, wrong tokens, and unknown scopes fail closed",
+      "file": "test/agent-auth.test.js",
+      "line": 25,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/agent-auth.js"
+      ]
+    },
+    {
+      "id": "test_dd5fec054d4e97",
+      "title": "multiple Agent tokens keep execution and review identities separate",
+      "file": "test/agent-auth.test.js",
+      "line": 37,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "state-flow",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/agent-auth.js"
+      ]
+    },
+    {
+      "id": "test_e7cb7397bacaff",
+      "title": "multiple Agent token configuration rejects duplicate identities and secrets",
+      "file": "test/agent-auth.test.js",
+      "line": 51,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/agent-auth.js"
+      ]
+    },
+    {
+      "id": "test_4ba4f3a6c654c9",
+      "title": "Streamable HTTP boundary accepts loopback and private LAN hosts only",
+      "file": "test/agent-auth.test.js",
+      "line": 66,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/agent-auth.js"
+      ]
+    },
+    {
+      "id": "test_c953d36e89135f",
+      "title": "three concurrent Agents atomically claim different NEXT tasks",
+      "file": "test/agent-dispatch.test.js",
+      "line": 9,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_b9b5b44f276411",
+      "title": "claim lease is max(30 minutes, estimate × 2), can extend, and safely expires",
+      "file": "test/agent-dispatch.test.js",
+      "line": 32,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_fdc0bb7db7405d",
+      "title": "read APIs hide an expired execution lease while preserving stored audit references",
+      "file": "test/agent-dispatch.test.js",
+      "line": 76,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "run-lifecycle",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_de8706444000ba",
+      "title": "history-calibrated estimate is persisted and determines the claim lease",
+      "file": "test/agent-dispatch.test.js",
+      "line": 111,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_d0e253525e5ad5",
+      "title": "claim filters capability, compute, risk and project in one atomic selection",
+      "file": "test/agent-dispatch.test.js",
+      "line": 172,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "data-consistency",
+        "run-lifecycle",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_07182019711cc2",
+      "title": "lease extensions never exceed eight hours from the original claim",
+      "file": "test/agent-dispatch.test.js",
+      "line": 201,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_0944947cce4291",
+      "title": "lease extension retries do not create duplicate audit events",
+      "file": "test/agent-dispatch.test.js",
+      "line": 223,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "run-lifecycle",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_4f4bdf896820e1",
+      "title": "remote Agent mutations use the server clock instead of reported claim and completion times",
+      "file": "test/agent-dispatch.test.js",
+      "line": 241,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_35e59a90c5f5e0",
+      "title": "defer and resume preserve before/after audit, reason, policy and reversal metadata",
+      "file": "test/agent-dispatch.test.js",
+      "line": 276,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "state-flow",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_872b021e197551",
+      "title": "dashboard, project list and schedule expose the same derived project and phase truth",
+      "file": "test/agent-dispatch.test.js",
+      "line": 315,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_9ad306730346c1",
+      "title": "cancelled tasks restore with both audit events preserved",
+      "file": "test/agent-dispatch.test.js",
+      "line": 351,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_438c199653d633",
+      "title": "rebalance records explainable decision history without persisting a current task mirror",
+      "file": "test/agent-dispatch.test.js",
+      "line": 373,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "data-consistency",
+        "subscription-data"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_51f504e3db7d9a",
+      "title": "rebalance clears stale terminal decisions and leaves archived phases untouched",
+      "file": "test/agent-dispatch.test.js",
+      "line": 402,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "data-consistency",
+        "task-scheduling",
+        "subscription-data"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_048db4b7f3b0a8",
+      "title": "review claim rejects the execution Agent and accepts an independent reviewer",
+      "file": "test/agent-dispatch.test.js",
+      "line": 442,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "state-flow",
+        "run-lifecycle",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_c31b42729afb67",
+      "title": "three execution Agents report concurrently and an independent Agent verifies every result",
+      "file": "test/agent-dispatch.test.js",
+      "line": 482,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "agent-dispatch",
+        "dependency-order"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_f53e5dbd99b87e",
+      "title": "reporting health distinguishes missing plans, stale work, overdue review, and completed projects",
+      "file": "test/agent-reporting.test.js",
+      "line": 14,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "evidence-review",
+        "state-flow",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/agent-reporting.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_34320a76d846f9",
+      "title": "agent contacts coalesce by project and client without creating event noise",
+      "file": "test/agent-reporting.test.js",
+      "line": 49,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "evidence-review",
+        "agent-dispatch",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/agent-reporting.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_f9da8695e527ce",
+      "title": "one completion atomically creates an idempotent next iteration plan",
+      "file": "test/agent-reporting.test.js",
+      "line": 64,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "evidence-review",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/agent-reporting.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_d4d09688f7b0f4",
+      "title": "invalid or non-completed nextPlan leaves completion and schedule untouched",
+      "file": "test/agent-reporting.test.js",
+      "line": 103,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "evidence-review",
+        "run-lifecycle",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/agent-reporting.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_1b388d2b1ebd83",
+      "title": "repair removes only synthesized mock output and restores the Agent run",
+      "file": "test/agent-run-repair.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "恢复路径"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_f66128d2f8047e",
+      "title": "autonomous REST vertical slice dispatches, claims, extends, restores, and rebalances",
+      "file": "test/autonomous-api.test.js",
+      "line": 12,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "subscription-data"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_3d339ebd444d86",
+      "title": "first vertical slice persists events, evidence, and verified progress",
+      "file": "test/vertical-slice.test.js",
+      "line": 9,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "state-flow",
+        "data-consistency",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_31819362f0a9fe",
+      "title": "a real Agent failure blocks the work item without synthetic evidence",
+      "file": "test/vertical-slice.test.js",
+      "line": 57,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "agent-dispatch",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_377df460f05e16",
+      "title": "recurring work creates a new run for every verified cycle",
+      "file": "test/vertical-slice.test.js",
+      "line": 98,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "state-flow"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_25c4f5fdc9f489",
+      "title": "restart never routes a durable Agent run through the mock executor",
+      "file": "test/vertical-slice.test.js",
+      "line": 157,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "恢复路径"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_0bdf1f180515db",
+      "title": "startup isolates legacy Mock Runs without rewriting history",
+      "file": "test/vertical-slice.test.js",
+      "line": 206,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_e99f6f8e72fd64",
+      "title": "portfolio demo is idempotent and ordered by strategic value",
+      "file": "test/vertical-slice.test.js",
+      "line": 332,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "agent-execution",
+      "scenarioIds": [
+        "run-lifecycle",
+        "data-consistency",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "顺序约束"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_d70ffdcf7e12ab",
+      "title": "first screen exposes autonomous capacity, recommendations, and a collapsed trajectory",
+      "file": "test/autonomous-ui.test.js",
+      "line": 14,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_56218582b0725d",
+      "title": "keyed refresh preserves fixed lanes, scroll, focus, drag state, and current-phase centering",
+      "file": "test/autonomous-ui.test.js",
+      "line": 29,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "state-flow",
+        "client-board",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_6ba94a42e4671c",
+      "title": "detail cards and rich tooltip follow the required responsive and motion contracts",
+      "file": "test/autonomous-ui.test.js",
+      "line": 43,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_e6152a009f3199",
+      "title": "topbar uses the lightweight Lifeline logo and a real favicon",
+      "file": "test/brand-assets.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_52005d61888f42",
+      "title": "homepage embeds the interactive 3D emblem beside the headline",
+      "file": "test/brand-assets.test.js",
+      "line": 22,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_e0edb249099b3d",
+      "title": "global creation actions sit before control-plane health in the compact topbar",
+      "file": "test/brand-assets.test.js",
+      "line": 40,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_2115eab9f97593",
+      "title": "customer status mapping hides control-plane detail behind four active states and archive",
+      "file": "test/client-board.test.js",
+      "line": 33,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board",
+        "state-flow"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_1f5267b71db300",
+      "title": "busy swimlane cells keep a stable three-card preview while preserving the full count",
+      "file": "test/client-board.test.js",
+      "line": 46,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_762d93bdd1b672",
+      "title": "shared board drag policy allows every active card to move in all directions and across phases",
+      "file": "test/client-board.test.js",
+      "line": 67,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_c4dd5fdd9cf540",
+      "title": "shared board placement persists status and phase while reconciling active Runs",
+      "file": "test/client-board.test.js",
+      "line": 87,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board",
+        "state-flow",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_39253dc4803f30",
+      "title": "drawer and archive filters retain searchable, due-date, phase and completion semantics",
+      "file": "test/client-board.test.js",
+      "line": 168,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board",
+        "run-lifecycle",
+        "client-interface",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_69735743e424a0",
+      "title": "customer progress uses the project current task to identify the real active phase",
+      "file": "test/client-board.test.js",
+      "line": 186,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_0601fb2f0700c2",
+      "title": "customer progress selects the most recently completed task as the latest delivery",
+      "file": "test/client-board.test.js",
+      "line": 198,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_d1b7a45243c68c",
+      "title": "customer board ships as an isolated, capacity-safe surface with an owner entry point",
+      "file": "test/client-board.test.js",
+      "line": 208,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-board"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js",
+        "public/client-data.js"
+      ]
+    },
+    {
+      "id": "test_50ea03f72453a5",
+      "title": "the shared task editor allows empty acceptance criteria and test commands",
+      "file": "test/ui-form.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_78c6b1303285f4",
+      "title": "the shared task editor exposes an optional issue reference",
+      "file": "test/ui-form.test.js",
+      "line": 14,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_65b13de2a7964d",
+      "title": "task forms expose star and scheduled date controls and the board exposes a star filter",
+      "file": "test/ui-form.test.js",
+      "line": 23,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_f7dfbce82560c3",
+      "title": "project detail exposes keyboard reorder, phase move preview, and undo feedback",
+      "file": "test/ui-form.test.js",
+      "line": 34,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "evidence-review",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归",
+        "顺序约束"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_8a673809a8c404",
+      "title": "task forms expose dependency and parallel scheduling without adding a third hierarchy level",
+      "file": "test/ui-form.test.js",
+      "line": 46,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "dependency-order"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归",
+        "顺序约束"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_447a63cf6f978c",
+      "title": "topbar and project detail task actions reuse one editor and one server-normalized project snapshot",
+      "file": "test/ui-form.test.js",
+      "line": 63,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_bb9f8734096843",
+      "title": "project detail supports inline Phase editing and unobtrusive lock and Issue hints",
+      "file": "test/ui-form.test.js",
+      "line": 81,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_7fcc5c0cddbc15",
+      "title": "board filters keep lane DOM and horizontal scroll stable",
+      "file": "test/ui-form.test.js",
+      "line": 92,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_e91ef5bc2aec3a",
+      "title": "detail card view uses a wider five-column grid without vertical overflow",
+      "file": "test/ui-form.test.js",
+      "line": 107,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_825d6a01aabc83",
+      "title": "task star actions use a compact top-right icon and titles clamp to two lines",
+      "file": "test/ui-form.test.js",
+      "line": 125,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_9bfa225219a942",
+      "title": "routing labels expose Luna Worker and validation profiles",
+      "file": "test/ui-form.test.js",
+      "line": 139,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_a281d0f16a6c99",
+      "title": "historical routing calibration reaches recommendations, cards, filters and task details",
+      "file": "test/ui-form.test.js",
+      "line": 146,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_f959544a1f40fc",
+      "title": "overview and detail consume the API-derived phase and project health state",
+      "file": "test/ui-form.test.js",
+      "line": 158,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "state-flow",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_c0853f4e1f1eed",
+      "title": "dispatch explanation can undo cancellation and resume deferred work",
+      "file": "test/ui-form.test.js",
+      "line": 167,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_cd7a3a298c36b6",
+      "title": "home replaces Mock Run replay with a stable real-result trajectory",
+      "file": "test/ui-form.test.js",
+      "line": 176,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "client-experience",
+      "scenarioIds": [
+        "client-interface",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "恢复路径",
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_898b18bdca491e",
+      "title": "installer preserves stable HTTP MCP config and writes one managed global workflow block",
+      "file": "test/codex-integration.test.js",
+      "line": 13,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js"
+      ]
+    },
+    {
+      "id": "test_e7fde0c050bc7a",
+      "title": "installer makes a stdio MCP independent from the caller repository",
+      "file": "test/codex-integration.test.js",
+      "line": 38,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "dependency-order"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js"
+      ]
+    },
+    {
+      "id": "test_b6c3f424becbcf",
+      "title": "compact dispatch view bounds large portfolio payloads while retaining decisions",
+      "file": "test/codex-integration.test.js",
+      "line": 47,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "agent-dispatch",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js"
+      ]
+    },
+    {
+      "id": "test_b7018827fe7167",
+      "title": "LAN Streamable HTTP MCP requires a bearer token and propagates scopes",
+      "file": "test/mcp-http.test.js",
+      "line": 13,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "权限边界",
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_71050971a4a540",
+      "title": "MCP syncs a plan idempotently and enforces completion verification",
+      "file": "test/mcp.test.js",
+      "line": 12,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_a80890e62ad8bb",
+      "title": "MCP accepts a maximum-length Unicode planId without overflowing derived keys",
+      "file": "test/mcp.test.js",
+      "line": 374,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_bbb90971d28138",
+      "title": "JsonStore preserves writes from separate Web and MCP service instances",
+      "file": "test/mcp.test.js",
+      "line": 410,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_1fbf7fb509742c",
+      "title": "STDIO serving entry exposes the Lifeline tools",
+      "file": "test/mcp.test.js",
+      "line": 433,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_80d2fe36228a25",
+      "title": "MCP Agent scopes allow portfolio reads and reject unauthorized schedule writes",
+      "file": "test/mcp.test.js",
+      "line": 456,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "agent-dispatch",
+        "task-scheduling",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_561f5c14e5ec44",
+      "title": "scoped MCP token identity cannot claim work as another Agent",
+      "file": "test/mcp.test.js",
+      "line": 487,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "run-lifecycle",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_685235e1285ee1",
+      "title": "scoped MCP completion binds an omitted agentId to the token identity",
+      "file": "test/mcp.test.js",
+      "line": 518,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_45ca55b568bb44",
+      "title": "scoped MCP cannot bypass execution or review claims through legacy tools",
+      "file": "test/mcp.test.js",
+      "line": 570,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "state-flow",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/mcp-server.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_05d70cc4fef7a1",
+      "title": "generic adapters extract Node.js and Python tests with traceable evidence",
+      "file": "test/test-catalog-analyzer.test.js",
+      "line": 19,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "data-consistency",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-catalog-analyzer.js",
+        "src/test-map.js",
+        "src/billing/invoices.js"
+      ]
+    },
+    {
+      "id": "test_aee2d2d4aebf26",
+      "title": "zero-config repository analysis clusters domains, adds scenarios, and reuses file fingerprints",
+      "file": "test/test-catalog-analyzer.test.js",
+      "line": 64,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "data-consistency"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-catalog-analyzer.js",
+        "src/test-map.js",
+        "src/billing/invoices.js"
+      ]
+    },
+    {
+      "id": "test_91a0345363c77d",
+      "title": "CLI emits a versioned catalog and project maps accept submitted catalogs without repository allowlists",
+      "file": "test/test-catalog-analyzer.test.js",
+      "line": 134,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "data-consistency",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/test-catalog-analyzer.js",
+        "src/test-map.js",
+        "src/billing/invoices.js"
+      ]
+    },
+    {
+      "id": "test_12488c3fb3190d",
+      "title": "test catalog parser extracts node:test declarations without executing the source",
+      "file": "test/test-map.test.js",
+      "line": 29,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_318d18ca374ea5",
+      "title": "Lifeline test catalog contains every real test declaration with file and line evidence",
+      "file": "test/test-map.test.js",
+      "line": 49,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_03a2d2c54b9235",
+      "title": "shared board persistence test becomes a cross-scenario interchange station",
+      "file": "test/test-map.test.js",
+      "line": 62,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_4dbcc71819582d",
+      "title": "scenario classification does not infer interchange lines from the file name alone",
+      "file": "test/test-map.test.js",
+      "line": 79,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_80b366b2de6066",
+      "title": "semantic label quota increases continuously from overview to context and detail",
+      "file": "test/test-map.test.js",
+      "line": 86,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "subscription-data"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_12d5357c4e2268",
+      "title": "semantic labels keep selected tests first and represent every major scenario",
+      "file": "test/test-map.test.js",
+      "line": 97,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_b6561b1f7db730",
+      "title": "focus layout expands one selected test into deterministic semantic branches",
+      "file": "test/test-map.test.js",
+      "line": 125,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_1543af28821aed",
+      "title": "expanded layout experiments place every test in stable non-overlapping domain regions",
+      "file": "test/test-map.test.js",
+      "line": 168,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_7211a21026096f",
+      "title": "display spread expands stations inside each domain without mutating the base layout",
+      "file": "test/test-map.test.js",
+      "line": 222,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_318239c5ad44d2",
+      "title": "baseline Lifeline domains preserve the audited real-test grouping",
+      "file": "test/test-map.test.js",
+      "line": 246,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_f6ebbe63cf5281",
+      "title": "project test map serves the packaged Lifeline catalog and leaves unsubmitted projects empty",
+      "file": "test/test-map.test.js",
+      "line": 259,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_64c945601df67c",
+      "title": "test map ships as a local Sigma surface with project-preserving navigation",
+      "file": "test/test-map.test.js",
+      "line": 281,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "mcp-integration",
+      "scenarioIds": [
+        "mcp-contract",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/test-map-catalog.js",
+        "src/quality-map-layout.js",
+        "src/quality-map-labels.js",
+        "src/test-map-overview-layouts.js",
+        "src/test-map.js"
+      ]
+    },
+    {
+      "id": "test_26b2637b5e8afc",
+      "title": "Codex parser only records explicit remaining values",
+      "file": "test/subscription-adapters.test.js",
+      "line": 7,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_c52500d6c882f4",
+      "title": "Codex parser converts explicit used percentages to remaining percentages",
+      "file": "test/subscription-adapters.test.js",
+      "line": 23,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_0721f7890d1d85",
+      "title": "Cursor parser keeps two usage pools separate",
+      "file": "test/subscription-adapters.test.js",
+      "line": 28,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_8c9b1c747c0b27",
+      "title": "Gemini, Grok, and Xiaoyunque safely fall back to availability",
+      "file": "test/subscription-adapters.test.js",
+      "line": 38,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_5efaddadde92d6",
+      "title": "limit banners become LIMITED without inventing a numeric balance",
+      "file": "test/subscription-adapters.test.js",
+      "line": 48,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_cbdbbd595b1100",
+      "title": "Xiaoyunque ignores unrelated page numbers until an exact quota component is calibrated",
+      "file": "test/subscription-adapters.test.js",
+      "line": 55,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_2158fc5ebe8d61",
+      "title": "collector only accepts quota routes and strips query or fragment data from reported URLs",
+      "file": "test/subscription-adapters.test.js",
+      "line": 67,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_fbe46011593da3",
+      "title": "subscription API contract is exposed by server and OpenAPI",
+      "file": "test/subscription-api.test.js",
+      "line": 11,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_f4e366f49517a4",
+      "title": "collector revocation requires either the paired collector token or an owner-approved call",
+      "file": "test/subscription-api.test.js",
+      "line": 29,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界",
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_06f4218135c178",
+      "title": "collector rejects wrong origins, account mismatch, unknown fields, and stale capture time",
+      "file": "test/subscription-api.test.js",
+      "line": 45,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "权限边界"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_ff82d76a2a1e79",
+      "title": "adapter errors preserve the previous successful balance",
+      "file": "test/subscription-api.test.js",
+      "line": 75,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_bdd255411a1eee",
+      "title": "Manifest V3 collector has narrow permissions and never requests cookies or request interception",
+      "file": "test/subscription-extension.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "权限边界"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_a726f7de3849e1",
+      "title": "collector only runs on open pages and resamples every five minutes",
+      "file": "test/subscription-extension.test.js",
+      "line": 19,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_3e935ec2605279",
+      "title": "collector revocation keeps the local connection when the server request fails",
+      "file": "test/subscription-extension.test.js",
+      "line": 46,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_9266efcfdae488",
+      "title": "home links to a compact subscription summary without changing the project board",
+      "file": "test/subscription-ui.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_5d60cd96ff08cf",
+      "title": "subscription page exposes six-account controls, freshness, filters, and 90-day history",
+      "file": "test/subscription-ui.test.js",
+      "line": 17,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_9c895cbf4cf28e",
+      "title": "subscription store seeds six personal accounts without disturbing existing state",
+      "file": "test/subscriptions.test.js",
+      "line": 12,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "state-flow",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_c24bf749518360",
+      "title": "latest snapshots are deduplicated and rolled into one hourly point",
+      "file": "test/subscriptions.test.js",
+      "line": 26,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_82c05a5a192090",
+      "title": "history keeps only the last successful point in an hour and prunes older than 90 days",
+      "file": "test/subscriptions.test.js",
+      "line": 49,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_3c8ba4d292201c",
+      "title": "a stale snapshot preserves its value while deriving STALE",
+      "file": "test/subscriptions.test.js",
+      "line": 61,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "data-consistency",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_bcbad1e3b6c9f1",
+      "title": "legacy numeric snapshots remain auditable but are not treated as trusted balance",
+      "file": "test/subscriptions.test.js",
+      "line": 79,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "subscriptions",
+      "scenarioIds": [
+        "subscription-data",
+        "evidence-review"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/store.js",
+        "src/subscriptions.js"
+      ]
+    },
+    {
+      "id": "test_57e9a04661921f",
+      "title": "portfolio bootstrap is atomic, idempotent, and restart-safe",
+      "file": "test/portfolio-v2.test.js",
+      "line": 11,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "恢复路径"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/portfolio-v2-template.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_4add68745ba7f7",
+      "title": "legacy data migrates without fake runs and records modified-template conflicts",
+      "file": "test/portfolio-v2.test.js",
+      "line": 47,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/portfolio-v2-template.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_d1531ecab09968",
+      "title": "modified legacy portfolio reports conflicts without losing MCP tasks",
+      "file": "test/portfolio-v2.test.js",
+      "line": 95,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "data-consistency",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/portfolio-v2-template.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_c70bd6d3295b43",
+      "title": "schema migration is idempotent and unfinished history does not raise progress",
+      "file": "test/portfolio-v2.test.js",
+      "line": 173,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/portfolio-v2-template.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_972bd624a5fce9",
+      "title": "schema migration repairs active tasks that have no durable active run",
+      "file": "test/portfolio-v2.test.js",
+      "line": 195,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "恢复路径"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/portfolio-v2-template.js",
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_f48420193bd32c",
+      "title": "merges unique legacy Lifeline tasks and archives the duplicate project",
+      "file": "test/project-merge.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_f017dbc0072c9c",
+      "title": "reconciles historical completion times, run records, verified work, and the production phase idempotently",
+      "file": "test/schedule-reconciliation.test.js",
+      "line": 5,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "data-consistency",
+        "state-flow",
+        "run-lifecycle",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_40737c04aec767",
+      "title": "reconciliation does not overwrite a human-adjusted template task",
+      "file": "test/schedule-reconciliation.test.js",
+      "line": 36,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "data-consistency"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": []
+    },
+    {
+      "id": "test_5af1b985c557d3",
+      "title": "current complete state bypasses historical migration on steady reload",
+      "file": "test/store.test.js",
+      "line": 9,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "state-flow"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_1dcfa758c28445",
+      "title": "old or incomplete state still runs the idempotent migration chain",
+      "file": "test/store.test.js",
+      "line": 18,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "state-flow",
+        "data-consistency",
+        "run-lifecycle"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_3e1277b9b02b3d",
+      "title": "persistence keeps canonical phase and audit history while runtime restores compatibility projections",
+      "file": "test/store.test.js",
+      "line": 32,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "project-storage",
+        "data-consistency",
+        "evidence-review",
+        "task-scheduling"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性"
+      ],
+      "sourceModules": [
+        "src/domain.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_b56cc5a1c9b0d4",
+      "title": "trajectory aggregates only real Agent results and calculates coverage, gaps, and concurrency",
+      "file": "test/trajectory.test.js",
+      "line": 10,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "evidence-review",
+        "agent-dispatch"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_9552870ad5567d",
+      "title": "trajectory accepts supported windows and rejects unknown windows",
+      "file": "test/trajectory.test.js",
+      "line": 91,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "storage-projects",
+      "scenarioIds": [
+        "evidence-review"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "行为回归"
+      ],
+      "sourceModules": [
+        "src/service.js",
+        "src/store.js"
+      ]
+    },
+    {
+      "id": "test_1dd24d821ac3f9",
+      "title": "canvas sessions are scoped to one project board and never grant clear capability",
+      "file": "test/canvas-service.test.js",
+      "line": 15,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "collaborative-canvas",
+      "scenarioIds": [
+        "canvas-sync",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "权限边界",
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/canvas.js"
+      ]
+    },
+    {
+      "id": "test_5929e84fb2216e",
+      "title": "canvas board ids are stable, opaque project identifiers and isolated by project",
+      "file": "test/canvas-service.test.js",
+      "line": 40,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "collaborative-canvas",
+      "scenarioIds": [
+        "canvas-sync",
+        "project-storage"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/canvas.js"
+      ]
+    },
+    {
+      "id": "test_5118c65b946362",
+      "title": "canvas session creation fails closed when the signing secret is missing or weak",
+      "file": "test/canvas-service.test.js",
+      "line": 51,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "collaborative-canvas",
+      "scenarioIds": [
+        "canvas-sync"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "权限边界",
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/canvas.js"
+      ]
+    },
+    {
+      "id": "test_82a1787fb2fac7",
+      "title": "WBO proxy routing strips the public prefix and preserves socket query parameters",
+      "file": "test/canvas-service.test.js",
+      "line": 60,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "collaborative-canvas",
+      "scenarioIds": [
+        "canvas-sync"
+      ],
+      "transfer": false,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/canvas.js"
+      ]
+    },
+    {
+      "id": "test_72330b80124bd0",
+      "title": "WBO proxy routing rejects non-http upstream schemes",
+      "file": "test/canvas-service.test.js",
+      "line": 69,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "collaborative-canvas",
+      "scenarioIds": [
+        "canvas-sync",
+        "mcp-contract"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/canvas.js"
+      ]
+    },
+    {
+      "id": "test_50431c53be9996",
+      "title": "canvas deployment pins WBO, persists board history, and publishes its session contract",
+      "file": "test/canvas-service.test.js",
+      "line": 76,
+      "framework": "node:test",
+      "declaration": "test",
+      "status": "UNOBSERVED",
+      "statusLabel": "未采集",
+      "domainId": "collaborative-canvas",
+      "scenarioIds": [
+        "canvas-sync",
+        "data-consistency"
+      ],
+      "transfer": true,
+      "riskTags": [
+        "状态一致性",
+        "交互回归"
+      ],
+      "sourceModules": [
+        "src/canvas.js"
+      ]
+    }
+  ],
+  "layoutExperiments": {
+    "version": 1,
+    "defaultMode": "islands",
+    "items": {
+      "islands": {
+        "id": "islands",
+        "label": "轨道星域",
+        "engine": "ELK Force + orbital sectors",
+        "domainShape": "circle",
+        "positions": {
+          "test_c91b2bfd3eab76": {
+            "x": 2766.413635360439,
+            "y": -1289.853100462336
+          },
+          "test_4b88354d3cc6dc": {
+            "x": 2749.987367704829,
+            "y": -1216.7963129289303
+          },
+          "test_87ff81fb210991": {
+            "x": 2804.172858823429,
+            "y": -1243.2243427749177
+          },
+          "test_ef057da511d91e": {
+            "x": 2841.289169885662,
+            "y": -1290.731054536898
+          },
+          "test_1be31fe128f4e9": {
+            "x": 2752.6977301694615,
+            "y": -1156.1640261528846
+          },
+          "test_4087a59c014455": {
+            "x": 2814.6364472731602,
+            "y": -1178.0976762380292
+          },
+          "test_385571d9e18c3a": {
+            "x": 2865.7008490736725,
+            "y": -1219.4488134807384
+          },
+          "test_0fa2298c16548a": {
+            "x": 2900.032979679904,
+            "y": -1275.4737587332436
+          },
+          "test_807a2870c66e78": {
+            "x": 2748.597542719799,
+            "y": -1094.9946502682985
+          },
+          "test_2ddfd8624da14c": {
+            "x": 2804.6308686681286,
+            "y": -1107.9309628727385
+          },
+          "test_2f8e1e98e1e211": {
+            "x": 2856.318026942844,
+            "y": -1133.140474373679
+          },
+          "test_06a39c14dcf0cf": {
+            "x": 2901.009540507913,
+            "y": -1169.3309484779898
+          },
+          "test_ab7224802f55a8": {
+            "x": 2936.4145281686906,
+            "y": -1214.6472661723008
+          },
+          "test_2785d272080cbe": {
+            "x": 2960.7181348451254,
+            "y": -1266.7665188832584
+          },
+          "test_713f3f4e4032d2": {
+            "x": 2790.453571381532,
+            "y": -1369.5041245968998
+          },
+          "test_d6e6d933906727": {
+            "x": 2753.0069667483535,
+            "y": -1413.5148513279269
+          },
+          "test_67662cd4e5951a": {
+            "x": 2695.33797939594,
+            "y": -1417.1863855704298
+          },
+          "test_9bdd97fad68ae0": {
+            "x": 2652.6123939393674,
+            "y": -1378.279874375774
+          },
+          "test_fd3db569c90ead": {
+            "x": 2852.678772186358,
+            "y": -1364.9943645963235
+          },
+          "test_336fe6e86b137b": {
+            "x": 2831.161316207589,
+            "y": -1421.957067214167
+          },
+          "test_c7695299c26370": {
+            "x": 2786.657833460641,
+            "y": -1463.5165477778028
+          },
+          "test_6fbb9ce5cde79e": {
+            "x": 2728.357887657669,
+            "y": -1481.091152202871
+          },
+          "test_66875bd7ebd5d9": {
+            "x": 2668.2998864311253,
+            "y": -1471.0518847993403
+          },
+          "test_ce7972b9053dff": {
+            "x": 2618.885259840635,
+            "y": -1435.4717628174035
+          },
+          "test_ca831e10dd4d78": {
+            "x": 2590.3176780561867,
+            "y": -1381.6977572727542
+          },
+          "test_5684acaf58f09f": {
+            "x": 2913.6146739343885,
+            "y": -1356.7904438506707
+          },
+          "test_e04c6094fbcedb": {
+            "x": 2902.7163756946334,
+            "y": -1412.1204323015033
+          },
+          "test_1e80d9476f786a": {
+            "x": 2876.3656541897517,
+            "y": -1461.978430683549
+          },
+          "test_9a229f550dfe26": {
+            "x": 2836.789102346431,
+            "y": -1502.1515195700767
+          },
+          "test_a22e307f140dd4": {
+            "x": 2787.330874152285,
+            "y": -1529.2451385676877
+          },
+          "test_94453ce1583918": {
+            "x": 2732.17010910614,
+            "y": -1540.9699211249842
+          },
+          "test_3443d9200a139b": {
+            "x": 2675.967801756464,
+            "y": -1536.3351422667813
+          },
+          "test_53415b184eb2f3": {
+            "x": 2623.472955275149,
+            "y": -1515.7324332362891
+          },
+          "test_526073635b7c12": {
+            "x": 2579.1212984463673,
+            "y": -1480.90268929474
+          },
+          "test_96395ba73531f2": {
+            "x": 2546.6604738294905,
+            "y": -1434.788966915341
+          },
+          "test_c21467ab0aedf8": {
+            "x": 2528.833368084112,
+            "y": -1381.2878003183873
+          },
+          "test_464234fa743ac8": {
+            "x": 2973.5437711029363,
+            "y": -1359.7064878425838
+          },
+          "test_00a2a8adb6ebfd": {
+            "x": 2959.274865160164,
+            "y": -1432.1488438555295
+          },
+          "test_116ae089c30ac8": {
+            "x": 2924.77443597336,
+            "y": -1497.426841737177
+          },
+          "test_4f11f879c76581": {
+            "x": 2872.957713456847,
+            "y": -1550.0245972896412
+          },
+          "test_a7809adafaa32a": {
+            "x": 2808.2031260273984,
+            "y": -1585.4976860803276
+          },
+          "test_0f1c7a76e6cabd": {
+            "x": 2735.9823305546106,
+            "y": -1600.8486900470973
+          },
+          "test_1eaf2b5f8f59dc": {
+            "x": 2662.3978662926634,
+            "y": -1594.7804744286254
+          },
+          "test_ae94dc680c7af1": {
+            "x": 2593.6675002810452,
+            "y": -1567.8057935330326
+          },
+          "test_bbd7d9b524d9fa": {
+            "x": 2535.59883618563,
+            "y": -1522.2039638363653
+          },
+          "test_ec0592df7ac898": {
+            "x": 2493.0985812748736,
+            "y": -1461.8282654633379
+          },
+          "test_8895ad7061b05f": {
+            "x": 2469.7579376701,
+            "y": -1391.780346310625
+          },
+          "test_1d651a08276b61": {
+            "x": 2659.4924221197657,
+            "y": -1304.5402256928462
+          },
+          "test_cd423611d44f7e": {
+            "x": 2593.953707433702,
+            "y": -1301.4527221044211
+          },
+          "test_9bef08d3820be7": {
+            "x": 2634.932113742124,
+            "y": -1243.699063199803
+          },
+          "test_549b19eae97b8d": {
+            "x": 2532.3918656541587,
+            "y": -1297.384657652446
+          },
+          "test_d0fae973ce950e": {
+            "x": 2561.6251178446546,
+            "y": -1235.0996701512695
+          },
+          "test_326649a64ff99c": {
+            "x": 2610.7597481641046,
+            "y": -1186.935463472182
+          },
+          "test_cde90b73ded816": {
+            "x": 2470.378635399878,
+            "y": -1299.5804347545463
+          },
+          "test_fcbbcbb0ece212": {
+            "x": 2486.2092661030297,
+            "y": -1247.7082739928471
+          },
+          "test_a588fbc9c66205": {
+            "x": 2512.691465707099,
+            "y": -1200.379392380481
+          },
+          "test_9f6965e8f666a9": {
+            "x": 2548.617892059408,
+            "y": -1159.7515470019819
+          },
+          "test_b24e8bea61db6f": {
+            "x": 2592.350634050656,
+            "y": -1127.6769899750475
+          },
+          "test_42aba23608b0e8": {
+            "x": 2704.4584613022366,
+            "y": -1274.97897915585
+          },
+          "test_f550cd13cd7ede": {
+            "x": 2691.9837598531713,
+            "y": -1216.290123111822
+          },
+          "test_1b388d2b1ebd83": {
+            "x": 1664.5998747247527,
+            "y": -277.0523361306531
+          },
+          "test_f66128d2f8047e": {
+            "x": 1704.1706363398828,
+            "y": -313.4258623968372
+          },
+          "test_3d339ebd444d86": {
+            "x": 1670.5888223527518,
+            "y": -216.09227440038845
+          },
+          "test_31819362f0a9fe": {
+            "x": 1728.4086634178168,
+            "y": -247.34603093227935
+          },
+          "test_377df460f05e16": {
+            "x": 1764.4116163412175,
+            "y": -302.3343815071011
+          },
+          "test_25c4f5fdc9f489": {
+            "x": 1685.3036397597584,
+            "y": -157.92463607220415
+          },
+          "test_e99f6f8e72fd64": {
+            "x": 1769.0129618987332,
+            "y": -203.1726119467328
+          },
+          "test_0bdf1f180515db": {
+            "x": 1821.1366400117163,
+            "y": -282.7826120326688
+          },
+          "test_52c03de4f1f17a": {
+            "x": 1705.8925526750877,
+            "y": -374.79729685202864
+          },
+          "test_dd5fec054d4e97": {
+            "x": 1668.423523073203,
+            "y": -413.33235113421836
+          },
+          "test_e7cb7397bacaff": {
+            "x": 1614.759789912565,
+            "y": -416.3460417457636
+          },
+          "test_4ba4f3a6c654c9": {
+            "x": 1573.211800540003,
+            "y": -382.24848806612727
+          },
+          "test_c953d36e89135f": {
+            "x": 1565.6983089485996,
+            "y": -329.02794661882376
+          },
+          "test_b9b5b44f276411": {
+            "x": 1768.0573449671078,
+            "y": -377.1395275741482
+          },
+          "test_fdc0bb7db7405d": {
+            "x": 1744.6044957461781,
+            "y": -426.82653935005226
+          },
+          "test_de8706444000ba": {
+            "x": 1703.1827565812546,
+            "y": -462.92466673017475
+          },
+          "test_d0e253525e5ad5": {
+            "x": 1650.7561176358483,
+            "y": -479.36494667567746
+          },
+          "test_07182019711cc2": {
+            "x": 1596.1387572926692,
+            "y": -473.3833728909774
+          },
+          "test_0944947cce4291": {
+            "x": 1548.5131668679896,
+            "y": -445.9855917308332
+          },
+          "test_4f4bdf896820e1": {
+            "x": 1515.8863530673539,
+            "y": -401.77782887161203
+          },
+          "test_35e59a90c5f5e0": {
+            "x": 1503.7436676638888,
+            "y": -348.1924720379492
+          },
+          "test_872b021e197551": {
+            "x": 1514.126587993243,
+            "y": -294.2385079460239
+          },
+          "test_9ad306730346c1": {
+            "x": 1820.7640847032653,
+            "y": -410.28810745505376
+          },
+          "test_438c199653d633": {
+            "x": 1749.432519278832,
+            "y": -504.6114537514072
+          },
+          "test_51f504e3db7d9a": {
+            "x": 1636.5920517472227,
+            "y": -539.9966875317546
+          },
+          "test_048db4b7f3b0a8": {
+            "x": 1524.1728455010525,
+            "y": -503.2950806265653
+          },
+          "test_c31b42729afb67": {
+            "x": 1453.9485282953603,
+            "y": -408.1445096590912
+          },
+          "test_f91bfff2e2f8fd": {
+            "x": 1452.013613552334,
+            "y": -289.901784777688
+          },
+          "test_f53e5dbd99b87e": {
+            "x": 1603.300875479533,
+            "y": -280.4948140881491
+          },
+          "test_34320a76d846f9": {
+            "x": 1575.3888311571786,
+            "y": -227.38250118664837
+          },
+          "test_f9da8695e527ce": {
+            "x": 1517.3012613030007,
+            "y": -193.9015210318704
+          },
+          "test_d4d09688f7b0f4": {
+            "x": 1580.7599289959196,
+            "y": -160.55217041015672
+          },
+          "test_2115eab9f97593": {
+            "x": 560.9074138758858,
+            "y": -2405.362480331839
+          },
+          "test_1f5267b71db300": {
+            "x": 601.1857323891745,
+            "y": -2449.9108817005012
+          },
+          "test_762d93bdd1b672": {
+            "x": 558.6712131874446,
+            "y": -2341.909728473193
+          },
+          "test_c4dd5fdd9cf540": {
+            "x": 609.4740239150531,
+            "y": -2364.465821528737
+          },
+          "test_39253dc4803f30": {
+            "x": 646.7528700118062,
+            "y": -2405.6967631314965
+          },
+          "test_69735743e424a0": {
+            "x": 664.0931513812448,
+            "y": -2458.5079130317235
+          },
+          "test_0601fb2f0700c2": {
+            "x": 609.6026821245216,
+            "y": -2295.6867270853104
+          },
+          "test_d1b7a45243c68c": {
+            "x": 715.1971928215215,
+            "y": -2412.4757793220733
+          },
+          "test_56218582b0725d": {
+            "x": 592.8413442116357,
+            "y": -2513.451100964713
+          },
+          "test_65b13de2a7964d": {
+            "x": 549.9851792734812,
+            "y": -2544.4867078866296
+          },
+          "test_f7dfbce82560c3": {
+            "x": 497.35992004747703,
+            "y": -2538.969293490929
+          },
+          "test_8a673809a8c404": {
+            "x": 461.87267869654954,
+            "y": -2499.7198925844305
+          },
+          "test_447a63cf6f978c": {
+            "x": 461.66795840084455,
+            "y": -2446.8065874540707
+          },
+          "test_bb9f8734096843": {
+            "x": 496.8504319361275,
+            "y": -2407.283767132678
+          },
+          "test_f959544a1f40fc": {
+            "x": 652.55899563701,
+            "y": -2529.119806175637
+          },
+          "test_c0853f4e1f1eed": {
+            "x": 617.1929940132871,
+            "y": -2575.4938450326163
+          },
+          "test_cd7a3a298c36b6": {
+            "x": 565.4769475039573,
+            "y": -2602.452259010493
+          },
+          "test_d70ffdcf7e12ab": {
+            "x": 507.20714013973065,
+            "y": -2604.8884651786275
+          },
+          "test_6ba94a42e4671c": {
+            "x": 453.42129854287975,
+            "y": -2582.340986506363
+          },
+          "test_e6152a009f3199": {
+            "x": 414.3077765547694,
+            "y": -2539.0808668990003
+          },
+          "test_52005d61888f42": {
+            "x": 397.27563184124085,
+            "y": -2483.302631025004
+          },
+          "test_e0edb249099b3d": {
+            "x": 405.5511691670208,
+            "y": -2425.5720409299133
+          },
+          "test_50ea03f72453a5": {
+            "x": 437.56679936739124,
+            "y": -2376.8246822975643
+          },
+          "test_78c6b1303285f4": {
+            "x": 487.25797907459054,
+            "y": -2346.2944970694234
+          },
+          "test_7fcc5c0cddbc15": {
+            "x": 685.1388429235849,
+            "y": -2590.6385303957773
+          },
+          "test_e91ef5bc2aec3a": {
+            "x": 538.98254405826,
+            "y": -2666.8265276661195
+          },
+          "test_825d6a01aabc83": {
+            "x": 386.9767340678506,
+            "y": -2603.104409408521
+          },
+          "test_9bfa225219a942": {
+            "x": 338.84166959383185,
+            "y": -2445.467833087675
+          },
+          "test_a281d0f16a6c99": {
+            "x": 429.32202011874864,
+            "y": -2307.701433719164
+          },
+          "test_05d70cc4fef7a1": {
+            "x": 370.4406505846824,
+            "y": -898.3123008385444
+          },
+          "test_91a0345363c77d": {
+            "x": 390.2573943019924,
+            "y": -841.6793010200423
+          },
+          "test_aee2d2d4aebf26": {
+            "x": 410.07413801930244,
+            "y": -785.0463012015402
+          },
+          "test_e7fde0c050bc7a": {
+            "x": 414.13793967792355,
+            "y": -939.2940965014941
+          },
+          "test_b6c3f424becbcf": {
+            "x": 415.0281185893996,
+            "y": -994.8264789394486
+          },
+          "test_71050971a4a540": {
+            "x": 377.0346685764046,
+            "y": -1035.337411708761
+          },
+          "test_80d2fe36228a25": {
+            "x": 321.5593494153177,
+            "y": -1038.0070337241827
+          },
+          "test_561f5c14e5ec44": {
+            "x": 279.85148049665094,
+            "y": -1001.3315434344402
+          },
+          "test_685235e1285ee1": {
+            "x": 275.4051585943671,
+            "y": -945.9702921907141
+          },
+          "test_45ca55b568bb44": {
+            "x": 310.72500261537186,
+            "y": -903.1083447774015
+          },
+          "test_318d18ca374ea5": {
+            "x": 458.2135889694623,
+            "y": -894.919579552084
+          },
+          "test_03a2d2c54b9235": {
+            "x": 478.2023482867594,
+            "y": -946.28413054586
+          },
+          "test_80b366b2de6066": {
+            "x": 475.82458776565625,
+            "y": -1001.3496719737014
+          },
+          "test_318239c5ad44d2": {
+            "x": 451.4825864016127,
+            "y": -1050.7999962135882
+          },
+          "test_f6ebbe63cf5281": {
+            "x": 409.2946209383541,
+            "y": -1086.2689004524839
+          },
+          "test_64c945601df67c": {
+            "x": 356.39821940548063,
+            "y": -1101.7556142004055
+          },
+          "test_898b18bdca491e": {
+            "x": 301.74260569800765,
+            "y": -1094.6400335426847
+          },
+          "test_b7018827fe7167": {
+            "x": 254.5746342335019,
+            "y": -1066.1260007559918
+          },
+          "test_a80890e62ad8bb": {
+            "x": 222.87437029196587,
+            "y": -1021.0376334771247
+          },
+          "test_bbb90971d28138": {
+            "x": 212.0049907875717,
+            "y": -967.0031612670023
+          },
+          "test_1fbf7fb509742c": {
+            "x": 223.8054206370599,
+            "y": -913.1643513506942
+          },
+          "test_12488c3fb3190d": {
+            "x": 256.27921611798064,
+            "y": -868.6298680270901
+          },
+          "test_4dbcc71819582d": {
+            "x": 303.9323311693919,
+            "y": -840.934232563465
+          },
+          "test_12d5357c4e2268": {
+            "x": 538.7801687192891,
+            "y": -946.4385589173219
+          },
+          "test_b6561b1f7db730": {
+            "x": 410.07413801930244,
+            "y": -1151.273033361187
+          },
+          "test_1543af28821aed": {
+            "x": 181.73550534971287,
+            "y": -1071.373890125339
+          },
+          "test_7211a21026096f": {
+            "x": 208.82128444980975,
+            "y": -830.9809517311734
+          },
+          "test_f4e366f49517a4": {
+            "x": 1995.6117425491261,
+            "y": -2463.320033866011
+          },
+          "test_06f4218135c178": {
+            "x": 2035.5295345099894,
+            "y": -2502.1335494165714
+          },
+          "test_a726f7de3849e1": {
+            "x": 2037.0910635973048,
+            "y": -2557.788564746134
+          },
+          "test_9266efcfdae488": {
+            "x": 1999.412360883044,
+            "y": -2598.7792279048917
+          },
+          "test_9c895cbf4cf28e": {
+            "x": 1943.823033813128,
+            "y": -2601.9010575508323
+          },
+          "test_3c8ba4d292201c": {
+            "x": 1901.7917487473317,
+            "y": -2565.386811288008
+          },
+          "test_bcbad1e3b6c9f1": {
+            "x": 1897.1120746336044,
+            "y": -2509.906907227045
+          },
+          "test_26b2637b5e8afc": {
+            "x": 1932.4331369627464,
+            "y": -2466.868068251473
+          },
+          "test_c52500d6c882f4": {
+            "x": 1999.2798291353806,
+            "y": -2401.6406418343104
+          },
+          "test_0721f7890d1d85": {
+            "x": 2055.325808224251,
+            "y": -2430.4416449627342
+          },
+          "test_8c9b1c747c0b27": {
+            "x": 2092.0111061303537,
+            "y": -2481.6748224044477
+          },
+          "test_5efaddadde92d6": {
+            "x": 2101.223422689893,
+            "y": -2544.010869574928
+          },
+          "test_cbdbbd595b1100": {
+            "x": 2080.925618192947,
+            "y": -2603.6652800224156
+          },
+          "test_2158fc5ebe8d61": {
+            "x": 2035.6061905431352,
+            "y": -2647.446543488961
+          },
+          "test_fbe46011593da3": {
+            "x": 1975.2867238989868,
+            "y": -2665.6732134261442
+          },
+          "test_ff82d76a2a1e79": {
+            "x": 1913.3057938498237,
+            "y": -2654.3147864455145
+          },
+          "test_bdd255411a1eee": {
+            "x": 1863.3693790216598,
+            "y": -2615.882976348368
+          },
+          "test_3e935ec2605279": {
+            "x": 1836.5200280460135,
+            "y": -2558.8762933592648
+          },
+          "test_5d60cd96ff08cf": {
+            "x": 1838.6949966288357,
+            "y": -2495.90074997219
+          },
+          "test_c24bf749518360": {
+            "x": 1869.4133292103318,
+            "y": -2440.8822658359823
+          },
+          "test_82c05a5a192090": {
+            "x": 1921.88221371984,
+            "y": -2405.9871986837115
+          },
+          "test_f017dbc0072c9c": {
+            "x": 1377.6785427907616,
+            "y": -1557.1629405760355
+          },
+          "test_40737c04aec767": {
+            "x": 1404.1771539256847,
+            "y": -1503.33150359057
+          },
+          "test_b56cc5a1c9b0d4": {
+            "x": 1418.721481066733,
+            "y": -1617.1762180802768
+          },
+          "test_9552870ad5567d": {
+            "x": 1478.4981502632547,
+            "y": -1612.0041952874396
+          },
+          "test_57e9a04661921f": {
+            "x": 1391.284813871302,
+            "y": -1681.2909198083712
+          },
+          "test_4add68745ba7f7": {
+            "x": 1334.1151767479719,
+            "y": -1696.7505898519685
+          },
+          "test_d1531ecab09968": {
+            "x": 1283.9152794403021,
+            "y": -1665.3286370646322
+          },
+          "test_c70bd6d3295b43": {
+            "x": 1272.8380718962417,
+            "y": -1607.1507694542088
+          },
+          "test_972bd624a5fce9": {
+            "x": 1307.9784869508978,
+            "y": -1559.4798135538215
+          },
+          "test_5af1b985c557d3": {
+            "x": 1417.6306429244828,
+            "y": -1736.1620736873645
+          },
+          "test_1dcfa758c28445": {
+            "x": 1285.946427674476,
+            "y": -1743.8423650315058
+          },
+          "test_3e1277b9b02b3d": {
+            "x": 1211.4833106505491,
+            "y": -1634.9618634519209
+          },
+          "test_f48420193bd32c": {
+            "x": 1266.3975261721453,
+            "y": -1515.0279301603427
+          },
+          "test_1dd24d821ac3f9": {
+            "x": 3378.2431162807,
+            "y": -161.57097720991763
+          },
+          "test_5929e84fb2216e": {
+            "x": 3415.814816775097,
+            "y": -223.92457703558568
+          },
+          "test_72330b80124bd0": {
+            "x": 3381.7984177447474,
+            "y": -288.2867451646056
+          },
+          "test_50431c53be9996": {
+            "x": 3309.114563346545,
+            "y": -292.3685828734189
+          },
+          "test_5118c65b946362": {
+            "x": 3268.105775858047,
+            "y": -232.21973884476435
+          },
+          "test_82a1787fb2fac7": {
+            "x": 3298.4598452481446,
+            "y": -166.05150960503533
+          }
+        },
+        "routes": {
+          "client-board": [
+            "test_56218582b0725d",
+            "test_1f5267b71db300",
+            "test_2115eab9f97593",
+            "test_39253dc4803f30",
+            "test_69735743e424a0",
+            "test_c4dd5fdd9cf540",
+            "test_762d93bdd1b672",
+            "test_d1b7a45243c68c",
+            "test_0601fb2f0700c2"
+          ],
+          "state-flow": [
+            "test_45ca55b568bb44",
+            "test_f017dbc0072c9c",
+            "test_1dcfa758c28445",
+            "test_5af1b985c557d3",
+            "test_9c895cbf4cf28e",
+            "test_c91b2bfd3eab76",
+            "test_42aba23608b0e8",
+            "test_d6e6d933906727",
+            "test_ca831e10dd4d78",
+            "test_ce7972b9053dff",
+            "test_6fbb9ce5cde79e",
+            "test_ef057da511d91e",
+            "test_87ff81fb210991",
+            "test_4b88354d3cc6dc",
+            "test_c7695299c26370",
+            "test_526073635b7c12",
+            "test_0fa2298c16548a",
+            "test_4087a59c014455",
+            "test_1be31fe128f4e9",
+            "test_385571d9e18c3a",
+            "test_5684acaf58f09f",
+            "test_06a39c14dcf0cf",
+            "test_2f8e1e98e1e211",
+            "test_2785d272080cbe",
+            "test_2ddfd8624da14c",
+            "test_807a2870c66e78",
+            "test_ab7224802f55a8",
+            "test_f53e5dbd99b87e",
+            "test_dd5fec054d4e97",
+            "test_377df460f05e16",
+            "test_35e59a90c5f5e0",
+            "test_3d339ebd444d86",
+            "test_048db4b7f3b0a8",
+            "test_56218582b0725d",
+            "test_2115eab9f97593",
+            "test_f959544a1f40fc",
+            "test_c4dd5fdd9cf540"
+          ],
+          "run-lifecycle": [
+            "test_685235e1285ee1",
+            "test_561f5c14e5ec44",
+            "test_71050971a4a540",
+            "test_f017dbc0072c9c",
+            "test_4add68745ba7f7",
+            "test_972bd624a5fce9",
+            "test_1dcfa758c28445",
+            "test_a726f7de3849e1",
+            "test_d6e6d933906727",
+            "test_6fbb9ce5cde79e",
+            "test_c7695299c26370",
+            "test_66875bd7ebd5d9",
+            "test_5684acaf58f09f",
+            "test_c953d36e89135f",
+            "test_f66128d2f8047e",
+            "test_1b388d2b1ebd83",
+            "test_4f4bdf896820e1",
+            "test_de8706444000ba",
+            "test_377df460f05e16",
+            "test_31819362f0a9fe",
+            "test_0944947cce4291",
+            "test_07182019711cc2",
+            "test_d0e253525e5ad5",
+            "test_3d339ebd444d86",
+            "test_b9b5b44f276411",
+            "test_fdc0bb7db7405d",
+            "test_0bdf1f180515db",
+            "test_e99f6f8e72fd64",
+            "test_f9da8695e527ce",
+            "test_d4d09688f7b0f4",
+            "test_048db4b7f3b0a8",
+            "test_25c4f5fdc9f489",
+            "test_39253dc4803f30",
+            "test_cd7a3a298c36b6",
+            "test_c4dd5fdd9cf540"
+          ],
+          "data-consistency": [
+            "test_05d70cc4fef7a1",
+            "test_71050971a4a540",
+            "test_91a0345363c77d",
+            "test_03a2d2c54b9235",
+            "test_aee2d2d4aebf26",
+            "test_f017dbc0072c9c",
+            "test_c70bd6d3295b43",
+            "test_d1531ecab09968",
+            "test_4add68745ba7f7",
+            "test_57e9a04661921f",
+            "test_1dcfa758c28445",
+            "test_40737c04aec767",
+            "test_3e1277b9b02b3d",
+            "test_06f4218135c178",
+            "test_3c8ba4d292201c",
+            "test_1d651a08276b61",
+            "test_3443d9200a139b",
+            "test_9a229f550dfe26",
+            "test_53415b184eb2f3",
+            "test_94453ce1583918",
+            "test_a22e307f140dd4",
+            "test_50431c53be9996",
+            "test_f53e5dbd99b87e",
+            "test_c953d36e89135f",
+            "test_de8706444000ba",
+            "test_d0e253525e5ad5",
+            "test_3d339ebd444d86",
+            "test_438c199653d633",
+            "test_e99f6f8e72fd64",
+            "test_f9da8695e527ce",
+            "test_51f504e3db7d9a",
+            "test_cd7a3a298c36b6",
+            "test_c4dd5fdd9cf540"
+          ],
+          "task-scheduling": [
+            "test_80d2fe36228a25",
+            "test_f017dbc0072c9c",
+            "test_3e1277b9b02b3d",
+            "test_bb9f8734096843",
+            "test_56218582b0725d",
+            "test_65b13de2a7964d",
+            "test_f7dfbce82560c3",
+            "test_39253dc4803f30",
+            "test_f959544a1f40fc",
+            "test_69735743e424a0",
+            "test_762d93bdd1b672",
+            "test_872b021e197551",
+            "test_d4d09688f7b0f4",
+            "test_51f504e3db7d9a",
+            "test_1d651a08276b61",
+            "test_67662cd4e5951a",
+            "test_9bdd97fad68ae0",
+            "test_713f3f4e4032d2",
+            "test_d6e6d933906727",
+            "test_ca831e10dd4d78",
+            "test_ce7972b9053dff",
+            "test_6fbb9ce5cde79e",
+            "test_9bef08d3820be7",
+            "test_fd3db569c90ead",
+            "test_c7695299c26370",
+            "test_cd423611d44f7e",
+            "test_66875bd7ebd5d9",
+            "test_336fe6e86b137b",
+            "test_96395ba73531f2",
+            "test_526073635b7c12",
+            "test_e04c6094fbcedb",
+            "test_3443d9200a139b",
+            "test_9a229f550dfe26",
+            "test_53415b184eb2f3",
+            "test_1be31fe128f4e9",
+            "test_385571d9e18c3a",
+            "test_94453ce1583918",
+            "test_c21467ab0aedf8",
+            "test_1e80d9476f786a",
+            "test_a22e307f140dd4",
+            "test_5684acaf58f09f",
+            "test_4f11f879c76581",
+            "test_8895ad7061b05f",
+            "test_00a2a8adb6ebfd",
+            "test_ec0592df7ac898",
+            "test_1eaf2b5f8f59dc",
+            "test_0f1c7a76e6cabd",
+            "test_a7809adafaa32a",
+            "test_807a2870c66e78",
+            "test_bbd7d9b524d9fa",
+            "test_ae94dc680c7af1",
+            "test_116ae089c30ac8",
+            "test_464234fa743ac8"
+          ],
+          "dependency-order": [
+            "test_e7fde0c050bc7a",
+            "test_c31b42729afb67",
+            "test_1d651a08276b61",
+            "test_67662cd4e5951a",
+            "test_713f3f4e4032d2",
+            "test_9bef08d3820be7",
+            "test_cd423611d44f7e",
+            "test_d0fae973ce950e",
+            "test_326649a64ff99c",
+            "test_0fa2298c16548a",
+            "test_385571d9e18c3a",
+            "test_549b19eae97b8d",
+            "test_fcbbcbb0ece212",
+            "test_9f6965e8f666a9",
+            "test_cde90b73ded816",
+            "test_b24e8bea61db6f",
+            "test_a588fbc9c66205",
+            "test_8a673809a8c404"
+          ],
+          "agent-dispatch": [
+            "test_b6c3f424becbcf",
+            "test_561f5c14e5ec44",
+            "test_80d2fe36228a25",
+            "test_b56cc5a1c9b0d4",
+            "test_c0853f4e1f1eed",
+            "test_4ba4f3a6c654c9",
+            "test_c953d36e89135f",
+            "test_e7cb7397bacaff",
+            "test_1b388d2b1ebd83",
+            "test_dd5fec054d4e97",
+            "test_52c03de4f1f17a",
+            "test_4f4bdf896820e1",
+            "test_de8706444000ba",
+            "test_34320a76d846f9",
+            "test_31819362f0a9fe",
+            "test_35e59a90c5f5e0",
+            "test_0944947cce4291",
+            "test_07182019711cc2",
+            "test_d0e253525e5ad5",
+            "test_b9b5b44f276411",
+            "test_fdc0bb7db7405d",
+            "test_872b021e197551",
+            "test_438c199653d633",
+            "test_c31b42729afb67",
+            "test_048db4b7f3b0a8",
+            "test_51f504e3db7d9a",
+            "test_25c4f5fdc9f489",
+            "test_f91bfff2e2f8fd",
+            "test_9ad306730346c1",
+            "test_67662cd4e5951a",
+            "test_713f3f4e4032d2",
+            "test_ce7972b9053dff",
+            "test_4b88354d3cc6dc",
+            "test_e04c6094fbcedb",
+            "test_4087a59c014455"
+          ],
+          "evidence-review": [
+            "test_05d70cc4fef7a1",
+            "test_45ca55b568bb44",
+            "test_318239c5ad44d2",
+            "test_318d18ca374ea5",
+            "test_b56cc5a1c9b0d4",
+            "test_3e1277b9b02b3d",
+            "test_9552870ad5567d",
+            "test_bcbad1e3b6c9f1",
+            "test_c91b2bfd3eab76",
+            "test_42aba23608b0e8",
+            "test_6fbb9ce5cde79e",
+            "test_f550cd13cd7ede",
+            "test_87ff81fb210991",
+            "test_c7695299c26370",
+            "test_94453ce1583918",
+            "test_1e80d9476f786a",
+            "test_f53e5dbd99b87e",
+            "test_dd5fec054d4e97",
+            "test_34320a76d846f9",
+            "test_31819362f0a9fe",
+            "test_35e59a90c5f5e0",
+            "test_0944947cce4291",
+            "test_3d339ebd444d86",
+            "test_fdc0bb7db7405d",
+            "test_f9da8695e527ce",
+            "test_d4d09688f7b0f4",
+            "test_048db4b7f3b0a8",
+            "test_9ad306730346c1",
+            "test_1f5267b71db300",
+            "test_f7dfbce82560c3"
+          ],
+          "client-interface": [
+            "test_bb9f8734096843",
+            "test_56218582b0725d",
+            "test_65b13de2a7964d",
+            "test_8a673809a8c404",
+            "test_447a63cf6f978c",
+            "test_f7dfbce82560c3",
+            "test_39253dc4803f30",
+            "test_6ba94a42e4671c",
+            "test_f959544a1f40fc",
+            "test_50ea03f72453a5",
+            "test_52005d61888f42",
+            "test_d70ffdcf7e12ab",
+            "test_cd7a3a298c36b6",
+            "test_e6152a009f3199",
+            "test_c0853f4e1f1eed",
+            "test_e0edb249099b3d",
+            "test_78c6b1303285f4",
+            "test_9bfa225219a942",
+            "test_825d6a01aabc83",
+            "test_7fcc5c0cddbc15",
+            "test_a281d0f16a6c99",
+            "test_e91ef5bc2aec3a"
+          ],
+          "mcp-contract": [
+            "test_45ca55b568bb44",
+            "test_685235e1285ee1",
+            "test_e7fde0c050bc7a",
+            "test_b6c3f424becbcf",
+            "test_561f5c14e5ec44",
+            "test_80d2fe36228a25",
+            "test_71050971a4a540",
+            "test_4dbcc71819582d",
+            "test_1fbf7fb509742c",
+            "test_318239c5ad44d2",
+            "test_12488c3fb3190d",
+            "test_318d18ca374ea5",
+            "test_898b18bdca491e",
+            "test_80b366b2de6066",
+            "test_03a2d2c54b9235",
+            "test_bbb90971d28138",
+            "test_a80890e62ad8bb",
+            "test_64c945601df67c",
+            "test_f6ebbe63cf5281",
+            "test_b7018827fe7167",
+            "test_7211a21026096f",
+            "test_12d5357c4e2268",
+            "test_1543af28821aed",
+            "test_b6561b1f7db730",
+            "test_d1531ecab09968",
+            "test_f4e366f49517a4",
+            "test_ef057da511d91e",
+            "test_72330b80124bd0",
+            "test_4ba4f3a6c654c9",
+            "test_e7cb7397bacaff",
+            "test_52c03de4f1f17a"
+          ],
+          "subscription-data": [
+            "test_80b366b2de6066",
+            "test_f66128d2f8047e",
+            "test_438c199653d633",
+            "test_51f504e3db7d9a",
+            "test_f4e366f49517a4",
+            "test_26b2637b5e8afc",
+            "test_06f4218135c178",
+            "test_bcbad1e3b6c9f1",
+            "test_3c8ba4d292201c",
+            "test_a726f7de3849e1",
+            "test_9c895cbf4cf28e",
+            "test_9266efcfdae488",
+            "test_5efaddadde92d6",
+            "test_c24bf749518360",
+            "test_2158fc5ebe8d61",
+            "test_3e935ec2605279",
+            "test_cbdbbd595b1100",
+            "test_0721f7890d1d85",
+            "test_c52500d6c882f4",
+            "test_bdd255411a1eee",
+            "test_ff82d76a2a1e79",
+            "test_8c9b1c747c0b27",
+            "test_82c05a5a192090",
+            "test_5d60cd96ff08cf",
+            "test_fbe46011593da3"
+          ],
+          "project-storage": [
+            "test_b6c3f424becbcf",
+            "test_80d2fe36228a25",
+            "test_91a0345363c77d",
+            "test_64c945601df67c",
+            "test_f6ebbe63cf5281",
+            "test_c70bd6d3295b43",
+            "test_d1531ecab09968",
+            "test_4add68745ba7f7",
+            "test_972bd624a5fce9",
+            "test_57e9a04661921f",
+            "test_1dcfa758c28445",
+            "test_f48420193bd32c",
+            "test_3e1277b9b02b3d",
+            "test_5af1b985c557d3",
+            "test_3c8ba4d292201c",
+            "test_9c895cbf4cf28e",
+            "test_9266efcfdae488",
+            "test_1d651a08276b61",
+            "test_67662cd4e5951a",
+            "test_9bdd97fad68ae0",
+            "test_fd3db569c90ead",
+            "test_87ff81fb210991",
+            "test_66875bd7ebd5d9",
+            "test_336fe6e86b137b",
+            "test_5684acaf58f09f",
+            "test_1dd24d821ac3f9",
+            "test_5929e84fb2216e",
+            "test_34320a76d846f9",
+            "test_d0e253525e5ad5",
+            "test_872b021e197551",
+            "test_e99f6f8e72fd64",
+            "test_bb9f8734096843",
+            "test_447a63cf6f978c",
+            "test_f7dfbce82560c3",
+            "test_f959544a1f40fc",
+            "test_69735743e424a0"
+          ],
+          "canvas-sync": [
+            "test_50431c53be9996",
+            "test_1dd24d821ac3f9",
+            "test_82a1787fb2fac7",
+            "test_72330b80124bd0",
+            "test_5929e84fb2216e",
+            "test_5118c65b946362"
+          ]
+        },
+        "domainBounds": {
+          "scheduling": {
+            "minX": 2393.843926422751,
+            "maxX": 3045.843926422751,
+            "minY": -1673.3619016101518,
+            "maxY": -1021.3619016101518
+          },
+          "agent-execution": {
+            "minX": 1371.72573014377,
+            "maxX": 1903.72573014377,
+            "minY": -612,
+            "maxY": -80
+          },
+          "client-experience": {
+            "minX": 264.8786651225605,
+            "maxX": 796.8786651225605,
+            "minY": -2738.9958615005316,
+            "maxY": -2206.9958615005316
+          },
+          "mcp-integration": {
+            "minX": 80,
+            "maxX": 612,
+            "minY": -1234.1596672813635,
+            "maxY": -702.1596672813636
+          },
+          "subscriptions": {
+            "minX": 1761.773283969203,
+            "maxX": 2173.773283969203,
+            "minY": -2737.8840202137567,
+            "maxY": -2325.8840202137567
+          },
+          "storage-projects": {
+            "minX": 1138.9969223910232,
+            "maxX": 1550.9969223910232,
+            "minY": -1829.5550461914427,
+            "maxY": -1417.5550461914427
+          },
+          "collaborative-canvas": {
+            "minX": 3195.843926422751,
+            "maxX": 3487.843926422751,
+            "minY": -372,
+            "maxY": -80
+          }
+        },
+        "extent": {
+          "minX": -40,
+          "maxX": 3607.843926422751,
+          "minY": -2858.9958615005316,
+          "maxY": 40
+        }
+      },
+      "elk": {
+        "id": "elk",
+        "label": "ELK 规整",
+        "engine": "ELK Layered",
+        "domainShape": "rectangle",
+        "positions": {
+          "test_713f3f4e4032d2": {
+            "x": 848,
+            "y": -1698
+          },
+          "test_96395ba73531f2": {
+            "x": 914,
+            "y": -1698
+          },
+          "test_d6e6d933906727": {
+            "x": 980,
+            "y": -1698
+          },
+          "test_c21467ab0aedf8": {
+            "x": 1046,
+            "y": -1698
+          },
+          "test_67662cd4e5951a": {
+            "x": 1112,
+            "y": -1698
+          },
+          "test_9bdd97fad68ae0": {
+            "x": 1178,
+            "y": -1698
+          },
+          "test_fd3db569c90ead": {
+            "x": 1244,
+            "y": -1698
+          },
+          "test_336fe6e86b137b": {
+            "x": 1310,
+            "y": -1698
+          },
+          "test_464234fa743ac8": {
+            "x": 848,
+            "y": -1768
+          },
+          "test_c7695299c26370": {
+            "x": 914,
+            "y": -1768
+          },
+          "test_6fbb9ce5cde79e": {
+            "x": 980,
+            "y": -1768
+          },
+          "test_00a2a8adb6ebfd": {
+            "x": 1046,
+            "y": -1768
+          },
+          "test_116ae089c30ac8": {
+            "x": 1112,
+            "y": -1768
+          },
+          "test_66875bd7ebd5d9": {
+            "x": 1178,
+            "y": -1768
+          },
+          "test_ce7972b9053dff": {
+            "x": 1244,
+            "y": -1768
+          },
+          "test_ca831e10dd4d78": {
+            "x": 1310,
+            "y": -1768
+          },
+          "test_5684acaf58f09f": {
+            "x": 848,
+            "y": -1838
+          },
+          "test_e04c6094fbcedb": {
+            "x": 914,
+            "y": -1838
+          },
+          "test_4f11f879c76581": {
+            "x": 980,
+            "y": -1838
+          },
+          "test_549b19eae97b8d": {
+            "x": 848,
+            "y": -1908
+          },
+          "test_1d651a08276b61": {
+            "x": 914,
+            "y": -1908
+          },
+          "test_d0fae973ce950e": {
+            "x": 980,
+            "y": -1908
+          },
+          "test_326649a64ff99c": {
+            "x": 1046,
+            "y": -1908
+          },
+          "test_cde90b73ded816": {
+            "x": 1112,
+            "y": -1908
+          },
+          "test_fcbbcbb0ece212": {
+            "x": 1178,
+            "y": -1908
+          },
+          "test_a588fbc9c66205": {
+            "x": 1244,
+            "y": -1908
+          },
+          "test_9f6965e8f666a9": {
+            "x": 1310,
+            "y": -1908
+          },
+          "test_cd423611d44f7e": {
+            "x": 1054,
+            "y": -1558
+          },
+          "test_9bef08d3820be7": {
+            "x": 1120,
+            "y": -1558
+          },
+          "test_b24e8bea61db6f": {
+            "x": 1186,
+            "y": -1558
+          },
+          "test_2ddfd8624da14c": {
+            "x": 848,
+            "y": -1978
+          },
+          "test_2f8e1e98e1e211": {
+            "x": 914,
+            "y": -1978
+          },
+          "test_c91b2bfd3eab76": {
+            "x": 980,
+            "y": -1978
+          },
+          "test_06a39c14dcf0cf": {
+            "x": 1046,
+            "y": -1978
+          },
+          "test_4b88354d3cc6dc": {
+            "x": 1112,
+            "y": -1978
+          },
+          "test_87ff81fb210991": {
+            "x": 1178,
+            "y": -1978
+          },
+          "test_ef057da511d91e": {
+            "x": 1244,
+            "y": -1978
+          },
+          "test_1be31fe128f4e9": {
+            "x": 1310,
+            "y": -1978
+          },
+          "test_4087a59c014455": {
+            "x": 848,
+            "y": -1628
+          },
+          "test_ab7224802f55a8": {
+            "x": 914,
+            "y": -1628
+          },
+          "test_2785d272080cbe": {
+            "x": 980,
+            "y": -1628
+          },
+          "test_385571d9e18c3a": {
+            "x": 1046,
+            "y": -1628
+          },
+          "test_0fa2298c16548a": {
+            "x": 1112,
+            "y": -1628
+          },
+          "test_807a2870c66e78": {
+            "x": 1178,
+            "y": -1628
+          },
+          "test_1e80d9476f786a": {
+            "x": 1046,
+            "y": -1838
+          },
+          "test_9a229f550dfe26": {
+            "x": 1112,
+            "y": -1838
+          },
+          "test_a22e307f140dd4": {
+            "x": 1178,
+            "y": -1838
+          },
+          "test_a7809adafaa32a": {
+            "x": 1244,
+            "y": -1838
+          },
+          "test_f550cd13cd7ede": {
+            "x": 918,
+            "y": -1558
+          },
+          "test_42aba23608b0e8": {
+            "x": 984,
+            "y": -1558
+          },
+          "test_94453ce1583918": {
+            "x": 1310,
+            "y": -1838
+          },
+          "test_0f1c7a76e6cabd": {
+            "x": 848,
+            "y": -2048
+          },
+          "test_3443d9200a139b": {
+            "x": 914,
+            "y": -2048
+          },
+          "test_1eaf2b5f8f59dc": {
+            "x": 980,
+            "y": -2048
+          },
+          "test_ae94dc680c7af1": {
+            "x": 1046,
+            "y": -2048
+          },
+          "test_53415b184eb2f3": {
+            "x": 1112,
+            "y": -2048
+          },
+          "test_bbd7d9b524d9fa": {
+            "x": 1178,
+            "y": -2048
+          },
+          "test_ec0592df7ac898": {
+            "x": 1244,
+            "y": -2048
+          },
+          "test_526073635b7c12": {
+            "x": 1310,
+            "y": -2048
+          },
+          "test_8895ad7061b05f": {
+            "x": 848,
+            "y": -1558
+          },
+          "test_52c03de4f1f17a": {
+            "x": 122,
+            "y": -1023
+          },
+          "test_f91bfff2e2f8fd": {
+            "x": 188,
+            "y": -1023
+          },
+          "test_dd5fec054d4e97": {
+            "x": 254,
+            "y": -1023
+          },
+          "test_e7cb7397bacaff": {
+            "x": 320,
+            "y": -1023
+          },
+          "test_4ba4f3a6c654c9": {
+            "x": 386,
+            "y": -1023
+          },
+          "test_c953d36e89135f": {
+            "x": 452,
+            "y": -1023
+          },
+          "test_b9b5b44f276411": {
+            "x": 518,
+            "y": -1023
+          },
+          "test_fdc0bb7db7405d": {
+            "x": 584,
+            "y": -1023
+          },
+          "test_de8706444000ba": {
+            "x": 122,
+            "y": -1093
+          },
+          "test_d0e253525e5ad5": {
+            "x": 188,
+            "y": -1093
+          },
+          "test_07182019711cc2": {
+            "x": 254,
+            "y": -1093
+          },
+          "test_0944947cce4291": {
+            "x": 320,
+            "y": -1093
+          },
+          "test_4f4bdf896820e1": {
+            "x": 386,
+            "y": -1093
+          },
+          "test_35e59a90c5f5e0": {
+            "x": 452,
+            "y": -1093
+          },
+          "test_872b021e197551": {
+            "x": 518,
+            "y": -1093
+          },
+          "test_9ad306730346c1": {
+            "x": 584,
+            "y": -1093
+          },
+          "test_438c199653d633": {
+            "x": 122,
+            "y": -883
+          },
+          "test_51f504e3db7d9a": {
+            "x": 188,
+            "y": -883
+          },
+          "test_048db4b7f3b0a8": {
+            "x": 254,
+            "y": -883
+          },
+          "test_c31b42729afb67": {
+            "x": 320,
+            "y": -883
+          },
+          "test_f53e5dbd99b87e": {
+            "x": 122,
+            "y": -953
+          },
+          "test_34320a76d846f9": {
+            "x": 188,
+            "y": -953
+          },
+          "test_f9da8695e527ce": {
+            "x": 254,
+            "y": -953
+          },
+          "test_d4d09688f7b0f4": {
+            "x": 320,
+            "y": -953
+          },
+          "test_1b388d2b1ebd83": {
+            "x": 122,
+            "y": -1163
+          },
+          "test_f66128d2f8047e": {
+            "x": 188,
+            "y": -1163
+          },
+          "test_3d339ebd444d86": {
+            "x": 254,
+            "y": -1163
+          },
+          "test_31819362f0a9fe": {
+            "x": 320,
+            "y": -1163
+          },
+          "test_377df460f05e16": {
+            "x": 386,
+            "y": -1163
+          },
+          "test_25c4f5fdc9f489": {
+            "x": 452,
+            "y": -1163
+          },
+          "test_0bdf1f180515db": {
+            "x": 518,
+            "y": -1163
+          },
+          "test_e99f6f8e72fd64": {
+            "x": 584,
+            "y": -1163
+          },
+          "test_d70ffdcf7e12ab": {
+            "x": 848,
+            "y": -216
+          },
+          "test_56218582b0725d": {
+            "x": 914,
+            "y": -216
+          },
+          "test_6ba94a42e4671c": {
+            "x": 980,
+            "y": -216
+          },
+          "test_e6152a009f3199": {
+            "x": 1046,
+            "y": -216
+          },
+          "test_52005d61888f42": {
+            "x": 1112,
+            "y": -216
+          },
+          "test_e0edb249099b3d": {
+            "x": 1178,
+            "y": -216
+          },
+          "test_2115eab9f97593": {
+            "x": 848,
+            "y": -286
+          },
+          "test_1f5267b71db300": {
+            "x": 914,
+            "y": -286
+          },
+          "test_762d93bdd1b672": {
+            "x": 980,
+            "y": -286
+          },
+          "test_c4dd5fdd9cf540": {
+            "x": 1046,
+            "y": -286
+          },
+          "test_39253dc4803f30": {
+            "x": 1112,
+            "y": -286
+          },
+          "test_69735743e424a0": {
+            "x": 1178,
+            "y": -286
+          },
+          "test_0601fb2f0700c2": {
+            "x": 1244,
+            "y": -286
+          },
+          "test_d1b7a45243c68c": {
+            "x": 1310,
+            "y": -286
+          },
+          "test_50ea03f72453a5": {
+            "x": 1244,
+            "y": -216
+          },
+          "test_78c6b1303285f4": {
+            "x": 1310,
+            "y": -216
+          },
+          "test_65b13de2a7964d": {
+            "x": 848,
+            "y": -356
+          },
+          "test_f7dfbce82560c3": {
+            "x": 914,
+            "y": -356
+          },
+          "test_8a673809a8c404": {
+            "x": 980,
+            "y": -356
+          },
+          "test_447a63cf6f978c": {
+            "x": 1046,
+            "y": -356
+          },
+          "test_bb9f8734096843": {
+            "x": 1112,
+            "y": -356
+          },
+          "test_7fcc5c0cddbc15": {
+            "x": 1178,
+            "y": -356
+          },
+          "test_e91ef5bc2aec3a": {
+            "x": 1244,
+            "y": -356
+          },
+          "test_825d6a01aabc83": {
+            "x": 1310,
+            "y": -356
+          },
+          "test_9bfa225219a942": {
+            "x": 848,
+            "y": -146
+          },
+          "test_a281d0f16a6c99": {
+            "x": 914,
+            "y": -146
+          },
+          "test_f959544a1f40fc": {
+            "x": 980,
+            "y": -146
+          },
+          "test_c0853f4e1f1eed": {
+            "x": 1046,
+            "y": -146
+          },
+          "test_cd7a3a298c36b6": {
+            "x": 1112,
+            "y": -146
+          },
+          "test_898b18bdca491e": {
+            "x": 848,
+            "y": -2366
+          },
+          "test_e7fde0c050bc7a": {
+            "x": 914,
+            "y": -2366
+          },
+          "test_b6c3f424becbcf": {
+            "x": 980,
+            "y": -2366
+          },
+          "test_b7018827fe7167": {
+            "x": 1046,
+            "y": -2366
+          },
+          "test_71050971a4a540": {
+            "x": 1112,
+            "y": -2366
+          },
+          "test_a80890e62ad8bb": {
+            "x": 1178,
+            "y": -2366
+          },
+          "test_bbb90971d28138": {
+            "x": 1244,
+            "y": -2366
+          },
+          "test_1fbf7fb509742c": {
+            "x": 1310,
+            "y": -2366
+          },
+          "test_80d2fe36228a25": {
+            "x": 848,
+            "y": -2436
+          },
+          "test_561f5c14e5ec44": {
+            "x": 914,
+            "y": -2436
+          },
+          "test_685235e1285ee1": {
+            "x": 980,
+            "y": -2436
+          },
+          "test_45ca55b568bb44": {
+            "x": 1046,
+            "y": -2436
+          },
+          "test_05d70cc4fef7a1": {
+            "x": 848,
+            "y": -2296
+          },
+          "test_aee2d2d4aebf26": {
+            "x": 914,
+            "y": -2296
+          },
+          "test_91a0345363c77d": {
+            "x": 980,
+            "y": -2296
+          },
+          "test_12488c3fb3190d": {
+            "x": 1112,
+            "y": -2436
+          },
+          "test_318d18ca374ea5": {
+            "x": 1178,
+            "y": -2436
+          },
+          "test_03a2d2c54b9235": {
+            "x": 1244,
+            "y": -2436
+          },
+          "test_4dbcc71819582d": {
+            "x": 1310,
+            "y": -2436
+          },
+          "test_80b366b2de6066": {
+            "x": 848,
+            "y": -2506
+          },
+          "test_12d5357c4e2268": {
+            "x": 914,
+            "y": -2506
+          },
+          "test_b6561b1f7db730": {
+            "x": 980,
+            "y": -2506
+          },
+          "test_1543af28821aed": {
+            "x": 1046,
+            "y": -2506
+          },
+          "test_7211a21026096f": {
+            "x": 1112,
+            "y": -2506
+          },
+          "test_318239c5ad44d2": {
+            "x": 1178,
+            "y": -2506
+          },
+          "test_f6ebbe63cf5281": {
+            "x": 1244,
+            "y": -2506
+          },
+          "test_64c945601df67c": {
+            "x": 1310,
+            "y": -2506
+          },
+          "test_26b2637b5e8afc": {
+            "x": 848,
+            "y": -992
+          },
+          "test_c52500d6c882f4": {
+            "x": 914,
+            "y": -992
+          },
+          "test_0721f7890d1d85": {
+            "x": 980,
+            "y": -992
+          },
+          "test_8c9b1c747c0b27": {
+            "x": 1046,
+            "y": -992
+          },
+          "test_5efaddadde92d6": {
+            "x": 1112,
+            "y": -992
+          },
+          "test_cbdbbd595b1100": {
+            "x": 1178,
+            "y": -992
+          },
+          "test_2158fc5ebe8d61": {
+            "x": 1244,
+            "y": -992
+          },
+          "test_fbe46011593da3": {
+            "x": 1310,
+            "y": -992
+          },
+          "test_f4e366f49517a4": {
+            "x": 848,
+            "y": -1062
+          },
+          "test_06f4218135c178": {
+            "x": 914,
+            "y": -1062
+          },
+          "test_ff82d76a2a1e79": {
+            "x": 980,
+            "y": -1062
+          },
+          "test_bdd255411a1eee": {
+            "x": 1046,
+            "y": -1062
+          },
+          "test_a726f7de3849e1": {
+            "x": 1112,
+            "y": -1062
+          },
+          "test_3e935ec2605279": {
+            "x": 1178,
+            "y": -1062
+          },
+          "test_9266efcfdae488": {
+            "x": 1244,
+            "y": -1062
+          },
+          "test_5d60cd96ff08cf": {
+            "x": 1310,
+            "y": -1062
+          },
+          "test_9c895cbf4cf28e": {
+            "x": 848,
+            "y": -922
+          },
+          "test_c24bf749518360": {
+            "x": 914,
+            "y": -922
+          },
+          "test_82c05a5a192090": {
+            "x": 980,
+            "y": -922
+          },
+          "test_3c8ba4d292201c": {
+            "x": 1046,
+            "y": -922
+          },
+          "test_bcbad1e3b6c9f1": {
+            "x": 1112,
+            "y": -922
+          },
+          "test_57e9a04661921f": {
+            "x": 848,
+            "y": -674
+          },
+          "test_4add68745ba7f7": {
+            "x": 914,
+            "y": -674
+          },
+          "test_d1531ecab09968": {
+            "x": 980,
+            "y": -674
+          },
+          "test_c70bd6d3295b43": {
+            "x": 1046,
+            "y": -674
+          },
+          "test_972bd624a5fce9": {
+            "x": 1112,
+            "y": -674
+          },
+          "test_f48420193bd32c": {
+            "x": 1178,
+            "y": -674
+          },
+          "test_f017dbc0072c9c": {
+            "x": 918,
+            "y": -604
+          },
+          "test_40737c04aec767": {
+            "x": 984,
+            "y": -604
+          },
+          "test_5af1b985c557d3": {
+            "x": 1244,
+            "y": -674
+          },
+          "test_1dcfa758c28445": {
+            "x": 1310,
+            "y": -674
+          },
+          "test_3e1277b9b02b3d": {
+            "x": 848,
+            "y": -604
+          },
+          "test_b56cc5a1c9b0d4": {
+            "x": 1054,
+            "y": -604
+          },
+          "test_9552870ad5567d": {
+            "x": 1120,
+            "y": -604
+          },
+          "test_1dd24d821ac3f9": {
+            "x": 848,
+            "y": -1310
+          },
+          "test_5929e84fb2216e": {
+            "x": 914,
+            "y": -1310
+          },
+          "test_5118c65b946362": {
+            "x": 980,
+            "y": -1310
+          },
+          "test_82a1787fb2fac7": {
+            "x": 1046,
+            "y": -1310
+          },
+          "test_72330b80124bd0": {
+            "x": 1112,
+            "y": -1310
+          },
+          "test_50431c53be9996": {
+            "x": 1178,
+            "y": -1310
+          }
+        },
+        "routes": {
+          "client-board": [
+            "test_2115eab9f97593",
+            "test_56218582b0725d",
+            "test_1f5267b71db300",
+            "test_762d93bdd1b672",
+            "test_c4dd5fdd9cf540",
+            "test_39253dc4803f30",
+            "test_69735743e424a0",
+            "test_0601fb2f0700c2",
+            "test_d1b7a45243c68c"
+          ],
+          "state-flow": [
+            "test_f53e5dbd99b87e",
+            "test_048db4b7f3b0a8",
+            "test_dd5fec054d4e97",
+            "test_3d339ebd444d86",
+            "test_377df460f05e16",
+            "test_35e59a90c5f5e0",
+            "test_9c895cbf4cf28e",
+            "test_f017dbc0072c9c",
+            "test_5af1b985c557d3",
+            "test_1dcfa758c28445",
+            "test_2115eab9f97593",
+            "test_56218582b0725d",
+            "test_f959544a1f40fc",
+            "test_c4dd5fdd9cf540",
+            "test_4087a59c014455",
+            "test_5684acaf58f09f",
+            "test_2ddfd8624da14c",
+            "test_ab7224802f55a8",
+            "test_c7695299c26370",
+            "test_2f8e1e98e1e211",
+            "test_2785d272080cbe",
+            "test_d6e6d933906727",
+            "test_6fbb9ce5cde79e",
+            "test_c91b2bfd3eab76",
+            "test_42aba23608b0e8",
+            "test_385571d9e18c3a",
+            "test_06a39c14dcf0cf",
+            "test_0fa2298c16548a",
+            "test_4b88354d3cc6dc",
+            "test_807a2870c66e78",
+            "test_87ff81fb210991",
+            "test_ce7972b9053dff",
+            "test_ef057da511d91e",
+            "test_ca831e10dd4d78",
+            "test_1be31fe128f4e9",
+            "test_526073635b7c12",
+            "test_45ca55b568bb44"
+          ],
+          "run-lifecycle": [
+            "test_de8706444000ba",
+            "test_1b388d2b1ebd83",
+            "test_d0e253525e5ad5",
+            "test_f66128d2f8047e",
+            "test_048db4b7f3b0a8",
+            "test_f9da8695e527ce",
+            "test_07182019711cc2",
+            "test_3d339ebd444d86",
+            "test_d4d09688f7b0f4",
+            "test_0944947cce4291",
+            "test_31819362f0a9fe",
+            "test_4f4bdf896820e1",
+            "test_377df460f05e16",
+            "test_c953d36e89135f",
+            "test_25c4f5fdc9f489",
+            "test_b9b5b44f276411",
+            "test_0bdf1f180515db",
+            "test_fdc0bb7db7405d",
+            "test_e99f6f8e72fd64",
+            "test_a726f7de3849e1",
+            "test_4add68745ba7f7",
+            "test_f017dbc0072c9c",
+            "test_972bd624a5fce9",
+            "test_1dcfa758c28445",
+            "test_c4dd5fdd9cf540",
+            "test_cd7a3a298c36b6",
+            "test_39253dc4803f30",
+            "test_5684acaf58f09f",
+            "test_c7695299c26370",
+            "test_d6e6d933906727",
+            "test_6fbb9ce5cde79e",
+            "test_66875bd7ebd5d9",
+            "test_561f5c14e5ec44",
+            "test_685235e1285ee1",
+            "test_71050971a4a540"
+          ],
+          "data-consistency": [
+            "test_438c199653d633",
+            "test_f53e5dbd99b87e",
+            "test_de8706444000ba",
+            "test_51f504e3db7d9a",
+            "test_d0e253525e5ad5",
+            "test_f9da8695e527ce",
+            "test_3d339ebd444d86",
+            "test_c953d36e89135f",
+            "test_e99f6f8e72fd64",
+            "test_50431c53be9996",
+            "test_06f4218135c178",
+            "test_3c8ba4d292201c",
+            "test_3e1277b9b02b3d",
+            "test_57e9a04661921f",
+            "test_4add68745ba7f7",
+            "test_f017dbc0072c9c",
+            "test_d1531ecab09968",
+            "test_40737c04aec767",
+            "test_c70bd6d3295b43",
+            "test_1dcfa758c28445",
+            "test_c4dd5fdd9cf540",
+            "test_cd7a3a298c36b6",
+            "test_1d651a08276b61",
+            "test_3443d9200a139b",
+            "test_9a229f550dfe26",
+            "test_53415b184eb2f3",
+            "test_a22e307f140dd4",
+            "test_94453ce1583918",
+            "test_05d70cc4fef7a1",
+            "test_aee2d2d4aebf26",
+            "test_91a0345363c77d",
+            "test_71050971a4a540",
+            "test_03a2d2c54b9235"
+          ],
+          "task-scheduling": [
+            "test_51f504e3db7d9a",
+            "test_d4d09688f7b0f4",
+            "test_872b021e197551",
+            "test_3e1277b9b02b3d",
+            "test_f017dbc0072c9c",
+            "test_65b13de2a7964d",
+            "test_56218582b0725d",
+            "test_f7dfbce82560c3",
+            "test_f959544a1f40fc",
+            "test_762d93bdd1b672",
+            "test_39253dc4803f30",
+            "test_bb9f8734096843",
+            "test_69735743e424a0",
+            "test_8895ad7061b05f",
+            "test_713f3f4e4032d2",
+            "test_464234fa743ac8",
+            "test_5684acaf58f09f",
+            "test_0f1c7a76e6cabd",
+            "test_96395ba73531f2",
+            "test_c7695299c26370",
+            "test_e04c6094fbcedb",
+            "test_1d651a08276b61",
+            "test_3443d9200a139b",
+            "test_d6e6d933906727",
+            "test_6fbb9ce5cde79e",
+            "test_4f11f879c76581",
+            "test_1eaf2b5f8f59dc",
+            "test_385571d9e18c3a",
+            "test_c21467ab0aedf8",
+            "test_00a2a8adb6ebfd",
+            "test_1e80d9476f786a",
+            "test_ae94dc680c7af1",
+            "test_cd423611d44f7e",
+            "test_67662cd4e5951a",
+            "test_116ae089c30ac8",
+            "test_9a229f550dfe26",
+            "test_53415b184eb2f3",
+            "test_9bef08d3820be7",
+            "test_807a2870c66e78",
+            "test_9bdd97fad68ae0",
+            "test_66875bd7ebd5d9",
+            "test_a22e307f140dd4",
+            "test_bbd7d9b524d9fa",
+            "test_fd3db569c90ead",
+            "test_ce7972b9053dff",
+            "test_a7809adafaa32a",
+            "test_ec0592df7ac898",
+            "test_336fe6e86b137b",
+            "test_ca831e10dd4d78",
+            "test_94453ce1583918",
+            "test_1be31fe128f4e9",
+            "test_526073635b7c12",
+            "test_80d2fe36228a25"
+          ],
+          "dependency-order": [
+            "test_c31b42729afb67",
+            "test_8a673809a8c404",
+            "test_713f3f4e4032d2",
+            "test_549b19eae97b8d",
+            "test_1d651a08276b61",
+            "test_d0fae973ce950e",
+            "test_385571d9e18c3a",
+            "test_326649a64ff99c",
+            "test_cd423611d44f7e",
+            "test_0fa2298c16548a",
+            "test_67662cd4e5951a",
+            "test_cde90b73ded816",
+            "test_9bef08d3820be7",
+            "test_fcbbcbb0ece212",
+            "test_b24e8bea61db6f",
+            "test_a588fbc9c66205",
+            "test_9f6965e8f666a9",
+            "test_e7fde0c050bc7a"
+          ],
+          "agent-dispatch": [
+            "test_438c199653d633",
+            "test_52c03de4f1f17a",
+            "test_de8706444000ba",
+            "test_1b388d2b1ebd83",
+            "test_51f504e3db7d9a",
+            "test_34320a76d846f9",
+            "test_f91bfff2e2f8fd",
+            "test_d0e253525e5ad5",
+            "test_048db4b7f3b0a8",
+            "test_dd5fec054d4e97",
+            "test_07182019711cc2",
+            "test_c31b42729afb67",
+            "test_e7cb7397bacaff",
+            "test_0944947cce4291",
+            "test_31819362f0a9fe",
+            "test_4ba4f3a6c654c9",
+            "test_4f4bdf896820e1",
+            "test_c953d36e89135f",
+            "test_35e59a90c5f5e0",
+            "test_25c4f5fdc9f489",
+            "test_b9b5b44f276411",
+            "test_872b021e197551",
+            "test_fdc0bb7db7405d",
+            "test_9ad306730346c1",
+            "test_b56cc5a1c9b0d4",
+            "test_c0853f4e1f1eed",
+            "test_4087a59c014455",
+            "test_713f3f4e4032d2",
+            "test_e04c6094fbcedb",
+            "test_67662cd4e5951a",
+            "test_4b88354d3cc6dc",
+            "test_ce7972b9053dff",
+            "test_80d2fe36228a25",
+            "test_561f5c14e5ec44",
+            "test_b6c3f424becbcf"
+          ],
+          "evidence-review": [
+            "test_f53e5dbd99b87e",
+            "test_34320a76d846f9",
+            "test_048db4b7f3b0a8",
+            "test_f9da8695e527ce",
+            "test_dd5fec054d4e97",
+            "test_3d339ebd444d86",
+            "test_d4d09688f7b0f4",
+            "test_0944947cce4291",
+            "test_31819362f0a9fe",
+            "test_35e59a90c5f5e0",
+            "test_fdc0bb7db7405d",
+            "test_9ad306730346c1",
+            "test_bcbad1e3b6c9f1",
+            "test_3e1277b9b02b3d",
+            "test_b56cc5a1c9b0d4",
+            "test_9552870ad5567d",
+            "test_1f5267b71db300",
+            "test_f7dfbce82560c3",
+            "test_c7695299c26370",
+            "test_f550cd13cd7ede",
+            "test_6fbb9ce5cde79e",
+            "test_c91b2bfd3eab76",
+            "test_42aba23608b0e8",
+            "test_1e80d9476f786a",
+            "test_87ff81fb210991",
+            "test_94453ce1583918",
+            "test_05d70cc4fef7a1",
+            "test_45ca55b568bb44",
+            "test_318d18ca374ea5",
+            "test_318239c5ad44d2"
+          ],
+          "client-interface": [
+            "test_9bfa225219a942",
+            "test_d70ffdcf7e12ab",
+            "test_65b13de2a7964d",
+            "test_a281d0f16a6c99",
+            "test_56218582b0725d",
+            "test_f7dfbce82560c3",
+            "test_f959544a1f40fc",
+            "test_6ba94a42e4671c",
+            "test_8a673809a8c404",
+            "test_c0853f4e1f1eed",
+            "test_e6152a009f3199",
+            "test_447a63cf6f978c",
+            "test_cd7a3a298c36b6",
+            "test_52005d61888f42",
+            "test_39253dc4803f30",
+            "test_bb9f8734096843",
+            "test_e0edb249099b3d",
+            "test_7fcc5c0cddbc15",
+            "test_50ea03f72453a5",
+            "test_e91ef5bc2aec3a",
+            "test_78c6b1303285f4",
+            "test_825d6a01aabc83"
+          ],
+          "mcp-contract": [
+            "test_52c03de4f1f17a",
+            "test_e7cb7397bacaff",
+            "test_4ba4f3a6c654c9",
+            "test_72330b80124bd0",
+            "test_f4e366f49517a4",
+            "test_d1531ecab09968",
+            "test_ef057da511d91e",
+            "test_898b18bdca491e",
+            "test_80d2fe36228a25",
+            "test_80b366b2de6066",
+            "test_e7fde0c050bc7a",
+            "test_561f5c14e5ec44",
+            "test_12d5357c4e2268",
+            "test_b6c3f424becbcf",
+            "test_685235e1285ee1",
+            "test_b6561b1f7db730",
+            "test_b7018827fe7167",
+            "test_45ca55b568bb44",
+            "test_1543af28821aed",
+            "test_71050971a4a540",
+            "test_12488c3fb3190d",
+            "test_7211a21026096f",
+            "test_a80890e62ad8bb",
+            "test_318d18ca374ea5",
+            "test_318239c5ad44d2",
+            "test_bbb90971d28138",
+            "test_03a2d2c54b9235",
+            "test_f6ebbe63cf5281",
+            "test_1fbf7fb509742c",
+            "test_4dbcc71819582d",
+            "test_64c945601df67c"
+          ],
+          "subscription-data": [
+            "test_438c199653d633",
+            "test_51f504e3db7d9a",
+            "test_f66128d2f8047e",
+            "test_9c895cbf4cf28e",
+            "test_26b2637b5e8afc",
+            "test_f4e366f49517a4",
+            "test_c24bf749518360",
+            "test_c52500d6c882f4",
+            "test_06f4218135c178",
+            "test_82c05a5a192090",
+            "test_0721f7890d1d85",
+            "test_ff82d76a2a1e79",
+            "test_3c8ba4d292201c",
+            "test_8c9b1c747c0b27",
+            "test_bdd255411a1eee",
+            "test_bcbad1e3b6c9f1",
+            "test_5efaddadde92d6",
+            "test_a726f7de3849e1",
+            "test_cbdbbd595b1100",
+            "test_3e935ec2605279",
+            "test_2158fc5ebe8d61",
+            "test_9266efcfdae488",
+            "test_fbe46011593da3",
+            "test_5d60cd96ff08cf",
+            "test_80b366b2de6066"
+          ],
+          "project-storage": [
+            "test_34320a76d846f9",
+            "test_d0e253525e5ad5",
+            "test_872b021e197551",
+            "test_e99f6f8e72fd64",
+            "test_1dd24d821ac3f9",
+            "test_5929e84fb2216e",
+            "test_9c895cbf4cf28e",
+            "test_3c8ba4d292201c",
+            "test_9266efcfdae488",
+            "test_3e1277b9b02b3d",
+            "test_57e9a04661921f",
+            "test_4add68745ba7f7",
+            "test_d1531ecab09968",
+            "test_c70bd6d3295b43",
+            "test_972bd624a5fce9",
+            "test_f48420193bd32c",
+            "test_5af1b985c557d3",
+            "test_1dcfa758c28445",
+            "test_f7dfbce82560c3",
+            "test_f959544a1f40fc",
+            "test_447a63cf6f978c",
+            "test_bb9f8734096843",
+            "test_69735743e424a0",
+            "test_5684acaf58f09f",
+            "test_1d651a08276b61",
+            "test_67662cd4e5951a",
+            "test_9bdd97fad68ae0",
+            "test_66875bd7ebd5d9",
+            "test_87ff81fb210991",
+            "test_fd3db569c90ead",
+            "test_336fe6e86b137b",
+            "test_80d2fe36228a25",
+            "test_91a0345363c77d",
+            "test_b6c3f424becbcf",
+            "test_f6ebbe63cf5281",
+            "test_64c945601df67c"
+          ],
+          "canvas-sync": [
+            "test_1dd24d821ac3f9",
+            "test_5929e84fb2216e",
+            "test_5118c65b946362",
+            "test_82a1787fb2fac7",
+            "test_72330b80124bd0",
+            "test_50431c53be9996"
+          ]
+        },
+        "domainBounds": {
+          "scheduling": {
+            "minX": 786,
+            "maxX": 1372,
+            "minY": -2110,
+            "maxY": -1472
+          },
+          "agent-execution": {
+            "minX": 60,
+            "maxX": 646,
+            "minY": -1225,
+            "maxY": -797
+          },
+          "client-experience": {
+            "minX": 786,
+            "maxX": 1372,
+            "minY": -418,
+            "maxY": -60
+          },
+          "mcp-integration": {
+            "minX": 786,
+            "maxX": 1372,
+            "minY": -2568,
+            "maxY": -2210
+          },
+          "subscriptions": {
+            "minX": 786,
+            "maxX": 1372,
+            "minY": -1124,
+            "maxY": -836
+          },
+          "storage-projects": {
+            "minX": 786,
+            "maxX": 1372,
+            "minY": -736,
+            "maxY": -518
+          },
+          "collaborative-canvas": {
+            "minX": 786,
+            "maxX": 1240,
+            "minY": -1372,
+            "maxY": -1224
+          }
+        },
+        "extent": {
+          "minX": -60,
+          "maxX": 1492,
+          "minY": -2688,
+          "maxY": 60
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@ const state = {
   projects: [],
   workItems: [],
   dashboard: null,
+  dispatch: null,
   devReloadSource: null,
   trajectory: null,
   trajectoryWindow: readTrajectoryWindow(),
@@ -10,22 +11,29 @@ const state = {
   selectedProjectId: new URLSearchParams(window.location.search).get('project'),
   detailFocusPending: true,
   detailSchedule: null,
-  creationSchedule: null,
   creationMode: 'task',
   creationDraftSnapshot: null,
   editingTaskId: null,
   taskEditorMode: 'edit',
+  taskEditorProjectId: null,
+  taskEditorSchedule: null,
   detailView: readDetailView(),
   draggedTaskId: null,
   dragPlaceholder: null,
   dragTooltipSuppressed: false,
-  boardScrollPositions: new Map()
+  boardScrollPositions: new Map(),
+  boardRowSignatures: new Map(),
+  detailRenderSignature: null,
+  refreshRemainingSeconds: 10,
+  refreshInFlight: false
 };
 
 const elements = {
   health: document.querySelector('#health'),
+  subscriptionSummaryLink: document.querySelector('#subscriptionSummaryLink'),
   metrics: document.querySelector('#metrics'),
   nextAction: document.querySelector('#nextAction'),
+  dispatchAudit: document.querySelector('#dispatchAudit'),
   board: document.querySelector('#portfolioBoard'),
   projectId: document.querySelector('#projectId'),
   trajectory: document.querySelector('#trajectory'),
@@ -45,14 +53,7 @@ const elements = {
   creationDrawer: document.querySelector('#creationDrawer'),
   closeCreationDrawer: document.querySelector('#closeCreationDrawer'),
   projectForm: document.querySelector('#projectForm'),
-  workItemForm: document.querySelector('#workItemForm'),
-  createPhaseId: document.querySelector('#createPhaseId'),
-  createNewPhaseFields: document.querySelector('#createNewPhaseFields'),
-  createNewPhaseTitle: document.querySelector('#createNewPhaseTitle'),
-  createNewPhaseOrder: document.querySelector('#createNewPhaseOrder'),
-  createPriority: document.querySelector('#createPriority'),
-  createDependencies: document.querySelector('#createDependencies'),
-  createParallelPolicy: document.querySelector('#createParallelPolicy'),
+  taskLauncherForm: document.querySelector('#taskLauncherForm'),
   strategicValue: document.querySelector('#strategicValue'),
   strategicValueOutput: document.querySelector('#strategicValueOutput'),
   toast: document.querySelector('#toast'),
@@ -61,6 +62,7 @@ const elements = {
   boardDescription: document.querySelector('#portfolioDescription'),
   backToPortfolio: document.querySelector('#backToPortfolio'),
   detailControls: document.querySelector('#detailControls'),
+  clientViewLink: document.querySelector('#clientViewLink'),
   addDetailTask: document.querySelector('#addDetailTask'),
   taskEditor: document.querySelector('#taskEditor'),
   taskEditorForm: document.querySelector('#taskEditorForm'),
@@ -87,12 +89,18 @@ const elements = {
   newPhaseFields: document.querySelector('#newPhaseFields'),
   editNewPhaseTitle: document.querySelector('#editNewPhaseTitle'),
   editNewPhaseOrder: document.querySelector('#editNewPhaseOrder'),
-  taskTooltip: document.querySelector('#taskTooltip')
+  taskTooltip: document.querySelector('#taskTooltip'),
+  taskInspector: document.querySelector('#taskInspector'),
+  taskInspectorContext: document.querySelector('#taskInspectorContext'),
+  taskInspectorTitle: document.querySelector('#taskInspectorTitle'),
+  taskInspectorBody: document.querySelector('#taskInspectorBody'),
+  closeTaskInspector: document.querySelector('#closeTaskInspector')
 };
 
 let taskTooltipHideTimer = null;
 
 elements.refresh.addEventListener('click', async () => {
+  resetRefreshCountdown();
   await Promise.all([checkHealth(), refresh()]);
 });
 elements.seedDemo?.addEventListener('click', bootstrapPortfolio);
@@ -107,12 +115,7 @@ elements.creationDrawer.addEventListener('click', (event) => {
   if (button) setCreationMode(button.dataset.createMode);
 });
 elements.projectForm.addEventListener('submit', createProject);
-elements.workItemForm.addEventListener('submit', createWorkItem);
-elements.projectId.addEventListener('change', loadCreationSchedule);
-elements.createPhaseId.addEventListener('change', () => {
-  syncCreateNewPhaseFields();
-  populateCreationDependencyOptions();
-});
+elements.taskLauncherForm.addEventListener('submit', openGlobalTaskCreator);
 elements.backToPortfolio.addEventListener('click', () => closeProjectDetail());
 elements.addDetailTask.addEventListener('click', openTaskCreator);
 elements.detailControls.addEventListener('click', (event) => {
@@ -159,9 +162,15 @@ elements.trajectoryDrawer.addEventListener('cancel', (event) => {
   event.preventDefault();
   elements.trajectoryDrawer.close();
 });
+elements.closeTaskInspector.addEventListener('click', () => elements.taskInspector.close());
+elements.taskInspector.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  elements.taskInspector.close();
+});
 window.addEventListener('popstate', async () => {
   state.selectedProjectId = new URLSearchParams(window.location.search).get('project');
   state.detailSchedule = null;
+  state.detailRenderSignature = null;
   state.detailFocusPending = Boolean(state.selectedProjectId);
   await refresh();
 });
@@ -179,6 +188,10 @@ window.addEventListener('keydown', (event) => {
 
 await checkHealth();
 await refresh();
+await loadSubscriptionSummary();
+window.setInterval(loadSubscriptionSummary, 10_000);
+updateRefreshButton();
+window.setInterval(tickAutoRefresh, 1_000);
 
 async function checkHealth() {
   try {
@@ -190,6 +203,18 @@ async function checkHealth() {
     elements.health.textContent = '控制平面离线';
     elements.health.classList.remove('online');
     notify(error.message, true);
+  }
+}
+
+async function loadSubscriptionSummary() {
+  if (!elements.subscriptionSummaryLink) return;
+  try {
+    const summary = await api('/api/subscriptions/summary');
+    elements.subscriptionSummaryLink.textContent = `算力余量 ${summary.usable}/${summary.total} 可用 · ${summary.attention} 异常`;
+    elements.subscriptionSummaryLink.classList.toggle('has-attention', summary.attention > 0);
+  } catch {
+    elements.subscriptionSummaryLink.textContent = '算力余量 · 暂不可用';
+    elements.subscriptionSummaryLink.classList.add('has-attention');
   }
 }
 
@@ -205,16 +230,19 @@ function enableDevReload() {
 }
 
 async function refresh() {
+  if (state.refreshInFlight) return;
+  state.refreshInFlight = true;
+  elements.refresh.disabled = true;
   try {
-    const [dashboard, projects, workItems, trajectory] = await Promise.all([
+    const [dashboard, workItems, trajectory] = await Promise.all([
       api('/api/dashboard'),
-      api('/api/projects'),
       api('/api/work-items'),
       api(`/api/trajectory?window=${encodeURIComponent(state.trajectoryWindow)}`)
     ]);
-    state.projects = projects.items;
     state.workItems = workItems.items.map(hydrateWorkItem);
     state.dashboard = hydrateDashboard(dashboard, state.workItems);
+    state.projects = state.dashboard.projects;
+    state.dispatch = dashboard.dispatch ?? null;
     state.trajectory = trajectory;
     state.bootstrap = dashboard.bootstrap?.portfolioV2 ?? dashboard.bootstrap ?? null;
     if (state.selectedProjectId && state.projects.some((project) => project.id === state.selectedProjectId)) {
@@ -228,7 +256,35 @@ async function refresh() {
     render();
   } catch (error) {
     notify(error.message, true);
+  } finally {
+    state.refreshInFlight = false;
+    elements.refresh.disabled = false;
+    resetRefreshCountdown();
   }
+}
+
+async function tickAutoRefresh() {
+  if (document.hidden || state.refreshInFlight) return;
+  state.refreshRemainingSeconds = Math.max(0, state.refreshRemainingSeconds - 1);
+  updateRefreshButton();
+  if (state.refreshRemainingSeconds > 0) return;
+  if (state.draggedTaskId || document.querySelector('dialog[open]')) {
+    resetRefreshCountdown();
+    return;
+  }
+  await Promise.all([checkHealth(), refresh()]);
+}
+
+function resetRefreshCountdown() {
+  state.refreshRemainingSeconds = 10;
+  updateRefreshButton();
+}
+
+function updateRefreshButton() {
+  if (!elements.refresh) return;
+  elements.refresh.textContent = state.refreshInFlight
+    ? '正在刷新…'
+    : `刷新状态 · ${state.refreshRemainingSeconds}s`;
 }
 
 async function bootstrapPortfolio() {
@@ -256,7 +312,7 @@ async function openCreationDrawer() {
   await setCreationMode(state.projects.length > 0 ? 'task' : 'project');
   elements.creationDrawer.showModal();
   state.creationDraftSnapshot = creationDraftSnapshot();
-  const firstField = state.creationMode === 'task' ? document.querySelector('#title') : document.querySelector('#projectName');
+  const firstField = state.creationMode === 'task' ? elements.projectId : document.querySelector('#projectName');
   firstField?.focus();
 }
 
@@ -264,14 +320,12 @@ function closeCreationDrawer(force = false) {
   if (!force && creationDraftChanged()) {
     if (!window.confirm('关闭后会丢失尚未提交的内容，仍要关闭吗？')) return;
   }
-  elements.createNewPhaseTitle.required = false;
-  elements.createNewPhaseOrder.required = false;
   state.creationDraftSnapshot = null;
   if (elements.creationDrawer.open) elements.creationDrawer.close();
 }
 
 function creationDraftSnapshot() {
-  return JSON.stringify([...elements.creationDrawer.querySelectorAll('input, textarea, select')].map((field) => [
+  return JSON.stringify([...elements.projectForm.querySelectorAll('input, textarea, select')].map((field) => [
     field.id,
     field.type === 'checkbox' || field.type === 'radio' ? field.checked : field.value
   ]));
@@ -281,7 +335,7 @@ function creationDraftChanged() {
   return state.creationDraftSnapshot !== null && creationDraftSnapshot() !== state.creationDraftSnapshot;
 }
 
-async function setCreationMode(mode) {
+function setCreationMode(mode) {
   state.creationMode = mode === 'project' ? 'project' : 'task';
   elements.creationDrawer.querySelectorAll('[data-create-mode]').forEach((button) => {
     const active = button.dataset.createMode === state.creationMode;
@@ -291,51 +345,22 @@ async function setCreationMode(mode) {
   elements.creationDrawer.querySelectorAll('[data-create-pane]').forEach((pane) => {
     pane.hidden = pane.dataset.createPane !== state.creationMode;
   });
-  if (state.creationMode === 'task') await loadCreationSchedule();
-  else syncCreateNewPhaseFields();
 }
 
-async function loadCreationSchedule() {
+async function openGlobalTaskCreator(event) {
+  event.preventDefault();
   const projectId = elements.projectId.value;
   if (!projectId) {
-    state.creationSchedule = null;
-    elements.createPhaseId.innerHTML = '<option value="">请先创建项目</option>';
-    elements.createPhaseId.disabled = true;
-    populateDependencyOptions(elements.createDependencies, null);
-    syncCreateNewPhaseFields();
+    notify('请先添加项目', true);
     return;
   }
   try {
     const schedule = hydrateSchedule(await api(`/api/projects/${encodeURIComponent(projectId)}/schedule`));
-    if (elements.projectId.value !== projectId) return;
-    state.creationSchedule = schedule;
-    elements.createPhaseId.disabled = false;
-    elements.createPhaseId.innerHTML = [
-      ...schedule.phases.map((phase) => `<option value="${escapeHtml(phase.id)}">S${escapeHtml(phase.phaseOrder)} · ${escapeHtml(phase.title)}</option>`),
-      '<option value="__new__">＋ 新建阶段</option>'
-    ].join('');
-    if (schedule.phases.length === 0) elements.createPhaseId.value = '__new__';
-    elements.createNewPhaseOrder.value = String(
-      Math.max(0, ...schedule.phases.map((phase) => Number(phase.phaseOrder) || 0)) + 1
-    );
-    populateCreationDependencyOptions();
-    syncCreateNewPhaseFields();
+    closeCreationDrawer(true);
+    openTaskCreatorFor(projectId, schedule);
   } catch (error) {
     notify(error.message, true);
   }
-}
-
-function syncCreateNewPhaseFields() {
-  const creatingPhase = state.creationMode === 'task' && elements.createPhaseId.value === '__new__';
-  elements.createNewPhaseFields.hidden = !creatingPhase;
-  elements.createNewPhaseTitle.required = creatingPhase;
-  elements.createNewPhaseOrder.required = creatingPhase;
-}
-
-function populateCreationDependencyOptions() {
-  populateDependencyOptions(elements.createDependencies, state.creationSchedule, {
-    selectedIds: selectedOptionValues(elements.createDependencies)
-  });
 }
 
 async function createProject(event) {
@@ -359,68 +384,6 @@ async function createProject(event) {
   }
 }
 
-async function createWorkItem(event) {
-  event.preventDefault();
-  if (!elements.projectId.value) {
-    notify('请先添加项目', true);
-    return;
-  }
-  try {
-    const kind = document.querySelector('#kind').value;
-    let phase = state.creationSchedule?.phases.find((entry) => entry.id === elements.createPhaseId.value);
-    if (elements.createPhaseId.value === '__new__') {
-      const phaseOrder = Number(elements.createNewPhaseOrder.value);
-      phase = await api('/api/phases', {
-        method: 'POST',
-        headers: { 'Idempotency-Key': mutationKey('phase-create') },
-        body: JSON.stringify({
-          projectId: elements.projectId.value,
-          title: elements.createNewPhaseTitle.value,
-          rank: phaseOrder * 1024
-        })
-      });
-    }
-    if (!phase) throw new Error('请选择有效阶段');
-    const taskOrder = Math.max(0, ...(phase.tasks ?? []).map((item) => Number(item.planning?.taskOrder) || 0)) + 1;
-    await api('/api/work-items', {
-      method: 'POST',
-      headers: { 'Idempotency-Key': mutationKey('task-create') },
-      body: JSON.stringify({
-        projectId: elements.projectId.value,
-        phaseId: phase.id,
-        title: document.querySelector('#title').value,
-        objective: document.querySelector('#objective').value,
-        issue: document.querySelector('#issue').value.trim() || null,
-        starred: document.querySelector('#starred').checked,
-        scheduledFor: document.querySelector('#scheduledFor').value || null,
-        dependsOnTaskIds: selectedOptionValues(elements.createDependencies),
-        parallelPolicy: elements.createParallelPolicy.value,
-        acceptanceCriteria: lines(document.querySelector('#criteria').value),
-        testCommands: lines(document.querySelector('#commands').value),
-        riskTier: kind === 'ops' ? 'medium' : 'low',
-        weight: 1,
-        resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 2 },
-        planning: {
-          phaseId: phase.id,
-          phase: phase.title,
-          phaseOrder: phase.phaseOrder,
-          taskOrder,
-          kind,
-          priority: elements.createPriority.value,
-          commitment: 'TENTATIVE'
-        }
-      })
-    });
-    elements.workItemForm.reset();
-    elements.createParallelPolicy.value = 'AUTO';
-    populateDependencyOptions(elements.createDependencies, state.creationSchedule);
-    closeCreationDrawer(true);
-    notify('人工任务已加入排期，推荐执行配置已生成');
-    await refresh();
-  } catch (error) {
-    notify(error.message, true);
-  }
-}
 
 async function markReady(workItemId) {
   try {
@@ -437,6 +400,7 @@ function render() {
   renderBootstrapAction();
   renderMetrics();
   renderNextAction();
+  renderDispatchAudit();
   renderBoardToolbar();
   renderBoard();
   renderProjectSelect();
@@ -625,13 +589,15 @@ function trajectoryAxisLabels(trajectory) {
 }
 
 function formatTrajectoryPercent(ratio) {
-  const percent = Math.max(0, Number(ratio) || 0) * 100;
+  if (ratio === null || ratio === undefined || !Number.isFinite(Number(ratio))) return '暂无';
+  const percent = Math.max(0, Number(ratio)) * 100;
   if (percent > 0 && percent < 0.1) return '<0.1%';
   return `${percent < 10 ? percent.toFixed(1) : Math.round(percent)}%`;
 }
 
 function formatElapsedMs(value) {
-  const milliseconds = Math.max(0, Number(value) || 0);
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '暂无';
+  const milliseconds = Math.max(0, Number(value));
   const minutes = Math.round(milliseconds / 60_000);
   if (minutes < 1) return '少于 1 分钟';
   if (minutes < 60) return `${minutes} 分钟`;
@@ -665,6 +631,9 @@ function renderBoardToolbar() {
   elements.backToPortfolio.hidden = !inDetail;
   elements.boardFilters.hidden = inDetail;
   elements.detailControls.hidden = !inDetail;
+  elements.clientViewLink.href = inDetail
+    ? `/client.html?project=${encodeURIComponent(project.id)}`
+    : '/client.html';
   elements.detailControls.querySelectorAll('[data-detail-view]').forEach((button) => {
     const active = button.dataset.detailView === state.detailView;
     button.classList.toggle('active', active);
@@ -672,7 +641,7 @@ function renderBoardToolbar() {
   });
   elements.boardTitle.textContent = inDetail ? project.name : '下一滴算力，投给谁？';
   elements.boardDescription.textContent = inDetail
-    ? '当前进度由项目明确指定并保持锁定；待处理任务可继续调整，计划任务暂不占用近期算力。'
+    ? '当前进度由最后一个已验证任务派生并保持锁定；待处理任务可继续调整，已推迟任务暂不占用近期算力。'
     : '越靠上越值得优先投入，越向右越接近交付；切换算力和任务类型，立刻找到此刻最值得推进的工作。';
 }
 
@@ -681,44 +650,147 @@ function renderBootstrapAction() {
 }
 
 function renderMetrics() {
-  const projects = state.dashboard?.projects ?? [];
-  const unfinished = state.workItems.filter(isUnfinished);
-  const deferred = state.workItems.filter((item) => item.status === 'DEFERRED');
-  const lowCompute = unfinished.filter((item) => item.recommendation?.compute === 'low').length;
-  const blocked = unfinished.filter((item) => item.status === 'BLOCKED').length;
+  const summary = state.dispatch?.summary ?? {};
+  const free = summary.freeSlots ?? { execution: { high: 0, medium: 0, low: 0 }, review: 0 };
+  const freeExecution = Object.values(free.execution ?? {}).reduce((sum, value) => sum + Number(value || 0), 0);
   elements.metrics.innerHTML = [
-    ['进行中项目', projects.length],
-    ['待推进任务', unfinished.length],
-    ['计划任务', deferred.length],
-    ['低算力可做', lowCompute],
-    ['当前阻塞', blocked]
-  ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join('');
+    ['正在执行', summary.runningCount ?? 0, '路'],
+    ['下一批', summary.nextCount ?? 0, '项'],
+    ['待复核', summary.reviewCount ?? 0, '项'],
+    ['停滞项目', summary.stalledProjectCount ?? 0, '个'],
+    ['剩余执行槽', freeExecution + Number(free.review ?? 0), '槽']
+  ].map(([label, value, unit]) => `<div class="metric"><span>${label}</span><strong>${value}<small>${unit}</small></strong></div>`).join('');
 }
 
 function renderNextAction() {
-  const candidate = recommendedCandidate();
-  if (!candidate) {
-    elements.nextAction.innerHTML = `
-      <div class="next-action-main">
-        <span class="next-label">当前建议</span>
-        <div class="next-copy"><strong>先添加项目或载入项目排期</strong><p>系统会结合项目战略价值、任务优先级、依赖顺序与就绪状态给出下一步。</p></div>
-      </div>
-    `;
-    return;
-  }
-  const project = projectFor(candidate.projectId);
-  const recommendation = candidate.recommendation;
-  elements.nextAction.innerHTML = `
-    <div class="next-action-main">
-      <span class="next-label">当前建议</span>
-      <div class="next-copy">
-        <strong>${escapeHtml(project?.name)} · ${escapeHtml(candidate.planning.phase)} · ${escapeHtml(candidate.title)}</strong>
-        <p>${escapeHtml(recommendation.approach)} ${escapeHtml(routeLabel(recommendation))}，预计 ${formatDuration(recommendation.estimateMinutes)}。</p>
-      </div>
-    </div>
-    <button class="button secondary compact" type="button" data-focus-item="${escapeHtml(candidate.id)}">在排期中定位</button>
-  `;
+  const recommendations = state.dispatch?.recommendations ?? {};
+  elements.nextAction.innerHTML = [
+    renderDispatchRecommendation('执行中', recommendations.running, '当前没有 Agent 占用执行槽'),
+    renderDispatchRecommendation('下一批 · 高算力', recommendations.highCompute, '高算力槽暂时没有合格任务'),
+    renderDispatchRecommendation('下一批 · 低算力', recommendations.lowCompute, '低算力槽暂时没有合格任务')
+  ].join('');
   bindActionButtons(elements.nextAction);
+}
+
+function renderDispatchAudit() {
+  if (!elements.dispatchAudit) return;
+  const changes = state.dispatch?.recentChanges ?? [];
+  const efficiency = state.dispatch?.efficiency;
+  const confidence = efficiency?.confidence === 'ENOUGH'
+    ? `${efficiency.summary.sampleCount} 个真实样本，已允许校准`
+    : `${efficiency?.summary?.sampleCount ?? 0} 个真实样本，继续使用保守规则`;
+  const efficiencySummary = efficiency?.summary ?? {};
+  const effect = Number(efficiencySummary.sampleCount) > 0
+    ? `近 30 天完成 ${efficiencySummary.throughput ?? 0} 项 · 执行中位 ${formatElapsedMs(efficiencySummary.medianExecutionMs)} · 失败/阻塞 ${formatTrajectoryPercent(efficiencySummary.failureAndBlockedRate)} · 槽位饱和 ${formatTrajectoryPercent(efficiencySummary.observedSlotSaturation)} · 最长未上报 ${formatElapsedMs(efficiencySummary.longestUnreportedMs)}`
+    : '尚无真实 Agent 完成样本；暂不根据历史调整模型、算力或估时。';
+  const changeMarkup = changes.slice(0, 8).map((change) => `
+    <article class="dispatch-audit-item">
+      <div>
+        <strong>${escapeHtml(dispatchChangeTitle(change))}</strong>
+        <span>${formatDateTime(change.createdAt)}${change.actor ? ` · ${escapeHtml(change.actor)}` : ''}${change.policyVersion ? ` · ${escapeHtml(change.policyVersion)}` : ''}</span>
+      </div>
+      <p>${escapeHtml(dispatchChangeSummary(change))}</p>
+      ${change.reversible ? `<button class="button compact" type="button" data-reverse-change="${escapeHtml(change.id)}">${change.reversalAction === 'RESUME' ? '重新排入近期' : change.reversalAction === 'REORDER' ? '撤销重排' : '恢复任务'}</button>` : ''}
+    </article>
+  `).join('');
+  elements.dispatchAudit.innerHTML = `
+    <div class="dispatch-confidence">
+      <strong>推荐置信度</strong>
+      <span>${escapeHtml(confidence)}</span>
+      <p>${escapeHtml(effect)}</p>
+      <small>未上报时段只表示“未知”，不当作 Agent 空闲。</small>
+    </div>
+    <div class="dispatch-audit-list">${changeMarkup || '<p class="dispatch-audit-empty">还没有写入调度变化；首次重排后会在这里留下前后值和规则版本。</p>'}</div>
+  `;
+  elements.dispatchAudit.querySelectorAll('[data-reverse-change]').forEach((button) => {
+    button.addEventListener('click', () => reverseDispatchChange(button.dataset.reverseChange));
+  });
+}
+
+function dispatchChangeTitle(change) {
+  const labels = {
+    'dispatch.decision_changed': '动态批次已调整',
+    'portfolio.rebalanced': '组合排期已重算',
+    'phase.status_reconciled': '阶段状态已校正',
+    'schedule.reordered': '任务顺序已调整',
+    'work_item.deferred': '任务已推迟',
+    'work_item.resumed': '任务已恢复近期推进',
+    'work_item.cancelled': '任务已移出排期',
+    'work_item.restored': '任务已恢复'
+  };
+  return `${labels[change.type] ?? '排期发生变化'}${change.taskTitle ? ` · ${change.taskTitle}` : ''}`;
+}
+
+function dispatchChangeSummary(change) {
+  if (change.type === 'dispatch.decision_changed') {
+    const before = change.before?.batch ? `${change.before.batch} #${change.before.rank}` : '未分批';
+    const after = change.after?.batch ? `${change.after.batch} #${change.after.rank}` : '未分批';
+    return `${before} → ${after}；${decisionReasonSummary(change.after?.reasonCodes)}`;
+  }
+  return change.reason || change.message || '已记录结构化审计信息';
+}
+
+async function reverseDispatchChange(changeId) {
+  const change = state.dispatch?.recentChanges?.find((entry) => entry.id === changeId);
+  const project = state.projects.find((entry) => entry.id === change?.projectId);
+  if (!project) return notify('无法确定任务所属项目，请刷新后重试', true);
+  try {
+    if (change.reversalAction === 'REORDER') {
+      await api(`/api/projects/${encodeURIComponent(project.id)}/schedule`, {
+        method: 'PATCH',
+        headers: { 'Idempotency-Key': mutationKey('undo-reorder') },
+        body: JSON.stringify({
+          expectedScheduleVersion: Number(project.scheduleVersion ?? 0),
+          phaseId: change.phaseId,
+          orderedTaskIds: change.reversalOrder,
+          reason: '用户从调度解释视图撤销任务重排'
+        })
+      });
+      notify('任务顺序已恢复');
+    } else if (change.reversalAction === 'RESUME') {
+      await api(`/api/work-items/${encodeURIComponent(change.taskId)}`, {
+        method: 'PATCH',
+        headers: { 'Idempotency-Key': mutationKey('resume') },
+        body: JSON.stringify({
+          expectedScheduleVersion: Number(project.scheduleVersion ?? 0),
+          status: 'PLANNED',
+          reason: '用户从调度解释视图重新排入近期推进'
+        })
+      });
+      notify('任务已重新进入近期排期');
+    } else {
+      await api(`/api/work-items/${encodeURIComponent(change.taskId)}/restore`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': mutationKey('restore') },
+        body: JSON.stringify({
+          expectedScheduleVersion: Number(project.scheduleVersion ?? 0),
+          reason: '用户从调度解释视图恢复任务'
+        })
+      });
+      notify('任务已恢复到动态排期');
+    }
+    await refresh();
+  } catch (error) {
+    await recoverScheduleMutation(error);
+  }
+}
+
+function renderDispatchRecommendation(label, decision, emptyText) {
+  const task = decision ? state.workItems.find((entry) => entry.id === decision.taskId) : null;
+  if (!decision || !task) {
+    return `<div class="dispatch-choice empty"><span>${escapeHtml(label)}</span><strong>${escapeHtml(emptyText)}</strong><p>状态或容量变化后自动补位</p></div>`;
+  }
+  const project = projectFor(task.projectId);
+  const reason = decisionReasonSummary(decision.reasonCodes);
+  const route = decision.recommendedModelRef ?? decision.recommendedAgent ?? task.recommendation?.executor ?? '待分配';
+  const source = decision.recommendationSource === 'HISTORY_CALIBRATED' ? '历史结果校准' : '规则推荐';
+  return `
+    <button class="dispatch-choice" type="button" data-focus-item="${escapeHtml(task.id)}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(project?.name ?? '未知项目')} · ${escapeHtml(task.title)}</strong>
+      <p>${escapeHtml(reason)} · ${escapeHtml(route)} · ${formatDuration(decision.estimateMinutes ?? task.recommendation?.estimateMinutes)} · ${source}</p>
+    </button>
+  `;
 }
 
 function renderBoard() {
@@ -726,22 +798,63 @@ function renderBoard() {
     renderProjectDetail();
     return;
   }
+  if (state.draggedTaskId && elements.board.children.length > 0) return;
   captureBoardScrollPositions();
   const projects = state.dashboard?.projects ?? [];
-  const rows = [];
+  const desiredIds = new Set();
+  const changedRows = [];
+  const focusSnapshot = captureBoardFocus();
   for (const [projectIndex, project] of projects.entries()) {
     const projectItems = state.workItems.filter((item) => item.projectId === project.id).sort(compareItems);
     const phases = projectItems.length > 0
-      ? groupPhases(projectItems)
+      ? groupPhases(projectItems, project.phases)
       : [{ order: '—', name: projectItems.length > 0 ? '当前筛选无任务' : '尚未排期', items: [] }];
     const firstUnfinishedPhase = phases.findIndex((phase) => phase.items.some(isUnfinished));
-    rows.push(`
-      <article class="project-row" data-project-row="${escapeHtml(project.id)}" aria-labelledby="project-${escapeHtml(project.id)}">
+    const markup = renderProjectRow(project, projectIndex, projects.length, phases, firstUnfinishedPhase);
+    desiredIds.add(project.id);
+    let row = elements.board.querySelector(`[data-project-row="${cssEscape(project.id)}"]`);
+    if (!row) {
+      row = htmlElement(markup);
+      changedRows.push(row);
+    } else if (state.boardRowSignatures.get(project.id) !== markup) {
+      const replacement = htmlElement(markup);
+      row.className = replacement.className;
+      row.replaceChildren(...replacement.childNodes);
+      changedRows.push(row);
+    }
+    state.boardRowSignatures.set(project.id, markup);
+    elements.board.appendChild(row);
+  }
+  elements.board.querySelectorAll('[data-project-row]').forEach((row) => {
+    if (desiredIds.has(row.dataset.projectRow)) return;
+    state.boardRowSignatures.delete(row.dataset.projectRow);
+    state.boardScrollPositions.delete(row.dataset.projectRow);
+    row.remove();
+  });
+  if (projects.length === 0) {
+    elements.board.innerHTML = '<div class="portfolio-empty">这个筛选下暂时没有任务。换个筛选条件，或从右上角添加新的项目与任务。</div>';
+  } else {
+    elements.board.querySelector('.portfolio-empty')?.remove();
+  }
+  changedRows.forEach((row) => {
+    bindActionButtons(row);
+    bindTaskInspectors(row);
+  });
+  applyBoardFilter();
+  restoreBoardScrollPositions();
+  restoreBoardFocus(focusSnapshot);
+}
+
+function renderProjectRow(project, projectIndex, projectCount, phases, firstUnfinishedPhase) {
+  const health = projectHealthView(project.health);
+  return `
+      <article class="project-row health-${escapeHtml(String(project.health ?? 'ON_TRACK').toLowerCase())}" data-project-row="${escapeHtml(project.id)}" aria-labelledby="project-${escapeHtml(project.id)}">
         <button class="project-summary" type="button" data-open-project="${escapeHtml(project.id)}" aria-label="打开 ${escapeHtml(project.name)} 项目详情">
           <div>
             <div class="project-rank">
               <span class="priority">${projectPriority(project.strategicValue)}</span>
-              <span class="project-order">${String(projectIndex + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}</span>
+              <span class="project-health ${escapeHtml(health.className)}">${escapeHtml(health.label)}</span>
+              <span class="project-order">${String(projectIndex + 1).padStart(2, '0')} / ${String(projectCount).padStart(2, '0')}</span>
             </div>
             <h3 id="project-${escapeHtml(project.id)}">${escapeHtml(project.name)}</h3>
             ${project.headline ? `<strong class="project-promise">${escapeHtml(project.headline)}</strong>` : ''}
@@ -758,28 +871,44 @@ function renderBoard() {
           ${phases.map((phase, phaseIndex) => renderPhase(phase, phaseIndex, firstUnfinishedPhase)).join('')}
         </div>
       </article>
-    `);
-  }
-  elements.board.innerHTML = rows.length > 0
-    ? rows.join('')
-    : '<div class="portfolio-empty">这个筛选下暂时没有任务。换个筛选条件，或从右上角添加新的项目与任务。</div>';
-  bindActionButtons(elements.board);
-  applyBoardFilter();
-  restoreBoardScrollPositions();
+    `;
 }
 
 function renderProjectDetail() {
   const schedule = state.detailSchedule;
   const project = schedule.project;
   const dashboardProject = state.dashboard?.projects?.find((entry) => entry.id === project.id) ?? project;
+  const projectHealth = projectHealthView(dashboardProject.health ?? project.health);
   const tasks = [...schedule.phases.flatMap((phase) => phase.tasks), ...schedule.unscheduledTasks];
   const completed = tasks.filter(isFinished);
   const inProgress = tasks.filter(isInProgress);
   const unfinished = tasks.filter((task) => isUnfinished(task) && !isInProgress(task));
   const deferred = tasks.filter((task) => task.status === 'DEFERRED');
-  const currentTask = tasks.find((task) => task.id === project.currentTaskId && isFinished(task))
+  const currentTask = tasks.find((task) => task.id === project.latestVerifiedTaskId && isFinished(task))
     ?? completed.filter((task) => task.status !== 'RECURRING').sort(compareItems).at(-1)
     ?? null;
+
+  const signature = JSON.stringify({
+    projectId: project.id,
+    scheduleVersion: schedule.scheduleVersion,
+    detailView: state.detailView,
+    latestVerifiedTaskId: project.latestVerifiedTaskId,
+    tasks: tasks.map((task) => [
+      task.id,
+      task.status,
+      task.updatedAt,
+      task.currentRunId,
+      task.latestCompletion?.id,
+      task.starred,
+      task.decision?.batch,
+      task.decision?.compute,
+      task.decision?.recommendedModelRef,
+      task.decision?.estimateMinutes
+    ])
+  });
+  if (state.detailRenderSignature === signature && elements.board.querySelector('.project-detail')) return;
+  const previousScrollTop = document.querySelector('.board-scroll')?.scrollTop ?? 0;
+  const focusSnapshot = captureBoardFocus();
 
   elements.board.innerHTML = `
     <div class="project-detail">
@@ -787,6 +916,7 @@ function renderProjectDetail() {
         <div class="detail-identity">
           <div class="project-rank">
             <span class="priority">${projectPriority(project.strategicValue)}</span>
+            <span class="project-health ${escapeHtml(projectHealth.className)}">${escapeHtml(projectHealth.label)}</span>
             <span class="detail-version">排期版本 ${schedule.scheduleVersion}</span>
           </div>
           <h3>别让你的野心，最后只活在待办事项里。</h3>
@@ -806,15 +936,15 @@ function renderProjectDetail() {
         ${renderStateRailColumn('当前进度', currentTask ? [currentTask] : [], '尚无完成记录', true)}
         ${renderStateRailColumn('推进中', inProgress, '执行、排队或复核中的任务', false)}
         ${renderStateRailColumn('待处理', unfinished, '可按算力与优先级调整', false)}
-        ${renderStateRailColumn('计划', deferred, '短期不推进，仍可调整或取消', false)}
+        ${renderStateRailColumn('已推迟', deferred, '短期不推进，仍可调整或取消', false)}
       </section>
 
       <section class="detail-state-guide" aria-label="状态说明">
         <div><span class="state-key completed">✓</span><p><strong>已完成</strong>只有通过验证的任务进入这里，内容与顺序均锁定。</p></div>
-        <div><span class="state-key current">●</span><p><strong>当前进度</strong>由项目明确指定为最新完成节点；它仍计入已完成，内容与顺序均不可修改。</p></div>
+        <div><span class="state-key current">●</span><p><strong>当前进度</strong>由最后一次验证时间自动派生；它仍计入已完成，内容与顺序均不可修改。</p></div>
         <div><span class="state-key in-progress">◉</span><p><strong>推进中</strong>已经排队、执行或进入复核，尚未完成，执行契约暂时锁定。</p></div>
         <div><span class="state-key pending">○</span><p><strong>待处理</strong>尚未开始且近期需要推进，可以继续调整或取消。</p></div>
-        <div><span class="state-key deferred">◇</span><p><strong>计划</strong>已经进入长期排期，但短期不投入算力，仍可微调或取消；周期任务计入完成并可再次执行。</p></div>
+        <div><span class="state-key deferred">◇</span><p><strong>已推迟</strong>仍在长期排期里，但短期不投入算力，可以微调、恢复或取消。</p></div>
       </section>
 
       <div class="detail-phase-list">
@@ -825,9 +955,14 @@ function renderProjectDetail() {
       </div>
     </div>
   `;
+  state.detailRenderSignature = signature;
   bindActionButtons(elements.board);
   bindProjectDetailActions();
+  bindTaskInspectors(elements.board);
   bindTaskTooltips();
+  const detailScroll = document.querySelector('.board-scroll');
+  if (detailScroll && !state.detailFocusPending) detailScroll.scrollTop = previousScrollTop;
+  restoreBoardFocus(focusSnapshot);
   if (state.detailFocusPending) {
     state.detailFocusPending = false;
     requestAnimationFrame(() => {
@@ -851,6 +986,7 @@ function renderDetailPhase(phase, currentTaskId) {
   const completedCount = phase.tasks.filter(isFinished).length;
   const parallelCandidates = parallelCandidatesForPhase(phase);
   const phaseEditable = phase.id !== 'unscheduled';
+  const phaseState = phaseStatusView(phase.computedStatus);
   return `
     <section class="detail-phase view-${state.detailView}" data-detail-phase="${escapeHtml(phase.id)}">
       <header class="detail-phase-head">
@@ -860,6 +996,7 @@ function renderDetailPhase(phase, currentTaskId) {
           <p${phaseEditable ? ` class="phase-inline-field${phase.goal ? '' : ' empty'}" data-phase-edit-field="goal" data-phase-id="${escapeHtml(phase.id)}" tabindex="0" title="双击修改阶段描述"` : ''}>${escapeHtml(phase.goal || '双击补充阶段描述')}</p>
         </div>
         <div class="phase-progress-block">
+          <span class="phase-computed-status ${escapeHtml(phaseState.className)}">${escapeHtml(phaseState.label)}</span>
           <span>${completedCount} / ${phase.tasks.length} 已完成</span>
           ${renderParallelSlot(parallelCandidates)}
         </div>
@@ -922,7 +1059,7 @@ function renderDetailTask(task, phase, reorderableIds, index, currentTaskId) {
     : recurring
       ? { className: 'recurring', label: '周期' }
       : task.status === 'DEFERRED'
-        ? { className: 'deferred', label: '计划' }
+        ? { className: 'deferred', label: '已推迟' }
         : finished
           ? { className: 'completed', label: '已完成' }
           : isInProgress(task)
@@ -937,9 +1074,11 @@ function renderDetailTask(task, phase, reorderableIds, index, currentTaskId) {
     ?? null;
   const completedAt = completion?.completedAt ?? task.currentRun?.finishedAt ?? null;
   const evidenceCount = (completion?.testEvidenceIds?.length ?? 0) + (completion?.reviewEvidenceIds?.length ?? 0);
+  const routing = effectiveTaskRouting(task);
   return `
     <article class="detail-task ${state.detailView}${current ? ' current' : ''}${finished ? ' finished' : ''}${task.starred ? ' starred' : ''}${locked ? ' locked' : ''}${recurring ? ' has-actions' : ''}"
       data-detail-task="${escapeHtml(task.id)}"
+      data-inspect-task="${escapeHtml(task.id)}"
       data-phase-id="${escapeHtml(phase.id)}"
       data-current-task="${current ? 'true' : 'false'}"
       data-reorderable="${movable ? 'true' : 'false'}"
@@ -965,14 +1104,14 @@ function renderDetailTask(task, phase, reorderableIds, index, currentTaskId) {
           <span class="tag provenance ${provenanceClass(task)}">${provenanceLabel(task)}</span>
           <span class="tag priority-${task.planning.priority.toLowerCase()}">${task.planning.priority}</span>
           <span class="tag kind-${task.planning.kind}">${kindLabel(task.planning.kind)}</span>
-          <span class="tag">${computeLabel(task.recommendation.compute)}</span>
+          <span class="tag">${computeLabel(routing.compute)}</span>
           <span class="tag">${task.planning.commitment === 'COMMITTED' ? '已确认' : '可调整'}</span>
           ${renderDependencyTags(task)}
           ${task.scheduledFor ? `<span class="tag scheduled-date">排期 ${escapeHtml(task.scheduledFor)}</span>` : ''}
           ${renderIssueReference(task.issue)}
           ${renderIssueReminder(task)}
         </div>
-        <p class="detail-task-route">${escapeHtml(routeLabel(task.recommendation))} · ${formatDuration(task.recommendation.estimateMinutes)} · ${escapeHtml(task.recommendation.approach)}</p>
+        <p class="detail-task-route">${escapeHtml(routeLabel(task.recommendation, routing.label))} · ${formatDuration(routing.estimateMinutes)} · ${escapeHtml(task.recommendation.approach)}</p>
         ${completion ? `
           <div class="completion-line">
             <span>完成记录</span>
@@ -1003,16 +1142,24 @@ function renderPhase(phase, phaseIndex, firstUnfinishedPhase) {
       </section>
     `;
   }
-  const completed = phase.items.every(isFinished);
+  const completed = phase.computedStatus
+    ? phase.computedStatus === 'COMPLETED'
+    : phase.items.every(isFinished);
   const deferred = !completed
     && phase.items.some((item) => item.status === 'DEFERRED')
     && phase.items.every((item) => isFinished(item) || item.status === 'DEFERRED');
-  const blocked = phase.items.some((item) => item.status === 'BLOCKED');
-  const current = !completed && phaseIndex === firstUnfinishedPhase;
+  const blocked = phase.computedStatus
+    ? phase.computedStatus === 'BLOCKED'
+    : phase.items.some((item) => item.status === 'BLOCKED');
+  const current = !completed && (phase.computedStatus
+    ? ['ACTIVE', 'REVIEW'].includes(phase.computedStatus)
+    : phaseIndex === firstUnfinishedPhase);
   const className = blocked ? 'blocked' : current ? 'current' : completed ? 'completed' : 'planned';
-  const stateLabel = blocked ? '有阻塞' : current ? '正在推进' : completed ? '已验证' : deferred ? '计划' : '待排期';
+  const stateLabel = phase.computedStatus === 'REVIEW'
+    ? '等待复核'
+    : blocked ? '有阻塞' : current ? '正在推进' : completed ? '已验证' : deferred ? '已推迟' : '待排期';
   return `
-    <section class="phase ${className}" data-filter-phase>
+    <section class="phase ${className}" data-filter-phase${current ? ' data-current-phase="true"' : ''}>
       <div class="phase-head">
         <div><span class="phase-index">S${phase.order}</span><h4>${escapeHtml(phase.name)}</h4></div>
         <span class="phase-state">${stateLabel}</span>
@@ -1025,8 +1172,8 @@ function renderPhase(phase, phaseIndex, firstUnfinishedPhase) {
 }
 
 function renderTask(item) {
-  const planning = item.planning;
   const recommendation = item.recommendation;
+  const routing = effectiveTaskRouting(item);
   const stateClass = isFinished(item)
     ? ' finished'
     : isInProgress(item)
@@ -1034,32 +1181,22 @@ function renderTask(item) {
       : isUnfinished(item)
         ? ' pending'
         : '';
-  const action = item.status === 'PLANNED'
-    ? `<button data-ready="${escapeHtml(item.id)}" class="button secondary compact" type="button">校验并就绪</button>`
-    : ['READY', 'RECURRING'].includes(item.status)
-      ? `<span class="task-agent-state">等待 Agent 完成后上报</span>`
-      : '';
+  const activeAgent = item.currentRun?.modelRef ?? item.currentRun?.agentId ?? null;
+  const agentLabel = activeAgent ? `执行 · ${activeAgent}` : `推荐 · ${routing.label}`;
   return `
-    <article class="task-item${stateClass}${item.starred ? ' starred' : ''}" data-item-id="${escapeHtml(item.id)}" data-filter-task="${escapeHtml(item.id)}">
+    <article class="task-item${stateClass}${item.starred ? ' starred' : ''}" data-item-id="${escapeHtml(item.id)}" data-filter-task="${escapeHtml(item.id)}" data-inspect-task="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="查看任务：${escapeHtml(item.title)}">
       <div class="task-title-row">
         <strong class="task-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</strong>
         <div class="task-title-controls">
-          ${renderStarControl(item, canEditTask(item))}
+          ${item.starred ? '<span class="task-star-indicator" aria-label="星标任务">★</span>' : ''}
           <span class="status ${item.status.toLowerCase()}">${statusLabel(item.status)}</span>
         </div>
       </div>
-      <div class="task-meta">
-        <span class="tag priority-${planning.priority.toLowerCase()}">${planning.priority}</span>
-        <span class="tag kind-${planning.kind}">${kindLabel(planning.kind)}</span>
-        <span class="tag">${computeLabel(recommendation.compute)}</span>
-        <span class="tag">${planning.commitment === 'COMMITTED' ? '已确认' : '可调整'}</span>
-        ${renderDependencyTags(item)}
-        ${item.scheduledFor ? `<span class="tag scheduled-date">排期 ${escapeHtml(item.scheduledFor)}</span>` : ''}
-        ${renderIssueReference(item.issue)}
-        ${renderIssueReminder(item)}
+      <div class="task-dispatch-line">
+        <span>${escapeHtml(agentLabel)}</span>
+        <span>${computeLabel(routing.compute)}</span>
+        <span>${formatDuration(routing.estimateMinutes)}</span>
       </div>
-      <p class="task-route">${escapeHtml(routeLabel(recommendation))} · ${formatDuration(recommendation.estimateMinutes)}<br>${escapeHtml(recommendation.approach)}</p>
-      ${action ? `<div class="task-actions">${action}</div>` : ''}
     </article>
   `;
 }
@@ -1087,6 +1224,79 @@ function bindActionButtons(container) {
   container.querySelectorAll('[data-toggle-star]').forEach((button) => {
     button.addEventListener('click', () => toggleTaskStar(button.dataset.toggleStar));
   });
+}
+
+function bindTaskInspectors(container) {
+  container.querySelectorAll('[data-inspect-task]').forEach((node) => {
+    node.addEventListener('click', (event) => {
+      if (event.target.closest('button, a, input, select, textarea, summary') || state.draggedTaskId) return;
+      openTaskInspector(node.dataset.inspectTask);
+    });
+    node.addEventListener('keydown', (event) => {
+      if (!['Enter', ' '].includes(event.key) || event.target !== node || state.draggedTaskId) return;
+      event.preventDefault();
+      openTaskInspector(node.dataset.inspectTask);
+    });
+  });
+}
+
+async function openTaskInspector(taskId) {
+  const fallback = detailTaskFor(taskId) ?? state.workItems.find((entry) => entry.id === taskId);
+  if (!fallback) return;
+  elements.taskInspectorContext.textContent = `${projectFor(fallback.projectId)?.name ?? '项目'} · ${fallback.planning?.phase ?? '待排期'}`;
+  elements.taskInspectorTitle.textContent = fallback.title;
+  elements.taskInspectorBody.innerHTML = '<p class="inspector-loading">正在读取真实任务记录…</p>';
+  if (!elements.taskInspector.open) elements.taskInspector.showModal();
+  try {
+    const details = await api(`/api/work-items/${encodeURIComponent(taskId)}/details`);
+    if (!elements.taskInspector.open) return;
+    renderTaskInspector(details);
+  } catch (error) {
+    elements.taskInspectorBody.innerHTML = `<div class="inspector-error"><strong>任务记录暂时无法读取</strong><p>${escapeHtml(error.message)}</p></div>`;
+  }
+}
+
+function renderTaskInspector(details) {
+  const task = hydrateWorkItem(details.task);
+  const decision = details.task?.decision ?? task.decision ?? null;
+  const routing = effectiveTaskRouting({ ...task, decision });
+  const dependencies = (task.dependsOnTaskIds ?? []).map((dependencyId) => (
+    detailTaskFor(dependencyId) ?? state.workItems.find((entry) => entry.id === dependencyId)
+  )).filter(Boolean);
+  const completion = details.completionRecords?.at(-1) ?? null;
+  const decisionReasons = decision?.reasonCodes?.length
+    ? decision.reasonCodes.map((reason) => `<li>${escapeHtml(decisionReasonLabel(reason))}</li>`).join('')
+    : '<li>当前没有持久化调度决策；刷新或重平衡后会补齐。</li>';
+  const criteria = task.acceptanceCriteria?.length
+    ? task.acceptanceCriteria.map((criterion) => `<li>${escapeHtml(criterion)}</li>`).join('')
+    : '<li>尚未填写；进入 NEXT 前会被契约门禁拦截。</li>';
+  const commands = task.testCommands?.length
+    ? `<pre>${escapeHtml(task.testCommands.join('\n'))}</pre>`
+    : '<p>未指定测试命令；可以使用其他可验证证据完成复核。</p>';
+  elements.taskInspectorContext.textContent = `${details.project?.name ?? '项目'} · ${details.phase?.title ?? task.planning.phase}`;
+  elements.taskInspectorTitle.textContent = task.title;
+  elements.taskInspectorBody.innerHTML = `
+    <section class="inspector-decision">
+      <div><span>动态批次</span><strong>${escapeHtml(dispatchBatchLabel(decision?.batch))}</strong></div>
+      <p>${escapeHtml(decisionReasonSummary(decision?.reasonCodes))}</p>
+      <ul>${decisionReasons}</ul>
+      <small>策略 ${escapeHtml(decision?.policyVersion ?? '尚未生成')} · ${decision?.decidedAt ? formatDateTime(decision.decidedAt) : '等待重平衡'}</small>
+    </section>
+    <dl class="inspector-facts">
+      <div><dt>状态</dt><dd>${escapeHtml(statusLabel(task.status))}</dd></div>
+      <div><dt>优先级</dt><dd>${escapeHtml(task.planning.priority)}</dd></div>
+      <div><dt>推荐执行</dt><dd>${escapeHtml(routing.label)} · ${routing.source === 'HISTORY_CALIBRATED' ? '历史结果校准' : '规则默认'}</dd></div>
+      <div><dt>算力 / 估时</dt><dd>${escapeHtml(computeLabel(routing.compute))} · ${formatDuration(routing.estimateMinutes)}</dd></div>
+      <div><dt>依赖</dt><dd>${dependencies.length ? dependencies.map((entry) => escapeHtml(entry.title)).join(' · ') : '无'}</dd></div>
+      <div><dt>并行策略</dt><dd>${escapeHtml(parallelPolicyLabel(task.parallelPolicy))}</dd></div>
+    </dl>
+    <section class="inspector-section"><h3>目标</h3><p>${escapeHtml(task.objective)}</p></section>
+    <details class="inspector-section" open><summary>验收标准 <span>${task.acceptanceCriteria?.length ?? 0}</span></summary><ul>${criteria}</ul></details>
+    <details class="inspector-section"><summary>验证方式 <span>${task.testCommands?.length ?? 0}</span></summary>${commands}</details>
+    <details class="inspector-section"><summary>完成与证据 <span>${details.evidence?.length ?? 0}</span></summary>
+      ${completion ? `<p>${escapeHtml(completion.resultSummary || '已收到完成上报')}</p><small>${escapeHtml(completion.modelRef ?? completion.executor ?? '未记录模型')} · ${formatDateTime(completion.completedAt)}</small>` : '<p>尚未收到真实完成上报。</p>'}
+    </details>
+  `;
 }
 
 async function toggleTaskStar(taskId) {
@@ -1121,6 +1331,7 @@ async function openProjectDetail(projectId) {
     url.searchParams.set('project', projectId);
     window.history.pushState({ projectId }, '', url);
     state.selectedProjectId = projectId;
+    state.detailRenderSignature = null;
     state.detailFocusPending = true;
     state.detailSchedule = hydrateSchedule(await api(`/api/projects/${encodeURIComponent(projectId)}/schedule`));
     render();
@@ -1134,6 +1345,7 @@ function closeProjectDetail({ replace = false } = {}) {
   state.selectedProjectId = null;
   state.detailFocusPending = false;
   state.detailSchedule = null;
+  state.detailRenderSignature = null;
   closeTaskEditor();
   const url = new URL(window.location.href);
   url.searchParams.delete('project');
@@ -1403,6 +1615,8 @@ function openTaskEditor(taskId) {
   }
   state.taskEditorMode = 'edit';
   state.editingTaskId = taskId;
+  state.taskEditorProjectId = state.selectedProjectId;
+  state.taskEditorSchedule = state.detailSchedule;
   setTaskEditorCopy({
     context: '调整执行契约',
     title: '编辑排期任务',
@@ -1433,8 +1647,14 @@ function openTaskEditor(taskId) {
 
 function openTaskCreator() {
   if (!state.detailSchedule || !state.selectedProjectId) return;
+  openTaskCreatorFor(state.selectedProjectId, state.detailSchedule);
+}
+
+function openTaskCreatorFor(projectId, schedule) {
   state.taskEditorMode = 'create';
   state.editingTaskId = null;
+  state.taskEditorProjectId = projectId;
+  state.taskEditorSchedule = schedule;
   setTaskEditorCopy({
     context: '人工录入排期',
     title: '新增项目任务',
@@ -1451,10 +1671,10 @@ function openTaskCreator() {
   elements.editStarred.checked = false;
   elements.editScheduledFor.value = '';
   elements.editParallelPolicy.value = 'AUTO';
-  populateDependencyOptions(elements.editDependencies, state.detailSchedule);
+  populateDependencyOptions(elements.editDependencies, schedule);
   elements.editCriteria.value = '';
   elements.editCommands.value = '';
-  const nextPhaseOrder = Math.max(0, ...state.detailSchedule.phases.map((phase) => Number(phase.phaseOrder) || 0)) + 1;
+  const nextPhaseOrder = Math.max(0, ...schedule.phases.map((phase) => Number(phase.phaseOrder) || 0)) + 1;
   elements.editNewPhaseOrder.value = String(nextPhaseOrder);
   elements.editNewPhaseTitle.value = '';
   syncNewPhaseFields();
@@ -1463,11 +1683,11 @@ function openTaskCreator() {
 }
 
 function populatePhaseOptions(includeNewPhase) {
-  const phaseOptions = state.detailSchedule.phases
+  const phaseOptions = (state.taskEditorSchedule?.phases ?? [])
     .map((phase) => `<option value="${escapeHtml(phase.id)}">S${escapeHtml(phase.phaseOrder)} · ${escapeHtml(phase.title)}</option>`)
     .join('');
   elements.editPhaseId.innerHTML = `${phaseOptions}${includeNewPhase ? '<option value="__new__">＋ 新建阶段</option>' : ''}`;
-  if (includeNewPhase && state.detailSchedule.phases.length === 0) elements.editPhaseId.value = '__new__';
+  if (includeNewPhase && state.taskEditorSchedule?.phases.length === 0) elements.editPhaseId.value = '__new__';
 }
 
 function populateDependencyOptions(select, schedule, { excludeTaskId = null, selectedIds = [] } = {}) {
@@ -1511,10 +1731,10 @@ function syncNewPhaseFields() {
     elements.phaseMoveHint.textContent = '保存后会创建新阶段，并把新任务放到该阶段末尾。';
     return;
   }
-  const targetPhase = state.detailSchedule?.phases.find((phase) => phase.id === elements.editPhaseId.value);
-  const currentTask = detailTaskFor(state.editingTaskId);
+  const targetPhase = state.taskEditorSchedule?.phases.find((phase) => phase.id === elements.editPhaseId.value);
+  const currentTask = taskEditorTaskFor(state.editingTaskId);
   const dependencyIds = selectedOptionValues(elements.editDependencies);
-  const dependencies = dependencyIds.map(detailTaskFor).filter(Boolean);
+  const dependencies = dependencyIds.map(taskEditorTaskFor).filter(Boolean);
   const latestDependencyPhase = Math.max(0, ...dependencies.map((task) => Number(task.planning.phaseOrder) || 0));
   if (state.taskEditorMode === 'edit' && targetPhase && currentTask && targetPhase.id !== currentTask.phaseId) {
     elements.phaseMoveHint.textContent = Number(targetPhase.phaseOrder) < latestDependencyPhase
@@ -1529,8 +1749,18 @@ function syncNewPhaseFields() {
   }
 }
 
+function taskEditorTaskFor(taskId) {
+  if (!state.taskEditorSchedule || !taskId) return null;
+  return [
+    ...state.taskEditorSchedule.phases.flatMap((phase) => phase.tasks),
+    ...(state.taskEditorSchedule.unscheduledTasks ?? [])
+  ].find((task) => task.id === taskId) ?? null;
+}
+
 function closeTaskEditor() {
   state.editingTaskId = null;
+  state.taskEditorProjectId = null;
+  state.taskEditorSchedule = null;
   elements.editNewPhaseTitle.required = false;
   elements.editNewPhaseOrder.required = false;
   if (elements.taskEditor.open) elements.taskEditor.close();
@@ -1610,16 +1840,16 @@ async function restoreTaskPhase(taskId, phaseId) {
 }
 
 async function createDetailTask() {
-  if (!state.detailSchedule || !state.selectedProjectId) return;
+  if (!state.taskEditorSchedule || !state.taskEditorProjectId) return;
   try {
-    let phase = state.detailSchedule.phases.find((entry) => entry.id === elements.editPhaseId.value);
+    let phase = state.taskEditorSchedule.phases.find((entry) => entry.id === elements.editPhaseId.value);
     if (elements.editPhaseId.value === '__new__') {
       const phaseOrder = Number(elements.editNewPhaseOrder.value);
       phase = await api('/api/phases', {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('phase-create') },
         body: JSON.stringify({
-          projectId: state.selectedProjectId,
+          projectId: state.taskEditorProjectId,
           title: elements.editNewPhaseTitle.value,
           rank: phaseOrder * 1024
         })
@@ -1632,7 +1862,7 @@ async function createDetailTask() {
       method: 'POST',
       headers: { 'Idempotency-Key': mutationKey('task-create') },
       body: JSON.stringify({
-        projectId: state.selectedProjectId,
+        projectId: state.taskEditorProjectId,
         phaseId: phase.id,
         title: elements.editTitle.value,
         objective: elements.editObjective.value,
@@ -1768,61 +1998,11 @@ function syncScheduleIntoWorkItems() {
 }
 
 function hydrateWorkItem(item) {
-  const kind = item.planning?.kind ?? inferKind(item);
-  const defaults = recommendationDefaults(kind, item.riskTier);
-  const recommendation = item.recommendation?.policyVersion === 'risk-tier-v1'
-    ? item.recommendation
-    : { estimateMinutes: item.recommendation?.estimateMinutes };
   return {
     ...item,
-    starred: item.starred === true,
-    scheduledFor: item.scheduledFor ?? null,
-    dependsOnTaskIds: Array.isArray(item.dependsOnTaskIds) ? item.dependsOnTaskIds : [],
-    parallelPolicy: ['AUTO', 'SEQUENTIAL', 'PARALLEL_ALLOWED'].includes(item.parallelPolicy)
-      ? item.parallelPolicy
-      : 'AUTO',
-    planning: {
-      phase: item.planning?.phase ?? '待排期',
-      phaseOrder: positiveNumber(item.planning?.phaseOrder, 99),
-      taskOrder: positiveNumber(item.planning?.taskOrder, 99),
-      kind,
-      priority: item.planning?.priority ?? (kind === 'bug' ? 'P0' : kind === 'scan' ? 'P2' : 'P1'),
-      commitment: item.planning?.commitment ?? 'TENTATIVE'
-    },
-    recommendation: {
-      ...defaults,
-      ...recommendation,
-      estimateMinutes: positiveNumber(recommendation.estimateMinutes, defaults.estimateMinutes)
-    }
+    storedStatus: item.storedStatus ?? item.status,
+    status: item.effectiveStatus ?? item.status
   };
-}
-
-function recommendationDefaults(kind, riskTier = 'medium') {
-  const base = {
-    feature: { capability: 'agentic-coding', estimateMinutes: 90, approach: '先确认范围和依赖，再完成一个可独立验收的纵向切片。' },
-    bug: { capability: 'code-repair', estimateMinutes: 45, approach: '先复现并补回归测试，再做最小修复。' },
-    scan: { capability: 'repository-scan', estimateMinutes: 20, approach: '先跑确定性检查，只把异常和高价值区域交给模型分析。' },
-    research: { capability: 'research-synthesis', estimateMinutes: 40, approach: '先快速铺开证据，再用强推理收敛分歧和方案。' },
-    ops: { capability: 'safe-automation', estimateMinutes: 30, approach: '优先使用确定性脚本，高风险动作保留人工审批。' },
-    review: { capability: 'independent-review', estimateMinutes: 35, approach: '与实现上下文隔离审查，先报告可验证问题再决定修改。' }
-  }[kind] ?? recommendationDefaults('feature', riskTier);
-  const risk = ['critical', 'high', 'medium', 'low'].includes(riskTier) ? riskTier : 'medium';
-  const validationProfile = ['critical', 'high'].includes(risk) ? 'V3' : risk === 'medium' ? 'V2' : ['scan', 'ops'].includes(kind) ? 'V0' : 'V1';
-  if (kind === 'ops') return { ...base, executor: 'shell', reasoningEffort: 'medium', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (kind === 'review') return { ...base, executor: 'codex', reasoningEffort: 'high', compute: risk === 'low' ? 'medium' : 'high', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (['critical', 'high'].includes(risk)) return { ...base, executor: 'codex', reasoningEffort: 'high', compute: 'high', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (kind === 'scan') return { ...base, executor: 'luna_worker', reasoningEffort: 'low', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (risk === 'low') return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (kind === 'bug') return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'medium', validationProfile, policyVersion: 'risk-tier-v1' };
-  return { ...base, executor: 'codex', reasoningEffort: 'medium', compute: 'medium', validationProfile, policyVersion: 'risk-tier-v1' };
-}
-
-function inferKind(item) {
-  const text = `${item.title ?? ''} ${item.objective ?? ''}`.toLowerCase();
-  if (text.includes('bug') || text.includes('修复')) return 'bug';
-  if (text.includes('scan') || text.includes('扫描')) return 'scan';
-  if (text.includes('review') || text.includes('审查')) return 'review';
-  return 'feature';
 }
 
 function positiveNumber(value, fallback) {
@@ -1830,58 +2010,65 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
-function groupPhases(items) {
+function groupPhases(items, derivedPhases = []) {
   const groups = new Map();
   for (const item of items) {
-    const key = `${item.planning.phaseOrder}:${item.planning.phase}`;
-    if (!groups.has(key)) groups.set(key, { order: item.planning.phaseOrder, name: item.planning.phase, items: [] });
+    const phaseId = item.phaseId ?? item.planning?.phaseId ?? null;
+    const key = phaseId ?? `${item.planning.phaseOrder}:${item.planning.phase}`;
+    if (!groups.has(key)) {
+      const derived = derivedPhases.find((phase) => (
+        phaseId ? phase.id === phaseId : (
+          Number(phase.phaseOrder) === Number(item.planning.phaseOrder)
+            && phase.title === item.planning.phase
+        )
+      ));
+      groups.set(key, {
+        id: phaseId,
+        order: item.planning.phaseOrder,
+        name: item.planning.phase,
+        computedStatus: derived?.computedStatus ?? null,
+        items: []
+      });
+    }
     groups.get(key).items.push(item);
   }
   return [...groups.values()].sort((left, right) => left.order - right.order);
 }
 
-function recommendedCandidate() {
-  return state.workItems.filter(isUnfinished).sort((left, right) => candidateScore(right) - candidateScore(left))[0] ?? null;
-}
-
-function candidateScore(item) {
-  const project = projectFor(item.projectId);
-  const priority = { P0: 40, P1: 30, P2: 20, P3: 10 }[item.planning.priority] ?? 0;
-  const readiness = {
-    REVIEW: 48,
-    RUNNING: 46,
-    QUEUED: 44,
-    READY: 36,
-    PLANNED: 24,
-    TRIAGED: 16,
-    DISCOVERED: 10,
-    BLOCKED: -40
-  }[item.status] ?? 0;
-  const foundation = Math.max(0, 100 - Number(item.planning.phaseOrder ?? 100));
-  const humanPriority = item.provenance?.origin === 'HUMAN' ? 8 : 0;
-  return (item.starred === true ? 1000 : 0)
-    + scheduledDatePriority(item.scheduledFor)
-    + Number(project?.strategicValue ?? 0) * 6
-    + priority
-    + readiness
-    + foundation
-    + humanPriority;
-}
-
-function scheduledDatePriority(value) {
-  if (!value) return 0;
-  const today = new Date();
-  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  const target = Date.parse(`${value}T00:00:00.000Z`);
-  if (!Number.isFinite(target)) return 0;
-  const days = Math.ceil((target - todayUtc) / 86_400_000);
-  if (days <= 0) return 120;
-  return Math.max(0, 100 - days * 5);
+function decisionReasonSummary(reasonCodes = []) {
+  const labels = {
+    STARRED: '星标优先',
+    PRIORITY_P0: 'P0 优先',
+    PRIORITY_P1: 'P1 优先',
+    PRIORITY_P2: 'P2 候选',
+    PRIORITY_P3: 'P3 储备',
+    COMMITTED: '已确认投入',
+    HARD_DEADLINE: '临近硬期限',
+    READY: '契约已就绪',
+    REVIEW_REQUIRED: '等待独立复核',
+    HIGH_STRATEGIC_VALUE: '高战略价值',
+    HUMAN_AUTHORED: '人工明确排入',
+    RISK_CRITICAL: '关键风险优先处置',
+    RISK_HIGH: '高风险优先处置',
+    PROJECT_CAPACITY_FULL: '同项目执行槽已满',
+    HIGH_COMPUTE_CAPACITY_FULL: '高算力槽已满',
+    MEDIUM_COMPUTE_CAPACITY_FULL: '中算力槽已满',
+    LOW_COMPUTE_CAPACITY_FULL: '低算力槽已满',
+    REVIEW_CAPACITY_FULL: '复核槽已满',
+    DEPENDENCY_BLOCKED: '前置任务未完成',
+    CONTRACT_INCOMPLETE: '执行契约待补齐',
+    HISTORY_CALIBRATED_MODEL: '历史表现推荐模型',
+    HISTORY_CALIBRATED_COMPUTE: '历史表现校准算力',
+    HISTORY_CALIBRATED_ESTIMATE: '历史耗时校准估时'
+  };
+  const visible = reasonCodes.map((code) => labels[code]).filter(Boolean).slice(0, 2);
+  return visible.join(' · ') || '按项目价值、顺序与可用容量进入当前批次';
 }
 
 function matchesFilter(item) {
-  if (state.filter === 'low') return item.recommendation.compute === 'low';
-  if (state.filter === 'high') return item.recommendation.compute === 'high';
+  const compute = effectiveTaskRouting(item).compute;
+  if (state.filter === 'low') return compute === 'low';
+  if (state.filter === 'high') return compute === 'high';
   if (state.filter === 'bug') return ['bug', 'scan'].includes(item.planning.kind);
   if (state.filter === 'starred') return item.starred === true;
   return true;
@@ -1915,8 +2102,66 @@ function captureBoardScrollPositions() {
 
 function restoreBoardScrollPositions() {
   elements.board.querySelectorAll('[data-project-track]').forEach((track) => {
-    track.scrollLeft = state.boardScrollPositions.get(track.dataset.projectTrack) ?? 0;
+    const saved = state.boardScrollPositions.get(track.dataset.projectTrack);
+    if (Number.isFinite(saved)) {
+      track.scrollLeft = saved;
+      return;
+    }
+    const currentPhase = track.querySelector('[data-current-phase="true"]');
+    if (!currentPhase) {
+      track.scrollLeft = 0;
+      return;
+    }
+    track.scrollLeft = Math.max(0, currentPhase.offsetLeft - Math.max(0, (track.clientWidth - currentPhase.offsetWidth) / 2));
   });
+}
+
+function captureBoardFocus() {
+  const active = document.activeElement;
+  if (!active || !elements.board.contains(active)) return null;
+  for (const attribute of ['data-open-project', 'data-focus-item', 'data-inspect-task', 'data-toggle-star']) {
+    const value = active.getAttribute?.(attribute);
+    if (value) return { attribute, value };
+  }
+  return null;
+}
+
+function restoreBoardFocus(snapshot) {
+  if (!snapshot) return;
+  elements.board.querySelector(`[${snapshot.attribute}="${cssEscape(snapshot.value)}"]`)?.focus({ preventScroll: true });
+}
+
+function htmlElement(markup) {
+  const template = document.createElement('template');
+  template.innerHTML = markup.trim();
+  return template.content.firstElementChild;
+}
+
+function cssEscape(value) {
+  return globalThis.CSS?.escape ? globalThis.CSS.escape(String(value)) : String(value).replace(/["\\]/g, '\\$&');
+}
+
+function projectHealthView(health) {
+  return {
+    ON_TRACK: { label: '推进正常', className: 'on-track' },
+    AT_RISK: { label: '存在风险', className: 'at-risk' },
+    BLOCKED: { label: '项目阻塞', className: 'blocked' },
+    STALLED: { label: '已经停滞', className: 'stalled' },
+    DORMANT: { label: '暂时休眠', className: 'dormant' },
+    COMPLETE: { label: '全部完成', className: 'complete' }
+  }[health] ?? { label: '状态计算中', className: 'unknown' };
+}
+
+function phaseStatusView(status) {
+  return {
+    COMPLETED: { label: '阶段完成', className: 'completed' },
+    ACTIVE: { label: '正在推进', className: 'active' },
+    REVIEW: { label: '等待复核', className: 'review' },
+    BLOCKED: { label: '阶段阻塞', className: 'blocked' },
+    DEFERRED: { label: '阶段已推迟', className: 'deferred' },
+    PLANNED: { label: '待推进', className: 'planned' },
+    NOT_STARTED: { label: '尚未开始', className: 'not-started' }
+  }[status] ?? { label: '状态计算中', className: 'unknown' };
 }
 
 function compareItems(left, right) {
@@ -1971,7 +2216,7 @@ function computeLabel(compute) {
 
 function statusLabel(status) {
   return {
-    DISCOVERED: '新发现', TRIAGED: '已分诊', PLANNED: '待排期', DEFERRED: '计划', READY: '已就绪', QUEUED: '排队中', RUNNING: '执行中', REVIEW: '审查中',
+    DISCOVERED: '新发现', TRIAGED: '已分诊', PLANNED: '待排期', DEFERRED: '已推迟', READY: '已就绪', QUEUED: '排队中', RUNNING: '执行中', REVIEW: '审查中',
     BLOCKED: '已阻塞', RECURRING: '周期', VERIFIED: '已验证', RELEASED: '已发布', ARCHIVED: '已归档', SUCCEEDED: '运行成功',
     FAILED: '运行失败', CANCELLED: '已取消', RECONNECTING: '重连中'
   }[status] ?? status;
@@ -1996,6 +2241,37 @@ function statusDescription(status) {
   }[status] ?? '技术执行状态。';
 }
 
+function dispatchBatchLabel(batch) {
+  return {
+    NOW: '正在推进',
+    NEXT: '下一批',
+    RESERVE: '候选池',
+    BACKLOG: '待处理池'
+  }[batch] ?? '等待调度';
+}
+
+function decisionReasonLabel(reason) {
+  const known = decisionReasonSummary([reason]);
+  if (known !== '按项目价值、顺序与可用容量进入当前批次') return known;
+  return {
+    STATUS_DEFERRED: '任务已推迟，不占用近期容量',
+    STATUS_BLOCKED: '任务处于阻塞状态',
+    STATUS_RECURRING: '周期任务等待下一次触发',
+    RECURRING_CYCLE_IDLE: '周期任务等待下一次触发',
+    DEPENDENCY_MISSING: '依赖任务不存在，需要人工修复',
+    LEASE_EXPIRED: '领取租约已经过期，等待安全恢复',
+    LEASE_EXPIRED_RECOVERY_PENDING: '领取租约已经过期，等待安全恢复'
+  }[reason] ?? reason;
+}
+
+function parallelPolicyLabel(policy) {
+  return {
+    AUTO: '自动判断',
+    PARALLEL_ALLOWED: '允许并行',
+    SEQUENTIAL: '必须串行'
+  }[policy] ?? policy ?? '自动判断';
+}
+
 function provenanceLabel(task) {
   const provenance = task?.provenance ?? {};
   if (provenance.origin === 'AI' && provenance.contentAdjustedByHuman) return 'AI 提交 · 人工调整';
@@ -2015,7 +2291,7 @@ function provenanceClass(task) {
 
 function bindTaskTooltips() {
   elements.board.querySelectorAll('[data-tooltip-task]').forEach((node) => {
-    const show = () => showTaskTooltip(node, detailTaskFor(node.dataset.tooltipTask));
+    const show = (event) => showTaskTooltip(node, detailTaskFor(node.dataset.tooltipTask), pointerFromEvent(event));
     node.addEventListener('pointerdown', () => {
       state.dragTooltipSuppressed = true;
       hideTaskTooltip();
@@ -2029,12 +2305,19 @@ function bindTaskTooltips() {
   });
 }
 
-function showTaskTooltip(anchor, task) {
+function pointerFromEvent(event) {
+  return Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY)
+    ? { x: event.clientX, y: event.clientY }
+    : null;
+}
+
+function showTaskTooltip(anchor, task, pointer = null) {
   if (!task || state.dragTooltipSuppressed || state.draggedTaskId) {
     hideTaskTooltip();
     return;
   }
   cancelTaskTooltipHide();
+  const routing = effectiveTaskRouting(task);
   const completion = task.latestCompletion;
   const completionModel = completion?.modelRef
     ?? task.currentRun?.modelRef
@@ -2058,7 +2341,7 @@ function showTaskTooltip(anchor, task) {
   elements.taskTooltip.innerHTML = `
     <div class="tooltip-heading"><strong>${escapeHtml(task.title)}</strong><span>${provenanceLabel(task)}</span></div>
     <div class="tooltip-meta">
-      ${task.starred ? '<span>★ 星标优先</span>' : ''}<span>${statusLabel(task.status)}</span><span>${task.planning.priority}</span><span>${kindLabel(task.planning.kind)}</span><span>${computeLabel(task.recommendation.compute)}</span>${task.scheduledFor ? `<span>排期 ${escapeHtml(task.scheduledFor)}</span>` : ''}
+      ${task.starred ? '<span>★ 星标优先</span>' : ''}<span>${statusLabel(task.status)}</span><span>${task.planning.priority}</span><span>${kindLabel(task.planning.kind)}</span><span>${computeLabel(routing.compute)}</span>${task.scheduledFor ? `<span>排期 ${escapeHtml(task.scheduledFor)}</span>` : ''}
     </div>
     <p>${escapeHtml(task.objective)}</p>
     <p class="tooltip-status">${escapeHtml(statusDescription(task.status))}</p>
@@ -2067,19 +2350,69 @@ function showTaskTooltip(anchor, task) {
     <h5>验收标准</h5>${criteria}
     <h5>测试命令</h5>${commands}
     ${completion ? `<p class="tooltip-completion">完成记录：${escapeHtml(completionModel || '人工 / 历史导入')} · ${formatDateTime(completionAt)} · ${evidenceCount} 条证据</p>` : ''}
-    <p class="tooltip-route">${escapeHtml(routeLabel(task.recommendation))} · ${formatDuration(task.recommendation.estimateMinutes)}<br>${escapeHtml(task.recommendation.approach)}</p>
+    <p class="tooltip-route">${escapeHtml(routeLabel(task.recommendation, routing.label))} · ${formatDuration(routing.estimateMinutes)}<br>${escapeHtml(task.recommendation.approach)}</p>
   `;
   elements.taskTooltip.hidden = false;
   const anchorRect = anchor.getBoundingClientRect();
   const tooltipRect = elements.taskTooltip.getBoundingClientRect();
   const gap = 12;
-  const left = Math.min(window.innerWidth - tooltipRect.width - gap, Math.max(gap, anchorRect.left));
-  const below = anchorRect.bottom + gap;
-  const top = below + tooltipRect.height <= window.innerHeight - gap
-    ? below
-    : Math.max(gap, anchorRect.top - tooltipRect.height - gap);
+  const preferredDirection = pointer
+    ? nearestTooltipEdge(anchorRect, pointer)
+    : anchorRect.left + anchorRect.width / 2 <= window.innerWidth / 2 ? 'right' : 'left';
+  const placement = resolveTooltipPlacement(anchorRect, tooltipRect, preferredDirection, gap);
+  const { left, top } = placement;
+  elements.taskTooltip.dataset.placement = placement.direction;
   elements.taskTooltip.style.left = `${left}px`;
   elements.taskTooltip.style.top = `${top}px`;
+}
+
+function nearestTooltipEdge(rect, pointer) {
+  const distances = {
+    left: Math.abs(pointer.x - rect.left),
+    right: Math.abs(rect.right - pointer.x),
+    top: Math.abs(pointer.y - rect.top),
+    bottom: Math.abs(rect.bottom - pointer.y)
+  };
+  return Object.entries(distances).sort((first, second) => first[1] - second[1])[0][0];
+}
+
+function resolveTooltipPlacement(anchorRect, tooltipRect, preferredDirection, gap) {
+  const viewport = { width: window.innerWidth, height: window.innerHeight };
+  const room = {
+    left: anchorRect.left - gap,
+    right: viewport.width - anchorRect.right - gap,
+    top: anchorRect.top - gap,
+    bottom: viewport.height - anchorRect.bottom - gap
+  };
+  const required = {
+    left: tooltipRect.width,
+    right: tooltipRect.width,
+    top: tooltipRect.height,
+    bottom: tooltipRect.height
+  };
+  const alternatives = Object.keys(room)
+    .filter((direction) => direction !== preferredDirection)
+    .sort((first, second) => (room[second] - required[second]) - (room[first] - required[first]));
+  const directions = [preferredDirection, ...alternatives];
+  const direction = directions.find((candidate) => room[candidate] >= required[candidate])
+    ?? directions[0];
+  return tooltipCoordinates(anchorRect, tooltipRect, direction, gap, viewport);
+}
+
+function tooltipCoordinates(anchorRect, tooltipRect, direction, gap, viewport) {
+  const centeredLeft = anchorRect.left + (anchorRect.width - tooltipRect.width) / 2;
+  const centeredTop = anchorRect.top + (anchorRect.height - tooltipRect.height) / 2;
+  const positions = {
+    left: { left: anchorRect.left - tooltipRect.width - gap, top: centeredTop },
+    right: { left: anchorRect.right + gap, top: centeredTop },
+    top: { left: centeredLeft, top: anchorRect.top - tooltipRect.height - gap },
+    bottom: { left: centeredLeft, top: anchorRect.bottom + gap }
+  };
+  return {
+    direction,
+    left: Math.min(viewport.width - tooltipRect.width - gap, Math.max(gap, positions[direction].left)),
+    top: Math.min(viewport.height - tooltipRect.height - gap, Math.max(gap, positions[direction].top))
+  };
 }
 
 function hideTaskTooltip() {
@@ -2098,14 +2431,29 @@ function cancelTaskTooltipHide() {
   taskTooltipHideTimer = null;
 }
 
-function routeLabel(recommendation) {
-  const executor = recommendation.executor === 'codex'
+function routeLabel(recommendation, actor = recommendation.executor) {
+  const executor = actor === 'codex'
     ? 'Codex'
-    : recommendation.executor === 'luna_worker'
+    : actor === 'luna_worker'
       ? 'Luna Worker'
-      : recommendation.executor === 'shell' ? 'Shell' : recommendation.executor;
+      : actor === 'shell' ? 'Shell' : actor;
   const effort = { low: '低推理', medium: '中推理', high: '高推理' }[recommendation.reasoningEffort] ?? recommendation.reasoningEffort;
   return `${executor} · ${effort} · ${recommendation.validationProfile ?? 'V2'} · ${recommendation.capability}`;
+}
+
+function effectiveTaskRouting(task) {
+  const recommendation = task.recommendation ?? {};
+  const decision = task.decision ?? {};
+  const label = decision.recommendedModelRef
+    ?? decision.recommendedAgent
+    ?? recommendation.executor
+    ?? '待分配';
+  return {
+    label,
+    compute: decision.compute ?? recommendation.compute ?? 'medium',
+    estimateMinutes: positiveNumber(decision.estimateMinutes, recommendation.estimateMinutes ?? 30),
+    source: decision.recommendationSource ?? 'RULE_DEFAULT'
+  };
 }
 
 function formatDuration(minutes) {

@@ -1,0 +1,14 @@
+{
+  "admitted": true,
+  "reasons": [],
+  "provenance": {
+    "viewpoint": "reference",
+    "sourcePath": "/home/zhuqin/star/app/Lifeline/artifacts/img2threejs-lifeline-logo/reference/logo.png",
+    "width": 1024,
+    "height": 1024,
+    "foregroundCoverage": 0.1494,
+    "largestComponentFraction": 1.0,
+    "pHash": 18015237264791998502,
+    "duplicateOfHash": null
+  }
+}

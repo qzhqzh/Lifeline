@@ -1,0 +1,12 @@
+{
+  "source": "detail-zones/zone-r1c1.png",
+  "componentId": "crystal-core",
+  "dominantAlbedo": "rgba(3, 27, 61, 1.0)",
+  "secondaryAlbedo": "rgba(10, 86, 139, 1.0)",
+  "materialClass": "metal",
+  "materialClassConfidence": 0.6,
+  "roughnessEstimate": 0.222,
+  "metalnessEstimate": 1.0,
+  "highlightEvidence": "sharp, tight specular hotspot supports low roughness/high specularity",
+  "acceptedLimitation": "The source is synthetic transparent logo art, not a photograph. Full PBR map recovery is inapplicable; extracted color and highlight estimates guide solid procedural materials, while glow remains separate emissive geometry."
+}

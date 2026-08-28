@@ -1,0 +1,13 @@
+**
+!Dockerfile
+!package.json
+!package-lock.json
+!src/
+!src/**
+!scripts/
+!scripts/**
+!public/
+!public/**
+!test/
+!test/**
+!openapi.json

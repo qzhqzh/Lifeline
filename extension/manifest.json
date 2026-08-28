@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Lifeline 算力余量采集器",
+  "version": "0.1.0",
+  "description": "从当前浏览器 Profile 的订阅额度页向本机 Lifeline 上报规范化余额，不上传 Cookie 或网页原文。",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://cursor.com/*",
+    "https://www.cursor.com/*",
+    "https://grok.com/*",
+    "https://www.grok.com/*",
+    "https://x.com/*",
+    "https://www.x.com/*",
+    "https://xyq.jianying.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Lifeline 算力余量",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/codex/settings/usage*",
+        "https://gemini.google.com/app*",
+        "https://cursor.com/dashboard*",
+        "https://www.cursor.com/dashboard*",
+        "https://grok.com/settings*",
+        "https://grok.com/account*",
+        "https://grok.com/usage*",
+        "https://www.grok.com/settings*",
+        "https://www.grok.com/account*",
+        "https://www.grok.com/usage*",
+        "https://x.com/i/premium*",
+        "https://x.com/i/grok/settings*",
+        "https://www.x.com/i/premium*",
+        "https://www.x.com/i/grok/settings*",
+        "https://xyq.jianying.com/home*"
+      ],
+      "js": ["adapters.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

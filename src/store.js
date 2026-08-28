@@ -20,8 +20,16 @@ const EMPTY_STATE = Object.freeze({
   migrationConflicts: [],
   migrationSnapshots: [],
   scanProposals: [],
+  subscriptionAccounts: [],
+  subscriptionLatestSnapshots: [],
+  subscriptionHourlySnapshots: [],
+  subscriptionCollectors: [],
+  agentContacts: [],
   events: []
 });
+const CURRENT_COLLECTION_KEYS = Object.freeze(
+  Object.keys(EMPTY_STATE).filter((key) => key !== 'schemaVersion')
+);
 
 const STORE_LOCK_TIMEOUT_MS = 10_000;
 const STORE_LOCK_STALE_MS = 30_000;
@@ -84,14 +92,14 @@ export class JsonStore {
 
   async #reloadFromDisk() {
     const text = await readFile(this.#filePath, 'utf8');
-    const migrated = migrateState(JSON.parse(text));
+    const migrated = normalizeLoadedState(JSON.parse(text));
     this.#state = migrated.state;
     return migrated;
   }
 
   async #persist() {
     const tempPath = `${this.#filePath}.${process.pid}.tmp`;
-    const body = `${JSON.stringify(this.#state, null, 2)}\n`;
+    const body = `${JSON.stringify(stateForPersistence(this.#state), null, 2)}\n`;
     await writeFile(tempPath, body, 'utf8');
     await rename(tempPath, this.#filePath);
   }
@@ -124,6 +132,16 @@ export class JsonStore {
   }
 }
 
+export function normalizeLoadedState(input) {
+  const needsProjectionRewrite = hasPersistedProjectionMirrors(input);
+  if (hasCurrentStateShape(input) && !needsProjectionRewrite) {
+    hydrateRuntimePhaseProjection(input);
+    return { state: input, changed: false };
+  }
+  const migrated = migrateState(input);
+  return { ...migrated, changed: migrated.changed || needsProjectionRewrite };
+}
+
 /**
  * Idempotent schema/migration harness. It deliberately keeps unknown fields
  * so older or user-owned data is never discarded during a compatibility read.
@@ -144,13 +162,20 @@ export function migrateState(input) {
     migrationConflicts: Array.isArray(source.migrationConflicts) ? structuredClone(source.migrationConflicts) : [],
     migrationSnapshots: Array.isArray(source.migrationSnapshots) ? structuredClone(source.migrationSnapshots) : [],
     scanProposals: Array.isArray(source.scanProposals) ? structuredClone(source.scanProposals) : [],
+    subscriptionAccounts: Array.isArray(source.subscriptionAccounts) ? structuredClone(source.subscriptionAccounts) : [],
+    subscriptionLatestSnapshots: Array.isArray(source.subscriptionLatestSnapshots) ? structuredClone(source.subscriptionLatestSnapshots) : [],
+    subscriptionHourlySnapshots: Array.isArray(source.subscriptionHourlySnapshots) ? structuredClone(source.subscriptionHourlySnapshots) : [],
+    subscriptionCollectors: Array.isArray(source.subscriptionCollectors) ? structuredClone(source.subscriptionCollectors) : [],
+    agentContacts: Array.isArray(source.agentContacts) ? structuredClone(source.agentContacts) : [],
     events: Array.isArray(source.events) ? structuredClone(source.events) : []
   };
 
   normalizePhases(state);
+  hydrateRuntimePhaseProjection(state);
   normalizeRunKinds(state);
   isolateLegacyMockRuns(state);
   repairDetachedActiveTasks(state);
+  migrateDispatchMirrorsToEvents(state);
   const after = JSON.stringify(state);
   return { state, changed: before !== after };
 }
@@ -158,6 +183,89 @@ export function migrateState(input) {
 // Kept as a named export for tests and future repository adapters.
 export const normalizeState = (state) => migrateState(state).state;
 export const migrateLegacyState = migrateState;
+
+function hasCurrentStateShape(state) {
+  return state !== null
+    && typeof state === 'object'
+    && Number(state.schemaVersion) >= CURRENT_SCHEMA_VERSION
+    && CURRENT_COLLECTION_KEYS.every((key) => Array.isArray(state[key]))
+    && state.workItems.every((task) => (
+      task !== null && typeof task === 'object' && task.planning !== null && typeof task.planning === 'object'
+    ));
+}
+
+function hasPersistedProjectionMirrors(state) {
+  if (!state || typeof state !== 'object') return false;
+  return (state.phases ?? []).some((phase) => phase && Object.hasOwn(phase, 'computedStatus'))
+    || (state.workItems ?? []).some((task) => task && (
+      Object.hasOwn(task, 'dispatch')
+      || Object.hasOwn(task, 'decision')
+      || (task.phaseId && ['phaseId', 'phase', 'phaseOrder'].some((key) => Object.hasOwn(task.planning ?? {}, key)))
+    ));
+}
+
+function hydrateRuntimePhaseProjection(state) {
+  const phasesById = new Map(state.phases.map((phase) => [phase.id, phase]));
+  for (const task of state.workItems) {
+    const phaseId = task.phaseId ?? task.planning?.phaseId;
+    const phase = phaseId ? phasesById.get(phaseId) : null;
+    if (!phase) continue;
+    task.phaseId = phase.id;
+    task.planning = {
+      ...(task.planning ?? {}),
+      phaseId: phase.id,
+      phase: phase.title,
+      phaseOrder: Number(phase.phaseOrder ?? Number(phase.rank) / 1024)
+    };
+  }
+}
+
+function stateForPersistence(state) {
+  return {
+    ...state,
+    phases: state.phases.map((phase) => {
+      const { computedStatus: _computedStatus, ...storedPhase } = phase;
+      return storedPhase;
+    }),
+    workItems: state.workItems.map((task) => {
+      const { dispatch: _dispatch, decision: _decision, ...storedTask } = task;
+      if (!storedTask.phaseId || !storedTask.planning) return storedTask;
+      const planning = { ...storedTask.planning };
+      delete planning.phaseId;
+      delete planning.phase;
+      delete planning.phaseOrder;
+      return { ...storedTask, planning };
+    })
+  };
+}
+
+function migrateDispatchMirrorsToEvents(state) {
+  const recordedTaskIds = new Set(state.events
+    .filter((event) => event?.type === 'dispatch.decision_changed' && event.workItemId)
+    .map((event) => event.workItemId));
+  let sequence = Math.max(0, ...state.events.map((event) => Number(event.sequence) || 0));
+  for (const task of state.workItems) {
+    const decision = task?.decision ?? (task?.dispatch ? { ...task.dispatch } : null);
+    if (!decision || recordedTaskIds.has(task.id)) continue;
+    const fingerprint = JSON.stringify({ taskId: task.id, decision });
+    state.events.push({
+      id: `event_dispatch_migration_${createHash('sha256').update(fingerprint).digest('hex').slice(0, 24)}`,
+      sequence: ++sequence,
+      type: 'dispatch.decision_changed',
+      message: 'Persisted dispatch mirror migrated to audit history',
+      workItemId: task.id,
+      metadata: {
+        projectId: task.projectId,
+        policyVersion: decision.policyVersion ?? null,
+        before: null,
+        after: decision,
+        migration: true
+      },
+      createdAt: decision.decidedAt ?? task.updatedAt ?? task.createdAt ?? null
+    });
+    recordedTaskIds.add(task.id);
+  }
+}
 
 function normalizeRunKinds(state) {
   for (const run of state.runs) {

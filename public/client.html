@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Lifeline 客户项目任务面板：确认范围、查看进度、验收交付。" />
+    <title>Lifeline · 客户项目任务面板</title>
+    <link rel="icon" type="image/png" href="/assets/lifeline-logo-64.png" />
+    <link rel="stylesheet" href="/client.css" />
+  </head>
+  <body>
+    <header class="client-topbar">
+      <a class="client-brand" href="/" aria-label="返回 Lifeline 控制平面">
+        <img src="/assets/lifeline-logo.webp" alt="" width="34" height="34" />
+        <strong>Lifeline</strong>
+      </a>
+
+      <label class="project-picker">
+        <span class="visually-hidden">切换项目</span>
+        <select id="projectSelect" aria-label="切换客户项目"></select>
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m6 8 4 4 4-4" /></svg>
+      </label>
+
+      <nav class="client-nav" aria-label="客户项目导航">
+        <a class="active" id="projectProgressNavLink" href="/client.html" aria-current="page">项目进度</a>
+        <a id="testMapNavLink" href="/test-map.html">测试地图</a>
+        <a id="canvasNavLink" href="/canvas.html">协作画布</a>
+      </nav>
+
+      <div class="client-topbar-actions">
+        <button class="button primary" id="openRequestDialog" type="button">提出需求</button>
+      </div>
+    </header>
+
+    <main id="clientMain" aria-live="polite">
+      <section class="client-loading" aria-label="正在载入项目">
+        <div class="loading-line wide"></div>
+        <div class="loading-line"></div>
+        <div class="loading-board"></div>
+      </section>
+    </main>
+
+    <dialog class="task-drawer" id="taskDrawer" aria-labelledby="drawerTitle">
+      <div class="drawer-surface">
+        <div id="drawerContent"></div>
+      </div>
+    </dialog>
+
+    <dialog class="request-dialog" id="requestDialog" aria-labelledby="requestDialogTitle">
+      <form class="request-form" id="requestForm">
+        <header>
+          <h2 id="requestDialogTitle">提出新需求</h2>
+          <button class="icon-button" id="closeRequestDialog" type="button" aria-label="关闭提出需求窗口">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+        <div class="request-fields">
+          <label>
+            需求标题
+            <input id="requestTitle" name="title" required minlength="3" maxlength="180" placeholder="一句话说明希望实现什么" />
+          </label>
+          <label>
+            所属功能
+            <select id="requestPhase" name="phaseId" required></select>
+          </label>
+          <label>
+            背景与预期
+            <textarea id="requestObjective" name="objective" required minlength="8" maxlength="4000" placeholder="补充使用场景、期望结果和需要注意的边界"></textarea>
+          </label>
+          <label>
+            希望完成日期 <span>可选</span>
+            <input id="requestDueDate" name="scheduledFor" type="date" />
+          </label>
+        </div>
+        <footer>
+          <button class="button secondary" id="cancelRequest" type="button">取消</button>
+          <button class="button primary" type="submit">提交需求</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="request-dialog move-dialog" id="moveTaskDialog" aria-labelledby="moveTaskDialogTitle">
+      <form class="request-form" id="moveTaskForm">
+        <header>
+          <div>
+            <h2 id="moveTaskDialogTitle">移动任务</h2>
+            <p class="move-task-name" id="moveTaskName"></p>
+          </div>
+          <button class="icon-button" id="closeMoveTaskDialog" type="button" aria-label="关闭移动任务窗口">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+        <div class="request-fields move-task-fields">
+          <label>
+            功能泳道
+            <select id="moveTaskPhase" name="phaseId" required></select>
+          </label>
+          <label>
+            任务状态
+            <select id="moveTaskStatus" name="statusId" required></select>
+          </label>
+        </div>
+        <footer>
+          <button class="button secondary" id="cancelMoveTask" type="button">取消</button>
+          <button class="button primary" id="moveTaskSubmit" type="submit">移动</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div class="client-toast" id="clientToast" role="status" aria-live="polite"></div>
+    <script type="module" src="/client.js"></script>
+  </body>
+</html>

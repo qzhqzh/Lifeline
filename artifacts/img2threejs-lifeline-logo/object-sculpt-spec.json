@@ -1,0 +1,3570 @@
+{
+  "targetName": "Lifeline Energy Emblem",
+  "targetId": "lifeline-energy-emblem",
+  "schemaVersion": "2.1",
+  "terminologyProfile": {
+    "domain": "real-time procedural Three.js asset",
+    "geometryTerms": [
+      "silhouette",
+      "topology",
+      "primitive",
+      "bevel",
+      "chamfer",
+      "taper",
+      "bend",
+      "boolean cut",
+      "edge loop",
+      "surface normal",
+      "displacement"
+    ],
+    "materialTerms": [
+      "albedo",
+      "baseColor",
+      "roughness",
+      "metalness",
+      "normal map",
+      "bump map",
+      "ambient occlusion",
+      "cavity dirt",
+      "edge wear",
+      "clearcoat"
+    ],
+    "lightingTerms": [
+      "key light",
+      "fill light",
+      "rim light",
+      "HDRI/environment reflection",
+      "contact shadow"
+    ],
+    "descriptionRule": "Use measurable 3D graphics terms. Avoid vague words unless they are paired with concrete geometry/material/shader parameters."
+  },
+  "sourceImage": "reference/logo.png",
+  "referenceCamera": {
+    "solved": false,
+    "fovDegrees": 32,
+    "aspect": 1,
+    "orientation": {
+      "yaw": 0,
+      "pitch": 0,
+      "roll": 0
+    },
+    "positionHint": [
+      0,
+      0,
+      8
+    ],
+    "note": "Near-orthographic logo view; front camera alignment is authored from the transparent canvas bounds."
+  },
+  "suitability": "conditional",
+  "scores": {
+    "object_isolation": 3,
+    "silhouette_readability": 3,
+    "depth_inference": 2,
+    "primitive_decomposition": 3,
+    "material_procedurality": 3,
+    "occlusion_risk": 2,
+    "interaction_fit": 3
+  },
+  "preSpecAssessment": {
+    "objectClass": {
+      "primaryType": "stylized technology emblem",
+      "primaryDomain": "object",
+      "formLanguage": [
+        "geometric",
+        "faceted",
+        "curve-and-node"
+      ],
+      "structureKind": [
+        "extruded-profile",
+        "tube-assembly",
+        "socketed-nodes"
+      ],
+      "motionPotential": [
+        "whole-emblem-orbit",
+        "node-pulse",
+        "energy-flow"
+      ],
+      "materialFamilies": [
+        "painted-metal",
+        "glossy-dielectric",
+        "emissive-energy"
+      ],
+      "notes": "Front-identity-focused reconstruction of illustrated logo art. Hidden depth is a shallow symmetric approximation."
+    },
+    "complexity": {
+      "tier": "moderate",
+      "scores": {
+        "silhouetteComplexity": 2,
+        "componentCount": 2,
+        "hierarchyDepth": 2,
+        "repetitionDensity": 1,
+        "materialLayerCount": 2,
+        "localDetailDensity": 2,
+        "occlusionRisk": 2,
+        "actionReadinessNeed": 1
+      },
+      "estimatedCounts": {
+        "macroComponents": 4,
+        "mesoComponents": 9,
+        "microFeatureGroups": 6,
+        "materialLayers": 5,
+        "repetitionSystems": 1
+      },
+      "reasoning": [
+        "The emblem contains four separable assemblies: faceted crystal, elliptical orbit, ECG signals, and three socketed nodes.",
+        "Moderate complexity is sufficient because the reference is clean logo art with controlled geometry, while occlusion crossings and emissive layering require multiple meshes and review angles."
+      ]
+    },
+    "specDepthDecision": {
+      "requiredDepth": "moderate",
+      "minimumComponentLevels": [
+        "macro",
+        "meso"
+      ],
+      "needsRepetitionSystems": true,
+      "needsMaterialLocalOverrides": true,
+      "needsMultipleReviewViews": true,
+      "needsActionReadyHierarchy": true,
+      "rationale": "Macro and meso levels cover the structural assemblies; micro local features are needed for facet highlights, node cores, and the two ECG signatures."
+    },
+    "unknownsToResolveBeforeImplementation": [],
+    "detailInventory": {
+      "scanMethod": "component-zones",
+      "targetMinDetails": 6,
+      "note": "Enumerate every identity-defining small detail before authoring the spec. Each detail must map to a component.localFeatures entry or material.localOverrides entry, never prose only. Use forge/stage1_intake/build_detail_inventory.py to scan zones.",
+      "details": [
+        {
+          "id": "crystal-axial-seam",
+          "kind": "seam",
+          "description": "Continuous cyan vertical seam",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "crystal-core.axial-seam"
+          },
+          "evidenceRef": "detail-zones/zone-r1c1.png",
+          "confidence": 0.98,
+          "realization": "unreported"
+        },
+        {
+          "id": "crystal-facet-highlights",
+          "kind": "bevel",
+          "description": "Asymmetric white and cyan vertical facet highlights",
+          "mapsTo": {
+            "type": "material.localOverrides",
+            "ref": "crystal-navy.facet-highlights"
+          },
+          "evidenceRef": "detail-zones/zone-r0c1.png",
+          "confidence": 0.94,
+          "realization": "unreported"
+        },
+        {
+          "id": "central-ecg-signature",
+          "kind": "linework",
+          "description": "Primary five-turn ECG signature",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "signal-central.ecg-profile"
+          },
+          "evidenceRef": "detail-zones/zone-r1c1.png",
+          "confidence": 0.99,
+          "realization": "unreported"
+        },
+        {
+          "id": "lower-ecg-signature",
+          "kind": "linework",
+          "description": "Compact secondary ECG signature",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "signal-orbit.ecg-profile"
+          },
+          "evidenceRef": "detail-zones/zone-r1c1.png",
+          "confidence": 0.97,
+          "realization": "unreported"
+        },
+        {
+          "id": "orbit-depth-crossing",
+          "kind": "contour",
+          "description": "Orbit crosses behind the upper crystal and in front below",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "orbit-shell.depth-route"
+          },
+          "evidenceRef": "detail-zones/zone-r1c1.png",
+          "confidence": 0.9,
+          "realization": "unreported"
+        },
+        {
+          "id": "cyan-node-cores",
+          "kind": "gloss",
+          "description": "Two cyan glossy nodes with white offset cores",
+          "mapsTo": {
+            "type": "material.localOverrides",
+            "ref": "node-cyan.core-highlight"
+          },
+          "evidenceRef": "detail-zones/zone-r1c2.png",
+          "confidence": 0.96,
+          "realization": "unreported"
+        },
+        {
+          "id": "orange-alert-node",
+          "kind": "gloss",
+          "description": "Orange-red node with amber and yellow-white core",
+          "mapsTo": {
+            "type": "material.localOverrides",
+            "ref": "node-orange.alert-core"
+          },
+          "evidenceRef": "detail-zones/zone-r1c0.png",
+          "confidence": 0.99,
+          "realization": "unreported"
+        },
+        {
+          "id": "orbit-cyan-inset",
+          "kind": "emissive",
+          "description": "Thin cyan-white tube inside navy orbit shell",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "orbit-energy.inset-route"
+          },
+          "evidenceRef": "detail-zones/zone-r1c2.png",
+          "confidence": 0.96,
+          "realization": "unreported"
+        }
+      ]
+    },
+    "anatomy": {
+      "applies": false,
+      "styleHeads": 0,
+      "proportions": {
+        "headUnit": 0,
+        "torso": 0,
+        "legs": 0,
+        "shoulderWidth": 0,
+        "hipWidth": 0
+      },
+      "pose": {
+        "type": "unassessed",
+        "jointAngles": {}
+      },
+      "faceLandmarks": {
+        "eyeLine": 0,
+        "eyeSpacing": 0,
+        "noseBase": 0,
+        "mouthLine": 0,
+        "hairline": 0
+      },
+      "features": [],
+      "confidence": 0,
+      "note": "Only meaningful when objectClass.primaryDomain is character or hybrid. Set applies=true and fill from forge/stage1_intake/extract_landmarks.py. See grimoire/character/reconstruction.md and grimoire/character/likeness_maximization.md."
+    },
+    "sourceImage": "reference/logo.png"
+  },
+  "qualityContract": {
+    "qualityBar": "moderate",
+    "definitionOfDone": [
+      "Front render preserves the pointed crystal, tilted orbit, two ECG signatures, three-node placement, and cyan/orange color hierarchy.",
+      "Three-quarter views reveal coherent shallow depth without breaking the front logo silhouette.",
+      "Every macro assembly remains a named pivot group and every identity detail maps to geometry or a material override."
+    ],
+    "minimumSpecDepth": {
+      "macroComponents": 5,
+      "mesoComponents": 4,
+      "microFeatureGroups": 7,
+      "materialLayers": 7,
+      "repetitionSystems": 1,
+      "reviewViewpoints": 3
+    },
+    "featureGroups": [
+      {
+        "id": "crystal-silhouette",
+        "name": "Pointed faceted crystal and axial seam",
+        "required": true,
+        "qualityCriteria": [
+          "Tip positions, width-to-height ratio, front facets, and cyan seam match the reference."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "crystal reads as a box",
+          "axial seam is broken"
+        ]
+      },
+      {
+        "id": "orbit-depth-route",
+        "name": "Elliptical orbit and depth crossings",
+        "required": true,
+        "qualityCriteria": [
+          "Orbit follows the wide tilted ellipse and preserves front/behind crossings."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "orbit becomes a flat ring",
+          "crossings reverse"
+        ]
+      },
+      {
+        "id": "ecg-linework",
+        "name": "Primary and secondary ECG signatures",
+        "required": true,
+        "qualityCriteria": [
+          "Both angular profiles preserve peak/trough order and scale."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "generic waveform",
+          "lower pulse omitted"
+        ]
+      },
+      {
+        "id": "node-system",
+        "name": "Three glossy orbit nodes",
+        "required": true,
+        "qualityCriteria": [
+          "Two cyan nodes and one orange node retain placement, shell, rim, and offset core."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "wrong node count",
+          "orange hierarchy lost"
+        ]
+      },
+      {
+        "id": "emissive-lookdev",
+        "name": "Navy, cyan, white, and orange material hierarchy",
+        "required": true,
+        "qualityCriteria": [
+          "Emission supports line readability while navy structural surfaces remain visible."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "bloom erases geometry",
+          "materials read flat or gray"
+        ]
+      }
+    ],
+    "visualDeltaChecks": [
+      "crystal tip and width-to-height silhouette delta",
+      "orbit ellipse, tilt, and crossing-order delta",
+      "central and lower ECG vertex-placement delta",
+      "three-node position, scale, and color-role delta",
+      "navy-to-cyan/orange luminance hierarchy delta"
+    ],
+    "antiShallowSpecRules": [
+      "Do not proceed to code if qualityContract.qualityBar is unassessed.",
+      "Do not proceed to code if the spec only contains a root component for a moderate or complex object.",
+      "Do not proceed to code if required featureGroups are not represented by componentTree, materials, or repetitionSystems.",
+      "Do not proceed to code if visible local features are described only in prose and not attached to components/materials/evidenceRefs.",
+      "Do not proceed past structural-pass if attached child parts lack attachment.parentSocket, localStart, localEnd, embedDepth/overlap, and gapTolerance.",
+      "Do not pass material look-dev when albedo is reused as roughness, height, normal, or AO.",
+      "Do not pass material look-dev without macro, meso, and micro surface frequency bands for close-up materials.",
+      "Do not pass reference-fidelity material look-dev from a source image without usable referencePbr maps or an explicit documented limitation.",
+      "Do not patch a spec with extracted PBR maps when extraction confidence is below the target threshold unless the user explicitly accepts lower fidelity.",
+      "Do not place adjacent separate-geometry parts below 0.02 world-unit seam overlap (source: grimoire/build/geometry_patterns.md).",
+      "Do not satisfy raised or recessed relief, fasteners, or grip structure with a map alone when the feature affects form; use geometry or displacement (source: grimoire/build/geometry_patterns.md).",
+      "Adjacent components must overlap by at least 0.02 world units at shared seams (source: grimoire/build/geometry_patterns.md).",
+      "Raised or recessed relief and fasteners must be geometry, instanced micro-parts, or displacement; a map alone is an approximation (source: grimoire/build/geometry_patterns.md)."
+    ],
+    "mustNotDo": [
+      "Do not proceed to code if qualityContract.qualityBar is unassessed.",
+      "Do not proceed to code if the spec only contains a root component for a moderate or complex object.",
+      "Do not proceed to code if required featureGroups are not represented by componentTree, materials, or repetitionSystems.",
+      "Do not proceed to code if visible local features are described only in prose and not attached to components/materials/evidenceRefs.",
+      "Do not proceed past structural-pass if attached child parts lack attachment.parentSocket, localStart, localEnd, embedDepth/overlap, and gapTolerance.",
+      "Do not pass material look-dev when albedo is reused as roughness, height, normal, or AO.",
+      "Do not pass material look-dev without macro, meso, and micro surface frequency bands for close-up materials.",
+      "Do not pass reference-fidelity material look-dev from a source image without usable referencePbr maps or an explicit documented limitation.",
+      "Do not patch a spec with extracted PBR maps when extraction confidence is below the target threshold unless the user explicitly accepts lower fidelity.",
+      "Do not place adjacent separate-geometry parts below 0.02 world-unit seam overlap (source: grimoire/build/geometry_patterns.md).",
+      "Do not satisfy raised or recessed relief, fasteners, or grip structure with a map alone when the feature affects form; use geometry or displacement (source: grimoire/build/geometry_patterns.md).",
+      "Adjacent components must overlap by at least 0.02 world units at shared seams (source: grimoire/build/geometry_patterns.md).",
+      "Raised or recessed relief and fasteners must be geometry, instanced micro-parts, or displacement; a map alone is an approximation (source: grimoire/build/geometry_patterns.md)."
+    ]
+  },
+  "qualityTargets": {
+    "targetFidelity": 0.7,
+    "mustMatch": [
+      "pointed crystal silhouette and cyan axial seam",
+      "tilted elliptical orbit with correct front/back crossings",
+      "central and lower ECG profiles",
+      "two cyan nodes and one orange alert node",
+      "navy structure with cyan/white/orange emission hierarchy"
+    ],
+    "niceToHave": [
+      "soft illustrated halo",
+      "subtle internal facet gradients"
+    ],
+    "fpsTarget": 60,
+    "reviewViewpoints": [
+      "front",
+      "three-quarter-left",
+      "three-quarter-right"
+    ]
+  },
+  "selfCorrectLoop": {
+    "enabled": true,
+    "visualAcceptance": {
+      "reviewer": "ai-vision",
+      "threshold": 0.7,
+      "comparisonArtifactRequired": true,
+      "layerScoresRequired": true,
+      "codePixelDiffIsAcceptanceAuthority": false,
+      "scoringRule": "AI vision must inspect a side-by-side reference/render sheet and score the current pass from 0 to 1. Pixel-diff code may assist diagnostics but cannot approve a pass.",
+      "requiredLayerScores": [
+        "silhouetteProportion",
+        "componentStructure",
+        "formDetail",
+        "materialSurface",
+        "lightingCamera"
+      ],
+      "featureReviewPolicy": {
+        "enabled": true,
+        "reviewUnit": "semantic-subsystem",
+        "maxCriticalFeaturesPerPass": 5,
+        "maxImportantFeaturesPerPass": 3,
+        "criticalDefaultThreshold": 0.8,
+        "importantAverageThreshold": 0.65,
+        "adaptiveEscalation": true,
+        "singleImagePairOnly": true,
+        "selectionRule": "Choose only the most visually salient, identity-defining, user-prioritized, or high-risk semantic systems. Group repeated parts instead of reviewing every mesh. AI vision scores every selected feature from the same full reference/render pair."
+      }
+    },
+    "reviewAfterPasses": [
+      "blockout",
+      "structural-pass",
+      "form-refinement",
+      "material-pass",
+      "surface-pass",
+      "lighting-pass",
+      "interaction-pass",
+      "optimization-pass"
+    ],
+    "allowedActions": [
+      "continue",
+      "refine-spec",
+      "refine-code",
+      "request-input",
+      "stop"
+    ],
+    "specRefineTriggers": [
+      "missing component",
+      "wrong primitive family",
+      "wrong proportions",
+      "material layer under-specified",
+      "local feature not traceable to viewEvidence",
+      "reference ambiguity discovered during implementation"
+    ],
+    "codeRefineTriggers": [
+      "spec is adequate but generated geometry/material does not match",
+      "browser render differs from reference",
+      "performance budget exceeded",
+      "lighting hides geometry or material response"
+    ],
+    "stopCriteria": [
+      "target fidelity reached or user accepts current approximation",
+      "remaining gaps require new reference images or manual art"
+    ],
+    "screenshotPolicy": {
+      "requiredForPasses": [
+        "blockout",
+        "structural-pass",
+        "form-refinement",
+        "material-pass",
+        "surface-pass",
+        "lighting-pass",
+        "interaction-pass"
+      ],
+      "preferredCapture": "in-app-browser-screenshot",
+      "fallbackCapture": "user-supplied-screenshot-path",
+      "minimumEvidence": "Each visual pass needs a reference image, rendered screenshot, side-by-side comparison sheet, AI vision score, layer scores, and critique before choosing continue.",
+      "reviewPairRule": "Compare the same camera/viewpoint whenever possible; do not judge a front reference against a random render angle.",
+      "acceptanceAuthority": "AI vision review of the comparison sheet. Code-generated pixel similarity is not sufficient evidence."
+    }
+  },
+  "featureReviewTargets": [
+    {
+      "id": "crystal-silhouette",
+      "name": "Pointed crystal silhouette and axial seam",
+      "tier": "critical",
+      "passIds": [
+        "blockout",
+        "structural-pass",
+        "form-refinement"
+      ],
+      "minimumScore": 0.82,
+      "mustPass": true,
+      "componentRefs": [
+        "crystal-core",
+        "crystal-highlights"
+      ],
+      "evidenceRefs": [
+        "full-object"
+      ]
+    },
+    {
+      "id": "orbit-depth-route",
+      "name": "Tilted orbit and front/back crossings",
+      "tier": "critical",
+      "passIds": [
+        "blockout",
+        "structural-pass",
+        "form-refinement"
+      ],
+      "minimumScore": 0.8,
+      "mustPass": true,
+      "componentRefs": [
+        "orbit-shell",
+        "orbit-energy"
+      ],
+      "evidenceRefs": [
+        "full-object"
+      ]
+    },
+    {
+      "id": "ecg-linework",
+      "name": "Two ECG signal profiles",
+      "tier": "critical",
+      "passIds": [
+        "structural-pass",
+        "form-refinement"
+      ],
+      "minimumScore": 0.82,
+      "mustPass": true,
+      "componentRefs": [
+        "signal-central",
+        "signal-orbit"
+      ],
+      "evidenceRefs": [
+        "full-object"
+      ]
+    },
+    {
+      "id": "node-system",
+      "name": "Three-node placement and color roles",
+      "tier": "critical",
+      "passIds": [
+        "structural-pass",
+        "material-pass"
+      ],
+      "minimumScore": 0.8,
+      "mustPass": true,
+      "componentRefs": [
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "evidenceRefs": [
+        "full-object"
+      ]
+    },
+    {
+      "id": "emissive-lookdev",
+      "name": "Navy and emissive color hierarchy",
+      "tier": "important",
+      "passIds": [
+        "material-pass",
+        "surface-pass",
+        "lighting-pass"
+      ],
+      "minimumScore": 0.72,
+      "mustPass": false,
+      "componentRefs": [
+        "crystal-core",
+        "orbit-energy",
+        "signal-central",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "evidenceRefs": [
+        "full-object"
+      ]
+    }
+  ],
+  "sculptPipeline": {
+    "passGateMode": "locked-sequential",
+    "passOrder": [
+      "blockout",
+      "structural-pass",
+      "form-refinement",
+      "material-pass",
+      "surface-pass",
+      "lighting-pass",
+      "interaction-pass",
+      "optimization-pass"
+    ],
+    "currentPass": "blockout",
+    "completedPasses": [],
+    "lastCompletedPass": "",
+    "blockedReason": "",
+    "nextRequiredEvidence": [
+      "Silhouette reads correctly without materials.",
+      "Quality contract has named all required macro feature groups before code generation.",
+      "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold.",
+      "browser render screenshot from your agent's browser/screenshot tool",
+      "single side-by-side full reference/render comparison sheet",
+      "all critical semantic feature scores at or above their thresholds",
+      "self-correction review appended with action=continue before the next pass"
+    ]
+  },
+  "lookDevTargets": {
+    "qualityPriority": "reference-fidelity",
+    "materialPass": {
+      "albedoPaletteRequired": true,
+      "roughnessVariationRequired": true,
+      "normalOrBumpRequired": true,
+      "localOverridesRequired": true,
+      "minimumTextureResolution": 1024,
+      "preferredTextureResolution": 2048,
+      "independentMapChannels": [
+        "albedo",
+        "roughness",
+        "height",
+        "normal",
+        "ambient-occlusion"
+      ],
+      "requiredSurfaceFrequencyBands": [
+        "macro",
+        "meso",
+        "micro"
+      ],
+      "geometryReliefRequiredWhenSilhouetteAffected": true,
+      "referencePbrExtraction": {
+        "requiredWhenSourceImagePresent": false,
+        "targetThreshold": 0.7,
+        "stopOnLowConfidence": true,
+        "script": "forge/stage1_intake/extract_pbr_evidence.py",
+        "acceptedLimitation": "Synthetic transparent logo art uses solid procedural layers; photographic PBR recovery is not applicable."
+      },
+      "mustAvoid": [
+        "single flat albedo per material",
+        "uniform roughness",
+        "albedo texture reused as roughness/height/normal/AO",
+        "single-frequency random noise",
+        "plastic-looking smooth bark, stone, cloth, foliage, or aged material",
+        "local color/detail described only in prose without material masks",
+        "claiming exact PBR recovery when confidence is below the target threshold"
+      ]
+    },
+    "lightingPass": {
+      "requiredTerms": [
+        "key light",
+        "fill light",
+        "rim or environment light",
+        "exposure",
+        "tone mapping",
+        "background",
+        "contact shadow"
+      ],
+      "mustAvoid": [
+        "ambient-only lighting",
+        "flat value range",
+        "missing contact shadow",
+        "reference lighting copied without separating material readability"
+      ]
+    },
+    "screenshotReview": [
+      "Compare albedo palette and local color zones.",
+      "Compare roughness/normal/bump response under light.",
+      "Compare cavity dirt, edge wear, stains, moss, scratches, or other local masks.",
+      "Compare key/fill/rim structure, exposure, tone mapping, background, and contact shadows.",
+      "Capture a neutral-light render to verify material readability without reference lighting.",
+      "Capture a grazing-light close-up to expose flat normals, uniform roughness, tiling, and plastic highlights.",
+      "Capture a reference-matched render from the same camera framing as the source."
+    ]
+  },
+  "actionReadiness": {
+    "contract": "Every macro/meso component should be generated as a stable named Object3D pivot node with a mesh child, action metadata, optional sockets, collider proxy, and destruction metadata.",
+    "defaultRigType": "action-ready-static-rig",
+    "rootMotionNode": "root",
+    "requiredComponentFields": [
+      "id",
+      "parent",
+      "transform",
+      "attachment for child appendages, connectors, limbs, tubes, handles, legs, horns, wings, branches, or cables",
+      "actionProfile.animationRole",
+      "actionProfile.pivot",
+      "actionProfile.collider",
+      "actionProfile.destruction"
+    ],
+    "transformChannels": [
+      "translate",
+      "rotate",
+      "scale",
+      "bend",
+      "twist",
+      "detach",
+      "visibility",
+      "material-state"
+    ],
+    "authoringRules": [
+      "Do not collapse independently movable parts into one mesh.",
+      "Put transforms on component pivot groups, not only on raw meshes.",
+      "For attached child parts, put the pivot at the semantic root/socket and build visible geometry from localStart to localEnd.",
+      "Represent hinge, socket, detachable, and breakable intent even when no animation is implemented yet.",
+      "Use simplified collider proxies for runtime physics instead of visual mesh colliders by default."
+    ],
+    "destructionPolicy": {
+      "defaultBreakable": false,
+      "fractureGroupNaming": "Use stable semantic names such as body-shell, left-hinge, glass-panel, branch-segment.",
+      "debrisStrategy": "Prefer detachable component groups and a small number of procedural fragments over random mesh explosion."
+    }
+  },
+  "assumptions": [
+    "Back-face bevels mirror the visible front at reduced detail.",
+    "Orbit depth crossings use authored shallow Z offsets inferred from visible overlaps.",
+    "Emission and halo radius approximate illustrated glow rather than measured luminance."
+  ],
+  "coordinateFrame": {
+    "front": "+Z toward the reference camera",
+    "up": "+Y matching image up",
+    "scaleReference": "central crystal height = 5.6 world units"
+  },
+  "silhouette": {
+    "boundingShape": "tall faceted crystal crossed by a wide tilted elliptical orbit",
+    "aspectRatios": [
+      "crystal width:height = 1:2.75",
+      "full emblem width:height = 1.12:1"
+    ],
+    "symmetry": "crystal bilateral; orbit/node composition asymmetric",
+    "dominantCurves": [
+      "elliptical orbit",
+      "two angular ECG polylines"
+    ],
+    "negativeSpaces": [
+      "upper-left orbit opening",
+      "upper-right orbit-to-crystal gap"
+    ],
+    "landmarks": [
+      "upper crystal tip",
+      "central ECG peak",
+      "orange left node",
+      "cyan upper-right node",
+      "cyan lower-right node",
+      "lower crystal tip"
+    ]
+  },
+  "viewEvidence": [
+    {
+      "id": "full-object",
+      "view": "front-primary",
+      "imageRegion": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1,
+        "units": "normalized"
+      },
+      "observations": [
+        "Transparent 1024px logo reference with unambiguous silhouette.",
+        "Orbit depth ordering is visible at crystal crossings.",
+        "Cyan/white emissive linework and orange alert node are identity-critical."
+      ],
+      "confidence": 0.96
+    }
+  ],
+  "componentTree": [
+    {
+      "id": "root",
+      "name": "Lifeline Energy Emblem",
+      "level": "macro",
+      "role": "root",
+      "importance": 0.95,
+      "confidence": 0.9,
+      "primitive": "box",
+      "topologyClass": "assembled-solid",
+      "topologyRationale": "Stable transform root for four independently animated visual assemblies.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(0, 17, 47, 1)",
+        "secondaryAlbedo": "rgba(0, 51, 111, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(0, 17, 47, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(0, 51, 111, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Stable transform root for four independently animated visual assemblies.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": null,
+      "attachment": null,
+      "dimensions": {
+        "width": 6.4,
+        "height": 5.8,
+        "depth": 0.7,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "root",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": false,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "box",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "root",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "utility-invisible",
+      "materialLayers": [
+        "utility-invisible"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "crystal-core",
+      "name": "Faceted central crystal",
+      "level": "macro",
+      "role": "body",
+      "importance": 0.95,
+      "confidence": 0.9,
+      "primitive": "extrude",
+      "topologyClass": "assembled-solid",
+      "topologyRationale": "Reference shows a planar pointed profile with shallow faceted depth and straight perimeter edges.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(0, 17, 47, 1)",
+        "secondaryAlbedo": "rgba(0, 51, 111, 1)",
+        "materialClass": "metal",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(0, 17, 47, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(0, 51, 111, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Reference shows a planar pointed profile with shallow faceted depth and straight perimeter edges.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "root",
+      "attachment": null,
+      "dimensions": {
+        "width": 1.8,
+        "height": 5.6,
+        "depth": 0.5,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "body",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "box",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "body",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "crystal-navy",
+      "materialLayers": [
+        "crystal-navy"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "crystal-core.axial-seam",
+          "kind": "emissive",
+          "description": "Continuous vertical cyan seam",
+          "realization": "geometry"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "crystal-highlights",
+      "name": "Crystal facet highlight strips",
+      "level": "meso",
+      "role": "surface-relief",
+      "importance": 0.8,
+      "confidence": 0.9,
+      "primitive": "plane-card",
+      "topologyClass": "surface-relief",
+      "topologyRationale": "Thin raised light strips sit flush with the front facets and do not change the outer silhouette.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(255, 255, 255, 1)",
+        "secondaryAlbedo": "rgba(0, 234, 255, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(255, 255, 255, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(0, 234, 255, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Thin raised light strips sit flush with the front facets and do not change the outer silhouette.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "crystal-core",
+      "attachment": {
+        "parentId": "crystal-core",
+        "parentSocket": "crystal-core-center",
+        "localStart": [
+          0,
+          -1.5,
+          0.25
+        ],
+        "localEnd": [
+          0,
+          1.5,
+          0.25
+        ],
+        "contactType": "overlap",
+        "overlap": 0.03,
+        "gapTolerance": 0.01,
+        "evidenceRefs": [
+          "full-object"
+        ]
+      },
+      "dimensions": {
+        "width": 1.2,
+        "height": 3.2,
+        "depth": 0.03,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          0.55,
+          0.28
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "surface-relief",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "box",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "surface-relief",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "energy-white",
+      "materialLayers": [
+        "energy-white"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "orbit-shell",
+      "name": "Elliptical orbital shell",
+      "level": "macro",
+      "role": "connector",
+      "importance": 0.95,
+      "confidence": 0.9,
+      "primitive": "tube",
+      "topologyClass": "assembled-solid",
+      "topologyRationale": "A continuous swept tube follows the visible elliptical route around the crystal.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(0, 17, 47, 1)",
+        "secondaryAlbedo": "rgba(0, 51, 111, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(0, 17, 47, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(0, 51, 111, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "A continuous swept tube follows the visible elliptical route around the crystal.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "root",
+      "attachment": {
+        "parentId": "root",
+        "parentSocket": "root-center",
+        "localStart": [
+          -3.1,
+          -0.2,
+          0
+        ],
+        "localEnd": [
+          3.1,
+          0.4,
+          0
+        ],
+        "contactType": "overlap",
+        "overlap": 0.03,
+        "gapTolerance": 0.01,
+        "evidenceRefs": [
+          "full-object"
+        ]
+      },
+      "dimensions": {
+        "width": 6.2,
+        "height": 2.5,
+        "depth": 0.34,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          -0.35,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "connector",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "tube",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "connector",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "orbit-navy",
+      "materialLayers": [
+        "orbit-navy"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "orbit-shell.depth-route",
+          "kind": "contour",
+          "description": "Authored front/back depth route through crystal crossings",
+          "realization": "geometry"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "orbit-energy",
+      "name": "Cyan orbital energy inset",
+      "level": "meso",
+      "role": "connector",
+      "importance": 0.8,
+      "confidence": 0.9,
+      "primitive": "tube",
+      "topologyClass": "surface-relief",
+      "topologyRationale": "A thinner luminous curve follows and overlaps the inner face of the structural orbit tube.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(0, 234, 255, 1)",
+        "secondaryAlbedo": "rgba(191, 252, 255, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(0, 234, 255, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(191, 252, 255, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "A thinner luminous curve follows and overlaps the inner face of the structural orbit tube.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "orbit-shell",
+      "attachment": {
+        "parentId": "orbit-shell",
+        "parentSocket": "orbit-shell-center",
+        "localStart": [
+          -2.9,
+          -0.1,
+          0.15
+        ],
+        "localEnd": [
+          2.9,
+          0.3,
+          0.15
+        ],
+        "contactType": "overlap",
+        "overlap": 0.03,
+        "gapTolerance": 0.01,
+        "evidenceRefs": [
+          "full-object"
+        ]
+      },
+      "dimensions": {
+        "width": 5.9,
+        "height": 2.2,
+        "depth": 0.12,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          0.02,
+          0.2
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "connector",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "tube",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "connector",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "energy-cyan",
+      "materialLayers": [
+        "energy-cyan"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "orbit-energy.inset-route",
+          "kind": "emissive",
+          "description": "Reference-matched cyan inner route",
+          "realization": "geometry"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "signal-central",
+      "name": "Central ECG signal",
+      "level": "macro",
+      "role": "connector",
+      "importance": 0.95,
+      "confidence": 0.9,
+      "primitive": "tube",
+      "topologyClass": "surface-relief",
+      "topologyRationale": "Angular tube path is raised over the crystal front and defines the emblem identity.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(255, 255, 255, 1)",
+        "secondaryAlbedo": "rgba(0, 234, 255, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(255, 255, 255, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(0, 234, 255, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Angular tube path is raised over the crystal front and defines the emblem identity.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "root",
+      "attachment": {
+        "parentId": "root",
+        "parentSocket": "root-center",
+        "localStart": [
+          -1.7,
+          0,
+          0.35
+        ],
+        "localEnd": [
+          1.7,
+          0,
+          0.35
+        ],
+        "contactType": "overlap",
+        "overlap": 0.03,
+        "gapTolerance": 0.01,
+        "evidenceRefs": [
+          "full-object"
+        ]
+      },
+      "dimensions": {
+        "width": 3.4,
+        "height": 1.15,
+        "depth": 0.12,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          0.08,
+          0.45
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "connector",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "tube",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "connector",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "energy-white",
+      "materialLayers": [
+        "energy-white"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "signal-central.ecg-profile",
+          "kind": "linework",
+          "description": "Primary five-turn ECG profile",
+          "realization": "geometry"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "signal-orbit",
+      "name": "Lower orbit ECG signal",
+      "level": "meso",
+      "role": "connector",
+      "importance": 0.8,
+      "confidence": 0.9,
+      "primitive": "tube",
+      "topologyClass": "surface-relief",
+      "topologyRationale": "Compact angular tube replaces a short lower-orbit segment and remains visibly raised.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(0, 234, 255, 1)",
+        "secondaryAlbedo": "rgba(191, 252, 255, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(0, 234, 255, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(191, 252, 255, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Compact angular tube replaces a short lower-orbit segment and remains visibly raised.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "orbit-shell",
+      "attachment": {
+        "parentId": "orbit-shell",
+        "parentSocket": "orbit-shell-center",
+        "localStart": [
+          -1.45,
+          -0.75,
+          0.3
+        ],
+        "localEnd": [
+          -0.35,
+          -0.75,
+          0.3
+        ],
+        "contactType": "overlap",
+        "overlap": 0.03,
+        "gapTolerance": 0.01,
+        "evidenceRefs": [
+          "full-object"
+        ]
+      },
+      "dimensions": {
+        "width": 1.15,
+        "height": 0.9,
+        "depth": 0.1,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          -0.95,
+          -1.02,
+          0.48
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "connector",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "tube",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "connector",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "energy-cyan",
+      "materialLayers": [
+        "energy-cyan"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "signal-orbit.ecg-profile",
+          "kind": "linework",
+          "description": "Secondary compact ECG profile",
+          "realization": "geometry"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "node-cyan-group",
+      "name": "Cyan orbit nodes",
+      "level": "macro",
+      "role": "node-group",
+      "importance": 0.95,
+      "confidence": 0.9,
+      "primitive": "instanced-cluster",
+      "topologyClass": "assembled-solid",
+      "topologyRationale": "Two repeated glossy spherical sockets share geometry and material while retaining stable pivots.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(0, 234, 255, 1)",
+        "secondaryAlbedo": "rgba(191, 252, 255, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(0, 234, 255, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(191, 252, 255, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Two repeated glossy spherical sockets share geometry and material while retaining stable pivots.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "root",
+      "attachment": null,
+      "dimensions": {
+        "radius": 0.38,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "node-group",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "box",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "node-group",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "node-cyan",
+      "materialLayers": [
+        "node-cyan"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "node-cyan.core-highlight",
+          "kind": "gloss",
+          "description": "Offset white/cyan emissive cores",
+          "realization": "geometry-and-material"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    },
+    {
+      "id": "node-orange",
+      "name": "Orange alert node",
+      "level": "meso",
+      "role": "node",
+      "importance": 0.8,
+      "confidence": 0.9,
+      "primitive": "sphere",
+      "topologyClass": "assembled-solid",
+      "topologyRationale": "Single glossy sphere with nested emissive core attached to the left orbit endpoint.",
+      "colorMaterialRecipe": {
+        "dominantAlbedo": "rgba(255, 74, 22, 1)",
+        "secondaryAlbedo": "rgba(255, 245, 102, 1)",
+        "materialClass": "plastic",
+        "materialClassConfidence": 0.9,
+        "colorGradient": {
+          "type": "linear",
+          "stops": [
+            {
+              "position": 0,
+              "color": "rgba(255, 74, 22, 1)"
+            },
+            {
+              "position": 1,
+              "color": "rgba(255, 245, 102, 1)"
+            }
+          ]
+        }
+      },
+      "geometryDescriptor": {
+        "topologyIntent": "Single glossy sphere with nested emissive core attached to the left orbit endpoint.",
+        "edgeTreatment": {
+          "type": "bevel",
+          "bevelRadius": 0.025,
+          "segments": 3
+        },
+        "deformationStack": [],
+        "uvStrategy": "generated procedural coordinates",
+        "normalStrategy": "vertex normals from generated geometry"
+      },
+      "parent": "orbit-shell",
+      "attachment": {
+        "parentId": "orbit-shell",
+        "parentSocket": "orbit-shell-center",
+        "localStart": [
+          -2.45,
+          0.2,
+          0
+        ],
+        "localEnd": [
+          -2.45,
+          0.2,
+          0.45
+        ],
+        "contactType": "overlap",
+        "overlap": 0.03,
+        "gapTolerance": 0.01,
+        "evidenceRefs": [
+          "full-object"
+        ]
+      },
+      "dimensions": {
+        "radius": 0.38,
+        "units": "relative",
+        "confidence": 0.9
+      },
+      "transform": {
+        "position": [
+          -2.45,
+          0.2,
+          0.45
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actionProfile": {
+        "animationRole": "node",
+        "pivot": {
+          "mode": "center",
+          "localPosition": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "confidence": 0.9
+        },
+        "transformChannels": {
+          "translate": true,
+          "rotate": true,
+          "scale": true,
+          "bend": false,
+          "twist": false,
+          "detach": true,
+          "visibility": true,
+          "materialState": true
+        },
+        "sockets": [],
+        "collider": {
+          "type": "sphere",
+          "offset": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "isTrigger": false
+        },
+        "constraints": [],
+        "destruction": {
+          "breakable": false,
+          "fractureGroup": "node",
+          "seamRefs": [],
+          "detachableFragments": [],
+          "breakImpulse": 0,
+          "debrisMaterial": "crystal-navy"
+        }
+      },
+      "material": "node-orange",
+      "materialLayers": [
+        "node-orange"
+      ],
+      "deformations": [],
+      "joints": [],
+      "seams": [],
+      "localFeatures": [
+        {
+          "id": "node-orange.alert-core",
+          "kind": "gloss",
+          "description": "Red-orange falloff with yellow-white core",
+          "realization": "geometry-and-material"
+        }
+      ],
+      "surfaceDetail": {
+        "macroRoughness": 0.28,
+        "microRoughness": 0.04,
+        "bumpAmplitude": 0.01,
+        "normalPattern": "subtle independent procedural highlight breakup",
+        "displacementPattern": "",
+        "occlusionPattern": "contact AO at overlaps",
+        "edgeWearPattern": "",
+        "notes": "Clean illustrated logo surface; no dirt or wear."
+      },
+      "evidenceRefs": [
+        "full-object"
+      ],
+      "details": [],
+      "fidelityTier": "reference-focused"
+    }
+  ],
+  "materials": [
+    {
+      "id": "utility-invisible",
+      "name": "Invisible root utility",
+      "type": "physical",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#000000",
+      "color": "#000000",
+      "albedo": {
+        "dominant": "#000000",
+        "secondary": [
+          "#000000",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#000000",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 1,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [],
+      "emissive": {
+        "color": "#000000",
+        "intensity": 0
+      },
+      "clearcoat": 0.35,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    },
+    {
+      "id": "crystal-navy",
+      "name": "Faceted navy crystal",
+      "type": "physical",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#00112f",
+      "color": "#00112f",
+      "albedo": {
+        "dominant": "#00112f",
+        "secondary": [
+          "#00112f",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#00112f",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 0.24,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0.3,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [
+        {
+          "id": "crystal-navy.facet-highlights",
+          "region": "front side facets",
+          "color": "#bffcff",
+          "roughness": 0.12,
+          "evidenceRefs": [
+            "full-object"
+          ]
+        }
+      ],
+      "emissive": {
+        "color": "#000000",
+        "intensity": 0
+      },
+      "clearcoat": 0.9,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    },
+    {
+      "id": "orbit-navy",
+      "name": "Navy orbit shell",
+      "type": "physical",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#00245f",
+      "color": "#00245f",
+      "albedo": {
+        "dominant": "#00245f",
+        "secondary": [
+          "#00245f",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#00245f",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 0.3,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0.15,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [],
+      "emissive": {
+        "color": "#000000",
+        "intensity": 0
+      },
+      "clearcoat": 0.35,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    },
+    {
+      "id": "energy-cyan",
+      "name": "Cyan energy",
+      "type": "physical-emissive",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#00eaff",
+      "color": "#00eaff",
+      "albedo": {
+        "dominant": "#00eaff",
+        "secondary": [
+          "#00eaff",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#00eaff",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 0.12,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [],
+      "emissive": {
+        "color": "#00d9ff",
+        "intensity": 3.2
+      },
+      "clearcoat": 0.9,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    },
+    {
+      "id": "energy-white",
+      "name": "White cyan energy",
+      "type": "physical-emissive",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#ffffff",
+      "color": "#ffffff",
+      "albedo": {
+        "dominant": "#ffffff",
+        "secondary": [
+          "#ffffff",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#ffffff",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 0.08,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [],
+      "emissive": {
+        "color": "#bffcff",
+        "intensity": 3.8
+      },
+      "clearcoat": 0.9,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    },
+    {
+      "id": "node-cyan",
+      "name": "Glossy cyan nodes",
+      "type": "physical-emissive",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#006ba8",
+      "color": "#006ba8",
+      "albedo": {
+        "dominant": "#006ba8",
+        "secondary": [
+          "#006ba8",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#006ba8",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 0.1,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [
+        {
+          "id": "node-cyan.core-highlight",
+          "region": "upper-left core",
+          "color": "#ffffff",
+          "roughness": 0.04,
+          "evidenceRefs": [
+            "full-object"
+          ]
+        }
+      ],
+      "emissive": {
+        "color": "#00bfe8",
+        "intensity": 1.5
+      },
+      "clearcoat": 0.9,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    },
+    {
+      "id": "node-orange",
+      "name": "Orange alert node",
+      "type": "physical-emissive",
+      "shaderModel": "MeshPhysicalMaterial",
+      "qualityTier": "utility",
+      "baseColor": "#ff4a16",
+      "color": "#ff4a16",
+      "albedo": {
+        "dominant": "#ff4a16",
+        "secondary": [
+          "#ff4a16",
+          "#ffffff"
+        ],
+        "samplingNotes": "Sampled from visible solid-color logo region."
+      },
+      "colorVariation": {
+        "palette": [
+          "#ff4a16",
+          "#ffffff"
+        ],
+        "pattern": "facet-or-radial-gradient",
+        "amplitude": 0.12,
+        "heightCorrelation": 0
+      },
+      "textureResolution": 1024,
+      "textureProjection": {
+        "mode": "procedural-object-space",
+        "repeat": [
+          1,
+          1
+        ],
+        "anisotropy": 1,
+        "texelDensityIntent": "Solid vector-like material; stable in object space."
+      },
+      "surfaceFrequencyBands": [
+        {
+          "id": "macro",
+          "frequency": 1,
+          "amplitude": 0.12,
+          "role": "broad illustrated gradient"
+        },
+        {
+          "id": "meso",
+          "frequency": 8,
+          "amplitude": 0.03,
+          "role": "facet highlight transition"
+        },
+        {
+          "id": "micro",
+          "frequency": 32,
+          "amplitude": 0.01,
+          "role": "subtle highlight breakup"
+        }
+      ],
+      "roughness": {
+        "base": 0.1,
+        "variation": 0.04,
+        "map": "independent-procedural-roughness-field",
+        "localResponse": "clean logo surface"
+      },
+      "metalness": {
+        "base": 0,
+        "variation": 0
+      },
+      "normal": {
+        "pattern": "independent-subtle-normal-field",
+        "strength": 0.04,
+        "scale": 32,
+        "space": "tangent"
+      },
+      "bump": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1
+      },
+      "displacement": {
+        "pattern": "none",
+        "amplitude": 0,
+        "scale": 1,
+        "silhouetteAffects": false
+      },
+      "ambientOcclusion": {
+        "cavityStrength": 0.18,
+        "contactShadowBias": 0.25,
+        "notes": "Only at geometric overlaps."
+      },
+      "wear": {
+        "edgeWear": 0,
+        "scratches": [],
+        "chips": []
+      },
+      "dirt": {
+        "amount": 0,
+        "cavityBias": 0,
+        "color": "#000000"
+      },
+      "localOverrides": [
+        {
+          "id": "node-orange.alert-core",
+          "region": "center core",
+          "color": "#fff566",
+          "roughness": 0.04,
+          "evidenceRefs": [
+            "full-object"
+          ]
+        }
+      ],
+      "emissive": {
+        "color": "#ff7800",
+        "intensity": 2.4
+      },
+      "clearcoat": 0.9,
+      "notes": "Procedural solid-color material for clean illustrated logo art; no photographic texture recovery required."
+    }
+  ],
+  "repetitionSystems": [
+    {
+      "id": "cyan-orbit-node-pair",
+      "componentRef": "node-cyan-group",
+      "realization": "instanced-geometry",
+      "buildsGeometry": true,
+      "geometry": "shared sphere shell and nested emissive core",
+      "instances": [
+        {
+          "id": "node-upper-right",
+          "position": [
+            2.25,
+            1.1,
+            0.15
+          ],
+          "scale": 1
+        },
+        {
+          "id": "node-lower-right",
+          "position": [
+            1.95,
+            -0.7,
+            0.5
+          ],
+          "scale": 1
+        }
+      ],
+      "variation": "same geometry; stable individual pivots"
+    }
+  ],
+  "buildPasses": [
+    {
+      "id": "blockout",
+      "goal": "Match macro silhouette and proportions.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Silhouette reads correctly without materials.",
+        "Quality contract has named all required macro feature groups before code generation.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "structural-pass",
+      "goal": "Build the component hierarchy implied by the pre-spec complexity assessment.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Macro, meso, and repeated structures meet qualityContract.minimumSpecDepth.",
+        "Parent-child relations, joints, seams, sockets, and contact points are explicit.",
+        "Every attached child appendage/connector has parentSocket, localStart/localEnd, contactType, embedDepth or overlap, and gapTolerance.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "form-refinement",
+      "goal": "Refine shape, deformation, bevels, tapers, curves, asymmetry, and visible local geometry.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Important visible forms are represented in component geometryDescriptor, deformations, localFeatures, or repetitionSystems.",
+        "Endpoint-based child parts are rooted at their attachment sockets and do not visibly float away from parents.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "material-pass",
+      "goal": "Match material color, roughness, bump, and local variation.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Reference-derived albedo palette records dominant, secondary, and accent colors per visible material.",
+        "Each important material defines roughness variation and at least one normal/bump/displacement response.",
+        "Local material overrides, dirt/wear/stains/moss/chips/scratches or equivalent masks are tied to evidenceRefs.",
+        "Thin, transparent, reflective, wet, or fibrous materials document alpha/transmission/clearcoat/metalness/fiber response when relevant.",
+        "Generated preview uses procedural albedo/roughness/bump texture or vertex color variation instead of one flat color.",
+        "Generated preview uses independent PBR maps at 1024px or higher for the quality-first tier.",
+        "If source pixels are available, referencePbr extraction passed at confidence >= 0.7 or the pass is stopped/requesting better references.",
+        "Macro, meso, and micro surface frequency bands are visible at the intended review distance without obvious tiling.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "surface-pass",
+      "goal": "Add procedural surface locality such as normal/bump/displacement, AO, dirt, stains, chips, grain, moss, scratches, and wear.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Every required material feature group has local overrides or surfaceDetail tied to evidenceRefs.",
+        "A grazing-angle close-up proves that normal/height detail breaks highlights naturally and does not read as smooth plastic.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "lighting-pass",
+      "goal": "Make material and form readable under neutral turntable lighting plus optional reference lighting.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "lightingFromPhoto identifies key light direction/color/intensity, fill light, rim or environment light, and ambient color.",
+        "Exposure, tone mapping, background color/gradient, shadow softness, and contact shadow behavior are specified.",
+        "Lighting does not hide geometry/material gaps and screenshots can be compared fairly to the reference.",
+        "Neutral, grazing, and reference-matched lighting checks distinguish material errors from lighting errors.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "interaction-pass",
+      "goal": "Make the model ready for future animation, transformation, physics, or destruction.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Macro and movable meso components have stable pivot nodes.",
+        "Sockets, collider proxies, and destruction metadata are present for future runtime actions.",
+        "AI vision comparison score meets selfCorrectLoop.visualAcceptance.threshold."
+      ]
+    },
+    {
+      "id": "optimization-pass",
+      "goal": "Protect runtime performance after visual fidelity is accepted.",
+      "componentRefs": [
+        "root",
+        "crystal-core",
+        "crystal-highlights",
+        "orbit-shell",
+        "orbit-energy",
+        "signal-central",
+        "signal-orbit",
+        "node-cyan-group",
+        "node-orange"
+      ],
+      "acceptance": [
+        "Triangle count, draw calls, instancing, LOD strategy, and FPS target are documented or verified.",
+        "Repeated detail is instanced or simplified where possible without breaking silhouette/material believability."
+      ]
+    }
+  ],
+  "visualEvidence": [
+    {
+      "timestamp": "2026-08-03T17:09:16.956091+00:00",
+      "passId": "blockout",
+      "estimatedFidelity": 0.76,
+      "aiVisionScore": 0.76,
+      "visualAcceptanceThreshold": 0.7,
+      "layerScores": {
+        "silhouetteProportion": 0.75,
+        "componentStructure": 0.82,
+        "formDetail": 0.73,
+        "materialSurface": 0.79,
+        "lightingCamera": 0.81
+      },
+      "featureReviews": [
+        {
+          "id": "crystal-silhouette",
+          "score": 0.78,
+          "visible": true,
+          "notes": "Pointed crystal and axial seam read clearly; facet widths and upper shoulder angles remain simpler than the reference."
+        },
+        {
+          "id": "orbit-depth-route",
+          "score": 0.74,
+          "visible": true,
+          "notes": "Wide orbit and front/back ordering are coherent; reference has a stronger upward-right tilt and a flatter lower-front arc."
+        },
+        {
+          "id": "ecg-linework",
+          "score": 0.76,
+          "visible": true,
+          "notes": "Both ECG systems are present with correct peak/trough intent; exact vertex spacing remains approximate."
+        },
+        {
+          "id": "node-system",
+          "score": 0.82,
+          "visible": true,
+          "notes": "Three-node count, cyan/orange roles, glossy shells, and offset cores match the reference hierarchy."
+        },
+        {
+          "id": "emissive-lookdev",
+          "score": 0.79,
+          "visible": true,
+          "notes": "Navy structure remains legible under cyan/white/orange emission after bloom correction."
+        }
+      ],
+      "referenceScreenshot": "reference/logo.png",
+      "renderScreenshot": "/home/zhuqin/star/app/Lifeline/lifeline-emblem-review-front-v3.png",
+      "comparisonImage": "comparison-blockout-v3.png",
+      "cameraView": "front",
+      "notes": "Comparison uses reference-matched scale; separate diagnostic capture disables bloom for silhouette measurement.",
+      "aiVisionNotes": "The emblem reads immediately and holds depth in both orbit views. The remaining mismatch is geometric rather than lighting-driven: reference orbit tilt, crystal shoulders, and ECG vertex placement are more specific."
+    }
+  ],
+  "reviewHistory": [
+    {
+      "timestamp": "2026-08-03T17:09:16.956091+00:00",
+      "passId": "blockout",
+      "estimatedFidelity": 0.76,
+      "aiVisionScore": 0.76,
+      "visualAcceptanceThreshold": 0.7,
+      "layerScores": {
+        "silhouetteProportion": 0.75,
+        "componentStructure": 0.82,
+        "formDetail": 0.73,
+        "materialSurface": 0.79,
+        "lightingCamera": 0.81
+      },
+      "featureReviews": [
+        {
+          "id": "crystal-silhouette",
+          "score": 0.78,
+          "visible": true,
+          "notes": "Pointed crystal and axial seam read clearly; facet widths and upper shoulder angles remain simpler than the reference."
+        },
+        {
+          "id": "orbit-depth-route",
+          "score": 0.74,
+          "visible": true,
+          "notes": "Wide orbit and front/back ordering are coherent; reference has a stronger upward-right tilt and a flatter lower-front arc."
+        },
+        {
+          "id": "ecg-linework",
+          "score": 0.76,
+          "visible": true,
+          "notes": "Both ECG systems are present with correct peak/trough intent; exact vertex spacing remains approximate."
+        },
+        {
+          "id": "node-system",
+          "score": 0.82,
+          "visible": true,
+          "notes": "Three-node count, cyan/orange roles, glossy shells, and offset cores match the reference hierarchy."
+        },
+        {
+          "id": "emissive-lookdev",
+          "score": 0.79,
+          "visible": true,
+          "notes": "Navy structure remains legible under cyan/white/orange emission after bloom correction."
+        }
+      ],
+      "action": "refine-code",
+      "summary": "Recognizable procedural blockout with stable 3D depth; critical silhouette systems remain below their strict per-feature thresholds.",
+      "matched": [
+        "pointed crystal and axial seam",
+        "three glossy nodes with correct cyan/orange roles",
+        "coherent non-degenerate orbit depth",
+        "controlled emissive hierarchy"
+      ],
+      "mismatches": [
+        "orbit tilt and lower arc differ from reference",
+        "crystal facet widths are simplified",
+        "ECG vertex spacing remains approximate",
+        "tier-1 silhouette IoU is 0.704 below 0.85"
+      ],
+      "specFixes": [],
+      "codeFixes": [
+        "refine orbit control points and tilt",
+        "refine crystal facet shoulder profiles",
+        "adjust ECG vertices against reference landmarks"
+      ],
+      "evidence": [],
+      "mapStrippedRender": "/home/zhuqin/star/app/Lifeline/lifeline-emblem-diagnostic-front-v3.png",
+      "reviewViewpoints": [
+        "front",
+        "three-quarter-left",
+        "three-quarter-right"
+      ],
+      "visualEvidence": {
+        "referenceScreenshot": "reference/logo.png",
+        "renderScreenshot": "/home/zhuqin/star/app/Lifeline/lifeline-emblem-review-front-v3.png",
+        "comparisonImage": "comparison-blockout-v3.png",
+        "cameraView": "front",
+        "notes": "Comparison uses reference-matched scale; separate diagnostic capture disables bloom for silhouette measurement.",
+        "aiVisionNotes": "The emblem reads immediately and holds depth in both orbit views. The remaining mismatch is geometric rather than lighting-driven: reference orbit tilt, crystal shoulders, and ECG vertex placement are more specific."
+      }
+    }
+  ],
+  "lodPlan": [
+    {
+      "tier": "near",
+      "distance": 0,
+      "strategy": "full component tree and material layers"
+    },
+    {
+      "tier": "far",
+      "distance": 30,
+      "strategy": "merge static components and reduce local feature geometry"
+    }
+  ],
+  "performanceBudget": {
+    "qualityPriority": "reference-fidelity",
+    "targetTriangles": 45000,
+    "maxDrawCalls": 36,
+    "textureSize": 1024,
+    "fpsTarget": 60,
+    "optimizationPolicy": "Preserve silhouette and emissive linework; instance the cyan node pair and reuse materials."
+  },
+  "lightingFromPhoto": [
+    {
+      "type": "key light",
+      "direction": [
+        -2,
+        3,
+        4
+      ],
+      "color": "#8fdfff",
+      "intensity": 2.2,
+      "note": "cool key for navy facets"
+    },
+    {
+      "type": "fill light",
+      "direction": [
+        3,
+        -1,
+        4
+      ],
+      "color": "#1d5b9e",
+      "intensity": 0.8,
+      "note": "preserve dark orbit readability"
+    },
+    {
+      "type": "rim/environment light",
+      "direction": [
+        0,
+        2,
+        -3
+      ],
+      "color": "#00eaff",
+      "intensity": 1.1,
+      "note": "cyan rear separation with contact shadow/AO at overlaps; ACES filmic tone mapping, exposure 1.15"
+    }
+  ],
+  "proceduralStrategy": [
+    "Extrude the crystal from an authored pointed profile and layer shallow facet meshes.",
+    "Sweep separate navy and cyan tubes along authored elliptical routes with explicit Z-depth crossings.",
+    "Build ECG signals as tube geometry along fixed angular paths.",
+    "Reuse node shell/core geometry for the cyan pair and author the orange alert variant separately.",
+    "Use emissive materials plus selective bloom while keeping transparent background and 60 FPS target."
+  ],
+  "animationAnchors": [
+    "root rotation pivot",
+    "independent orbit pivot",
+    "three node pulse pivots",
+    "energy material-state channels"
+  ],
+  "destructionAnchors": [
+    "crystal-core detachable group",
+    "orbit-shell detachable group",
+    "node socket groups"
+  ],
+  "risks": [
+    "Single reference does not define back-face bevels; back geometry mirrors the front at reduced detail.",
+    "Illustrated glow must be approximated without washing out navy structural surfaces.",
+    "Orbit depth ordering must remain correct under the front reference camera."
+  ],
+  "localSpecSearch": {
+    "collection": "core_3d",
+    "query": "Lifeline Energy Emblem",
+    "index": {
+      "status": "rebuilt",
+      "reason": "missing",
+      "fingerprint": "6857e5ab528b42ac12f4f411f862610a0bffce8e47aee3610a7603c318072fe8"
+    },
+    "matches": []
+  },
+  "tier1Results": [
+    {
+      "passed": false,
+      "checks": {
+        "silhouetteIoU": 0.1559,
+        "aspectRatioDelta": 0.0408,
+        "scaleDelta": 1.4208,
+        "bilateralSymmetryError": 0.058,
+        "colorDelta": {
+          "checked": 9,
+          "maxDeltaE": 34.81,
+          "perComponent": [
+            {
+              "componentId": null,
+              "deltaE": 8.73
+            },
+            {
+              "componentId": null,
+              "deltaE": 8.73
+            },
+            {
+              "componentId": null,
+              "deltaE": 12.92
+            },
+            {
+              "componentId": null,
+              "deltaE": 8.73
+            },
+            {
+              "componentId": null,
+              "deltaE": 34.81
+            },
+            {
+              "componentId": null,
+              "deltaE": 12.92
+            },
+            {
+              "componentId": null,
+              "deltaE": 34.81
+            },
+            {
+              "componentId": null,
+              "deltaE": 34.81
+            },
+            {
+              "componentId": null,
+              "deltaE": 17.03
+            }
+          ],
+          "gated": false
+        }
+      },
+      "failures": [
+        "silhouette IoU 0.156 is below threshold 0.85",
+        "scale delta 1.421 exceeds threshold 0.08",
+        "blockout requires --map-stripped-render evidence"
+      ],
+      "renderHash": "c66b302d7fc4d1f2",
+      "passId": "blockout"
+    },
+    {
+      "passed": false,
+      "checks": {
+        "silhouetteIoU": 0.7043,
+        "aspectRatioDelta": 0.0208,
+        "scaleDelta": 0.0213,
+        "bilateralSymmetryError": 0.0798,
+        "colorDelta": {
+          "checked": 9,
+          "maxDeltaE": 38.11,
+          "perComponent": [
+            {
+              "componentId": null,
+              "deltaE": 15.35
+            },
+            {
+              "componentId": null,
+              "deltaE": 15.35
+            },
+            {
+              "componentId": null,
+              "deltaE": 10.39
+            },
+            {
+              "componentId": null,
+              "deltaE": 15.35
+            },
+            {
+              "componentId": null,
+              "deltaE": 38.11
+            },
+            {
+              "componentId": null,
+              "deltaE": 10.39
+            },
+            {
+              "componentId": null,
+              "deltaE": 38.11
+            },
+            {
+              "componentId": null,
+              "deltaE": 38.11
+            },
+            {
+              "componentId": null,
+              "deltaE": 21.16
+            }
+          ],
+          "gated": false
+        }
+      },
+      "failures": [
+        "silhouette IoU 0.704 is below threshold 0.85",
+        "blockout requires --map-stripped-render evidence"
+      ],
+      "renderHash": "f3b783067dd614e1",
+      "passId": "blockout"
+    },
+    {
+      "passed": false,
+      "checks": {
+        "silhouetteIoU": 0.7043,
+        "aspectRatioDelta": 0.0208,
+        "scaleDelta": 0.0213,
+        "bilateralSymmetryError": 0.0798,
+        "colorDelta": {
+          "checked": 9,
+          "maxDeltaE": 38.11,
+          "perComponent": [
+            {
+              "componentId": null,
+              "deltaE": 15.35
+            },
+            {
+              "componentId": null,
+              "deltaE": 15.35
+            },
+            {
+              "componentId": null,
+              "deltaE": 10.39
+            },
+            {
+              "componentId": null,
+              "deltaE": 15.35
+            },
+            {
+              "componentId": null,
+              "deltaE": 38.11
+            },
+            {
+              "componentId": null,
+              "deltaE": 10.39
+            },
+            {
+              "componentId": null,
+              "deltaE": 38.11
+            },
+            {
+              "componentId": null,
+              "deltaE": 38.11
+            },
+            {
+              "componentId": null,
+              "deltaE": 21.16
+            }
+          ],
+          "gated": false
+        }
+      },
+      "failures": [
+        "silhouette IoU 0.704 is below threshold 0.85"
+      ],
+      "renderHash": "f3b783067dd614e1",
+      "passId": "blockout",
+      "mapStrippedRender": "/home/zhuqin/star/app/Lifeline/lifeline-emblem-diagnostic-front-v3.png"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+:root { color-scheme: dark; font: 13px/1.5 system-ui, sans-serif; background: #090b10; color: #f3f6f5; }
+body { width: 340px; margin: 0; }
+main { padding: 16px; }
+header { display: grid; gap: 2px; margin-bottom: 16px; }
+header strong { font-size: 16px; }
+header span, #message, .connection span { color: #8f99a8; font-size: 11px; }
+#message { min-height: 17px; }
+#message[data-state="error"] { color: #ff9d9d; }
+form { display: grid; gap: 10px; }
+label { display: grid; gap: 4px; color: #aab3c0; font-size: 11px; }
+input { min-height: 36px; padding: 0 10px; border: 1px solid #303845; border-radius: 8px; background: #11161e; color: inherit; }
+button { min-height: 36px; border: 0; border-radius: 8px; background: #73e5c1; color: #07110e; font-weight: 750; cursor: pointer; }
+h2 { margin: 18px 0 8px; font-size: 12px; }
+.connection { padding: 10px; border: 1px solid #29303a; border-radius: 8px; display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.connection + .connection { margin-top: 8px; }
+.connection div { min-width: 0; display: grid; gap: 2px; }
+.connection .connection-state { color: #d4d9e0; }
+.connection .connection-state[data-state="SYNCED"], .connection .connection-state[data-state="WAITING"] { color: #73e5c1; }
+.connection .connection-state[data-state="OFFLINE"], .connection .connection-state[data-state="ERROR"], .connection .connection-state[data-state="REVOKED"] { color: #ff9d9d; }
+.connection .connection-url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connection button { min-height: 28px; padding: 0 8px; background: #252c36; color: #ff9d9d; font-size: 10px; }
+.connection button:disabled { cursor: wait; opacity: .55; }

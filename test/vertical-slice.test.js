@@ -6,8 +6,6 @@ import test from 'node:test';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
 
-const silentLogger = { error() {} };
-
 test('first vertical slice persists events, evidence, and verified progress', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-test-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -102,7 +100,7 @@ test('recurring work creates a new run for every verified cycle', async (t) => {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const file = join(directory, 'state.json');
   const store = new JsonStore(file);
-  const service = new LifelineService({ store, logger: silentLogger });
+  const service = new LifelineService({ store });
   await service.start();
   const project = await service.createProject({ name: 'Recurring work' });
   const item = await service.createWorkItem({
@@ -200,9 +198,7 @@ test('restart never routes a durable Agent run through the mock executor', async
 });
 
 async function createService(file) {
-  const service = new LifelineService({
-    store: new JsonStore(file), logger: silentLogger
-  });
+  const service = new LifelineService({ store: new JsonStore(file) });
   await service.start();
   return service;
 }
@@ -306,7 +302,7 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
   }, null, 2));
 
   const store = new JsonStore(file);
-  const service = new LifelineService({ store, logger: silentLogger });
+  const service = new LifelineService({ store });
   await service.start();
   const run = await service.getRun(runId);
   const task = await service.getWorkItem(workItemId);
@@ -327,7 +323,7 @@ test('startup isolates legacy Mock Runs without rewriting history', async (t) =>
   assert.equal(firstState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 2);
 
   const restartedStore = new JsonStore(file);
-  const restarted = new LifelineService({ store: restartedStore, logger: silentLogger });
+  const restarted = new LifelineService({ store: restartedStore });
   await restarted.start();
   const secondState = await restartedStore.read();
   assert.equal(secondState.events.filter((event) => event.type === 'work_item.mock_history_isolated').length, 2);

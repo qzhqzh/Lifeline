@@ -41,7 +41,9 @@ export const ROUTING_POLICY_VERSION = 'risk-tier-v1';
 // Phase, bootstrap receipt, migration snapshot and completion collections.
 // Version 4 adds durable, fingerprinted scan proposals before task creation.
 // Version 5 isolates legacy Mock Runs from formal task progress and trajectories.
-export const CURRENT_SCHEMA_VERSION = 5;
+// Version 6 adds the local-only subscription balance hub collections.
+// Version 7 adds autonomous dispatch decisions and bounded Agent claim leases.
+export const CURRENT_SCHEMA_VERSION = 7;
 export const DEFAULT_LOCAL_USER_ID = 'local-owner';
 export const SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
 
@@ -84,11 +86,11 @@ const TRANSITIONS = Object.freeze({
   [WORK_ITEM_STATUS.PLANNED]: [WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.BLOCKED, WORK_ITEM_STATUS.CANCELLED],
   [WORK_ITEM_STATUS.DEFERRED]: [WORK_ITEM_STATUS.PLANNED, WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.CANCELLED],
   [WORK_ITEM_STATUS.READY]: [WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.BLOCKED, WORK_ITEM_STATUS.CANCELLED],
-  [WORK_ITEM_STATUS.QUEUED]: [WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.BLOCKED],
-  [WORK_ITEM_STATUS.RUNNING]: [WORK_ITEM_STATUS.REVIEW, WORK_ITEM_STATUS.BLOCKED],
+  [WORK_ITEM_STATUS.QUEUED]: [WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.BLOCKED],
+  [WORK_ITEM_STATUS.RUNNING]: [WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.REVIEW, WORK_ITEM_STATUS.BLOCKED],
   [WORK_ITEM_STATUS.REVIEW]: [WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.RECURRING, WORK_ITEM_STATUS.VERIFIED, WORK_ITEM_STATUS.BLOCKED],
   [WORK_ITEM_STATUS.BLOCKED]: [WORK_ITEM_STATUS.PLANNED, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.CANCELLED],
-  [WORK_ITEM_STATUS.CANCELLED]: [],
+  [WORK_ITEM_STATUS.CANCELLED]: [WORK_ITEM_STATUS.PLANNED],
   [WORK_ITEM_STATUS.RECURRING]: [WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.ARCHIVED],
   [WORK_ITEM_STATUS.VERIFIED]: [WORK_ITEM_STATUS.RELEASED, WORK_ITEM_STATUS.ARCHIVED],
   [WORK_ITEM_STATUS.RELEASED]: [WORK_ITEM_STATUS.ARCHIVED],
@@ -268,14 +270,25 @@ function createdViaForOrigin(origin, source) {
   return 'SERVICE';
 }
 
-export function validateReadyContract(workItem) {
+export function executionContractViolations(workItem) {
   const violations = [];
-  if (!workItem.objective?.trim()) violations.push('objective is required');
-  if (!Array.isArray(workItem.acceptanceCriteria) || workItem.acceptanceCriteria.length === 0) {
-    violations.push('at least one acceptance criterion is required');
+  if (typeof workItem?.objective !== 'string' || workItem.objective.trim().length < 8) {
+    violations.push('objective must contain at least 8 characters');
   }
-  if (!RISK_TIERS.includes(workItem.riskTier)) violations.push('risk tier is invalid');
-  if (!workItem.resourceProfile) violations.push('resource profile is required');
+  if (!Array.isArray(workItem?.acceptanceCriteria) || !workItem.acceptanceCriteria.some((criterion) => (
+    typeof criterion === 'string' && criterion.trim().length > 0
+  ))) {
+    violations.push('at least one non-empty acceptance criterion is required');
+  }
+  if (!RISK_TIERS.includes(workItem?.riskTier)) violations.push('risk tier is invalid');
+  if (!workItem?.resourceProfile || typeof workItem.resourceProfile !== 'object' || Array.isArray(workItem.resourceProfile)) {
+    violations.push('resource profile must be an object');
+  }
+  return violations;
+}
+
+export function validateReadyContract(workItem) {
+  const violations = executionContractViolations(workItem);
 
   if (violations.length > 0) {
     throw new DomainError('Work item is not ready for execution', 'INVALID_EXECUTION_CONTRACT', { violations });

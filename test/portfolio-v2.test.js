@@ -3,12 +3,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { MockExecutor } from '../src/executor.js';
+import { CURRENT_SCHEMA_VERSION } from '../src/domain.js';
 import { getPortfolioV2Template } from '../src/portfolio-v2-template.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore, migrateState } from '../src/store.js';
-
-const logger = { error() {} };
 
 test('portfolio bootstrap is atomic, idempotent, and restart-safe', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-pv2-'));
@@ -91,7 +89,7 @@ test('legacy data migrates without fake runs and records modified-template confl
   assert.equal(state.runs.some((run) => run.id === 'run_existing'), true);
   assert.equal(state.completionRecords.every((record) => record.completionMethod === 'IMPORTED_HISTORY'), true);
   assert.equal(state.completionRecords.some((record) => record.taskId === 'work_legacy'), false);
-  assert.equal(state.schemaVersion, 5);
+  assert.equal(state.schemaVersion, CURRENT_SCHEMA_VERSION);
 });
 
 test('modified legacy portfolio reports conflicts without losing MCP tasks', async (t) => {
@@ -180,7 +178,7 @@ test('schema migration is idempotent and unfinished history does not raise progr
   };
   const first = migrateState(legacy);
   const second = migrateState(first.state);
-  assert.equal(first.state.schemaVersion, 5);
+  assert.equal(first.state.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.equal(second.changed, false);
   assert.equal(first.state.phases[0].rank, 101376);
 
@@ -221,8 +219,6 @@ test('schema migration repairs active tasks that have no durable active run', ()
 async function createService(file, localUserId) {
   const service = new LifelineService({
     store: new JsonStore(file),
-    executor: new MockExecutor({ delayMs: 0 }),
-    logger,
     localUserId
   });
   await service.start();

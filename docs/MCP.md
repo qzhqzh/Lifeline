@@ -1,6 +1,6 @@
 # Lifeline MCP 与 Codex 接入
 
-Lifeline 现在提供一个本地 stdio MCP，让 Codex 在实现复杂需求前把功能拆成 `Project → Phase → Task` 写入同一块项目大板，并在执行后记录真实模型、时间、产物、测试证据与验证状态。
+Lifeline 同时提供本地 stdio 与局域网 Streamable HTTP MCP，让 Codex 或其他 Agent 在实现复杂需求前把功能拆成 `Project → Phase → Task` 写入同一块项目大板，并通过动态批次完成领取、一次结果上报和独立复核。
 
 ## Codex 如何自动判断
 
@@ -10,7 +10,7 @@ Lifeline 现在提供一个本地 stdio MCP，让 Codex 在实现复杂需求前
 - 单步小修、只读问答、探索性诊断和实现细节：默认不入板，避免任务噪声；
 - 同一目标恢复或微调时复用稳定 `planId`，不会重复创建 Phase/Task；
 - 周期扫描发现先调用 `lifeline_propose_scan_finding`，稳定指纹会去重；只有 `lifeline_review_scan_proposal` 接受后才进入正式排期；
-- 默认只在工作结束时调用一次 `lifeline_submit_completion`；确需在大板实时显示 `RUNNING` 时，才提前调用 `lifeline_start_task`；
+- 自治执行先调用 `lifeline_claim_next_task`，领取即开始握手；默认只在工作结束时调用一次 `lifeline_submit_completion`。`lifeline_start_task` 仅保留给本机 stdio 兼容流程；
 - Agent 上报只能进入 `REVIEW`。只有通过确定性测试或不同 actor 的独立复核，才允许调用 `lifeline_verify_task` 进入 `VERIFIED`。
 
 主 Agent 仍负责判断是否需要排期，不需要用户在每条提示词里明确要求调用 MCP。
@@ -21,8 +21,7 @@ Lifeline 现在提供一个本地 stdio MCP，让 Codex 在实现复杂需求前
 
 ```toml
 [mcp_servers.lifeline]
-command = "docker"
-args = ["compose", "exec", "-T", "-e", "LIFELINE_LOCAL_USER_ID=local-owner", "-e", "LIFELINE_MCP_CLIENT_NAME=codex", "lifeline", "node", "src/mcp-server.js"]
+url = "http://127.0.0.1:31009/mcp"
 required = false
 startup_timeout_sec = 15
 tool_timeout_sec = 60
@@ -44,6 +43,7 @@ Codex 只会为已信任项目加载项目级配置。新增或修改 MCP 配置
 
 ```text
 lifeline://portfolio
+lifeline://portfolio/dispatch
 lifeline://projects/{projectId}
 lifeline://projects/{projectId}/schedule
 lifeline://tasks/{taskId}
@@ -54,6 +54,7 @@ lifeline://runs/{runId}
 
 | Tool | 用途 |
 |---|---|
+| `lifeline_get_dispatch_board` | 查询项目健康度、NOW/NEXT/RESERVE/BACKLOG、容量与结构化原因 |
 | `lifeline_list_projects` | 选择真实项目，避免按名称猜测 |
 | `lifeline_get_schedule` | 读取有序 Phase/Task、运行和完成状态 |
 | `lifeline_get_task` | 查询执行契约、Run、Evidence、CompletionRecord 和审计 |
@@ -64,17 +65,20 @@ lifeline://runs/{runId}
 | `lifeline_list_scan_proposals` | 按项目和复核状态查询扫描提案 |
 | `lifeline_propose_scan_finding` | 以稳定指纹提交扫描发现，重复发现只累计次数、不创建任务 |
 | `lifeline_review_scan_proposal` | 接受提案并生成正式 Bug Task，或驳回并保留审计原因 |
-| `lifeline_update_task` | 按 `expectedScheduleVersion` 编辑未执行任务或调整所属阶段；锁定历史仅允许单独更新 Issue 引用 |
+| `lifeline_update_task` | 按 `expectedScheduleVersion` 编辑未执行任务、调整所属阶段，或用 `status=DEFERRED/PLANNED` + `reason` 推迟/恢复；锁定历史仅允许单独更新 Issue 引用 |
 | `lifeline_reorder_tasks` | 原子替换一个 Phase 内所有可移动任务的顺序 |
 | `lifeline_cancel_task` | 将未执行任务移出活跃排期并保留取消原因与审计记录 |
+| `lifeline_restore_task` | 将已取消任务恢复为 PLANNED，并保留取消与恢复两段审计 |
 | `lifeline_sync_plan` | 用稳定 `planId` 一次同步一个 Phase 和多项有序 Task |
-| `lifeline_start_task` | 可选：建立持久 Agent Run 并提前显示 `RUNNING` |
+| `lifeline_claim_next_task` | 原子领取一个 NEXT 执行/复核任务，同时创建 Run 与限时租约 |
+| `lifeline_extend_task_lease` | 只在必要时延长仍有效的租约，最长不超过 8 小时 |
+| `lifeline_start_task` | 仅本机 stdio 兼容：建立持久 Agent Run；局域网 Agent 必须使用原子领取 |
 | `lifeline_submit_completion` | 一次写入真实起止时间、模型、结果和证据；完成进入 `REVIEW`，失败或阻塞如实记录 |
-| `lifeline_verify_task` | 通过确定性测试或独立复核后进入 `VERIFIED` |
+| `lifeline_verify_task` | 通过确定性测试或独立复核后进入 `VERIFIED`；`HUMAN_APPROVAL` 仅允许本机项目所有者 |
 
 所有写工具要求 `idempotencyKey`；编辑、排序和取消还要求先读取并回传 `expectedScheduleVersion`，旧版本写入会返回冲突而不是静默覆盖。MCP 返回 `structuredContent`，同时保留 JSON text 兼容旧 Host。
 
-完成上报的耗时由 `startedAt` 与 `completedAt` 推导，避免调用方传入的时长与真实时间轴矛盾。失败、阻塞或周期任务下一次上报会建立新的 Run，不会复用已经终止的尝试。
+本机 stdio 为兼容既有工作流，在没有 Run 时仍可一次性上报，并由 `startedAt` 与 `completedAt` 推导耗时。局域网 scoped MCP 必须先用 `lifeline_claim_next_task` 取得执行或复核租约：不能用旧的 `lifeline_start_task`、无领取 completion 或无领取 verification 绕过容量与并发门禁；服务端记录领取、延长和已领取任务的完成时间。失败、阻塞或周期任务下一次上报会建立新的 Run，不会复用已经终止的尝试。
 
 Task 可选传入 `dependsOnTaskIds` 和 `parallelPolicy`（`AUTO`、`SEQUENTIAL`、`PARALLEL_ALLOWED`）。依赖必须属于同一项目、位于当前 Task 之前且保持无环；前置任务未完成时不能进入执行，仍被其他活跃任务依赖的 Task 也不能取消。界面从同一依赖图推导每个 Phase 的可并行槽位，不增加第三层业务结构。`issue` 仍是独立的可空关联字段，不影响依赖、验收或其他任务字段。
 
@@ -82,9 +86,21 @@ Task 可选传入 `dependsOnTaskIds` 和 `parallelPolicy`（`AUTO`、`SEQUENTIAL
 
 ## 数据与并发边界
 
-Web UI 和 MCP 都进入同一个 `LifelineService`，不复制状态机或证据规则。项目 MCP 在正式 Compose 容器内启动，因此与 Web UI 共同读写 `/app/data/lifeline.json` 对应的持久卷；`JsonStore` 使用跨进程锁、每次 mutation 前重新载入和原子替换，避免旧内存快照覆盖另一个进程刚写入的数据。修改此配置后需新开 Codex 对话，让 Host 重新载入 MCP 启动命令。
+Web UI 和 MCP 都进入同一个 `LifelineService`，不复制状态机或证据规则。项目 MCP 在正式 Compose 容器内启动，因此与 Web UI 共同读写 `/app/data/lifeline.json` 对应的持久卷；`JsonStore` 使用跨进程锁、每次 mutation 前重新载入和原子替换，避免旧内存快照覆盖另一个进程刚写入的数据。修改此配置后需新开 Codex 对话，让 Host 重新载入 MCP 连接配置。
 
-当前 stdio 版本是本机单用户边界，身份来自 `LIFELINE_LOCAL_USER_ID`。远程 Streamable HTTP、OAuth scope、真实 token subject 和跨用户隔离仍属于 `LF-PV2-044`，未把本地信任模型伪装成生产授权模型。
+stdio 仍是本机单用户边界，身份来自 `LIFELINE_LOCAL_USER_ID`。V3 另提供 `http://<主机>:8019/mcp`，使用本地 Bearer Agent Token，并按 `portfolio:read`、`schedule:write`、`task:claim`、`completion:write`、`verification:write` 限权。没有配置令牌时端点返回 503，不允许匿名降级；错误 Host、外部 Origin 和缺少 scope 的操作都会拒绝。
+
+创建或轮换局域网令牌：
+
+```bash
+npm run agent-token -- --client-id codex-executor --scopes portfolio:read,task:claim,completion:write
+npm run agent-token -- --client-id codex-reviewer --scopes portfolio:read,task:claim,verification:write
+npm run agent-token -- --client-id codex-scheduler --scopes portfolio:read,schedule:write
+# 轮换时保持原 scope：npm run agent-token -- --client-id codex-executor --scopes portfolio:read,task:claim,completion:write --rotate
+docker compose up -d --build lifeline
+```
+
+令牌存放在 Git 忽略且权限为 `0600` 的 `.env`，生成命令不会输出令牌值；每条令牌绑定唯一 `clientId`，请求体不能冒充其他 Agent，因此执行者和复核者可以保持独立。当前仍是一个项目所有者的局域网令牌集合；公网 HTTPS、多用户 OAuth 与跨用户数据隔离没有伪装成已完成能力。完整策略与恢复步骤见 [自治推进策略与恢复手册](AUTONOMOUS_BOARD_OPERATIONS.md)。
 
 ## 手动启动与验证
 
@@ -100,4 +116,4 @@ MCP 协议只能写 stdout；启动信息和错误写 stderr。完整校验：
 npm run check
 ```
 
-测试覆盖现代 `2026-07-28` discover、旧版 Host、Resources/Tools、重复 plan 同步、扫描指纹去重与复核门禁、版本化编辑与排序、可审计取消、Web/MCP 并发写、Completion 停在 REVIEW、缺失通过证据不能 VERIFIED，以及验证后进度更新。
+测试覆盖现代 `2026-07-28` discover、旧版 Host、stdio/Streamable HTTP、Bearer 与 scope、Resources/Tools、重复 plan 同步、扫描指纹去重与复核门禁、版本化编辑与排序、取消/恢复审计、并发原子领取、租约过期、Completion 停在 REVIEW、独立复核和验证后进度更新。

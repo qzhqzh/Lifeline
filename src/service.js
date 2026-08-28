@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import {
   COMPLETION_OUTCOMES,
   DomainError,
@@ -21,6 +22,14 @@ import {
   validateReadyContract
 } from './domain.js';
 import {
+  DISPATCH_POLICY_VERSION,
+  deriveAutonomousBoard
+} from './autonomous-board.js';
+import {
+  deriveAgentReporting,
+  upsertAgentContact
+} from './agent-reporting.js';
+import {
   getPortfolioV2Template,
   PORTFOLIO_TEMPLATE_KEY,
   PORTFOLIO_TEMPLATE_VERSION
@@ -28,8 +37,12 @@ import {
 
 export const RUN_KIND = Object.freeze({
   INTERNAL_MOCK: 'INTERNAL_MOCK',
-  AGENT: 'AGENT'
+  AGENT: 'AGENT',
+  AGENT_REVIEW: 'AGENT_REVIEW'
 });
+
+const MIN_CLAIM_LEASE_MINUTES = 30;
+const MAX_CLAIM_LEASE_MINUTES = 8 * 60;
 
 const TRAJECTORY_WINDOW_MS = Object.freeze({
   '24h': 24 * 60 * 60 * 1000,
@@ -39,15 +52,10 @@ const TRAJECTORY_WINDOW_MS = Object.freeze({
 
 export class LifelineService {
   #store;
-  #executor;
-  #logger;
   #localUserId;
-  #activeRuns = new Set();
 
-  constructor({ store, executor, logger = console, localUserId, userId }) {
+  constructor({ store, localUserId, userId }) {
     this.#store = store;
-    this.#executor = executor;
-    this.#logger = logger;
     this.#localUserId = resolveLocalUserId(localUserId ?? userId);
   }
 
@@ -57,12 +65,52 @@ export class LifelineService {
 
   async listProjects() {
     const state = await this.#store.read();
-    return state.projects.filter((project) => project.status !== 'ARCHIVED').sort(compareProjects);
+    const board = deriveAutonomousBoard(state);
+    const reporting = deriveAgentReporting(state, {
+      now: board.generatedAt,
+      boardProjects: board.projects,
+      decisions: board.decisions
+    });
+    const reportingByProjectId = new Map(reporting.projects.map((entry) => [entry.projectId, entry]));
+    return board.projects.map((project) => ({
+      ...project,
+      reporting: reportingByProjectId.get(project.id) ?? null
+    }));
   }
 
   async getProject(projectId) {
+    const project = (await this.listProjects()).find((entry) => entry.id === projectId);
+    if (!project) throw new DomainError(`project not found: ${projectId}`, 'NOT_FOUND');
+    return project;
+  }
+
+  async getAgentReporting(input = {}) {
     const state = await this.#store.read();
-    return requireEntity(state.projects, projectId, 'project');
+    const board = deriveAutonomousBoard(state, { now: input?.now });
+    return deriveAgentReporting(state, {
+      now: board.generatedAt,
+      boardProjects: board.projects,
+      decisions: board.decisions
+    });
+  }
+
+  async recordAgentContact(projectId, input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const project = requireEntity(state.projects, projectId, 'project');
+      const reportedSource = context.source?.reportedSource ?? context.source ?? input?.source ?? {};
+      return upsertAgentContact(state, {
+        projectId: project.id,
+        actor: context.actor,
+        client: context.client,
+        tool: context.tool,
+        at: input?.at ?? nowIso(),
+        repositoryPath: normalizeOptionalText(reportedSource?.repositoryPath, 'source.repositoryPath', 1000),
+        repositoryUrl: normalizeOptionalText(reportedSource?.repositoryUrl, 'source.repositoryUrl', 1000)
+          ?? project.repositoryUrl
+          ?? null
+      });
+    });
   }
 
   async createProject(input, options = {}) {
@@ -88,10 +136,9 @@ export class LifelineService {
 
   async listPhases(projectId) {
     const state = await this.#store.read();
-    requireEntity(state.projects, projectId, 'project');
-    return state.phases
-      .filter((phase) => phase.projectId === projectId && phase.status !== 'CANCELLED')
-      .sort(comparePhases);
+    const project = deriveAutonomousBoard(state).projects.find((entry) => entry.id === projectId);
+    if (!project) throw new DomainError(`project not found: ${projectId}`, 'NOT_FOUND');
+    return project.phases;
   }
 
   async createPhase(input, options = {}) {
@@ -116,6 +163,11 @@ export class LifelineService {
       }, nextGlobalSequence(state)));
       return phase;
     });
+  }
+
+  async syncPlan(input, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => syncPlanInState(state, input, context));
   }
 
   async updatePhase(phaseId, input = {}, options = {}) {
@@ -173,17 +225,428 @@ export class LifelineService {
     const workItems = projectId
       ? state.workItems.filter((item) => item.projectId === projectId && item.status !== WORK_ITEM_STATUS.CANCELLED)
       : state.workItems.filter((item) => !archivedProjectIds.has(item.projectId) && item.status !== WORK_ITEM_STATUS.CANCELLED);
-    return workItems.sort(compareWorkItems);
+    const decisions = new Map(deriveAutonomousBoard(state).decisions.map((entry) => [entry.taskId, entry]));
+    return workItems.sort(compareWorkItems).map((task) => decorateTaskWithDecision(task, decisions.get(task.id)));
   }
 
   async getWorkItem(workItemId) {
     const state = await this.#store.read();
-    return requireEntity(state.workItems, workItemId, 'work item');
+    const task = requireEntity(state.workItems, workItemId, 'work item');
+    const decision = deriveAutonomousBoard(state).decisions.find((entry) => entry.taskId === workItemId);
+    return decorateTaskWithDecision(task, decision);
   }
 
   async getSchedule(projectId) {
     const state = await this.#store.read();
-    return scheduleFromState(state, projectId);
+    return scheduleFromState(state, projectId, deriveAutonomousBoard(state));
+  }
+
+  async getDispatchBoard(input = {}) {
+    const state = await this.#store.read();
+    return deriveAutonomousBoard(state, { now: input?.now, policy: input?.policy });
+  }
+
+  async rebalancePortfolio(input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const replay = findIdempotentAuditEvent(state, 'portfolio.rebalanced', context);
+      if (replay) return deriveAutonomousBoard(state, { now: replay.createdAt, policy: input?.policy });
+
+      const rebalancedAt = options.authoritativeAgentClock
+        ? nowIso()
+        : normalizeIsoTimestamp(input?.now ?? nowIso(), 'now');
+      releaseExpiredClaimLeases(state, rebalancedAt, context);
+      const board = deriveAutonomousBoard(state, { now: rebalancedAt, policy: input?.policy });
+      const decisionByTaskId = new Map(board.decisions.map((decision) => [decision.taskId, decision]));
+      const activeProjectIds = new Set(board.projects.map((project) => project.id));
+      let decisionChanges = 0;
+      for (const task of state.workItems) {
+        if (!activeProjectIds.has(task.projectId)) continue;
+        const decision = decisionByTaskId.get(task.id);
+        const previous = latestRecordedDispatchDecision(state, task);
+        if (!decision) {
+          if (previous) {
+            decisionChanges += 1;
+            state.events.push(createAuditEvent({
+              type: 'dispatch.decision_changed',
+              message: 'Dispatch decision cleared because the task is no longer active work',
+              workItemId: task.id,
+              metadata: auditMetadata(context, {
+                projectId: task.projectId,
+                policyVersion: DISPATCH_POLICY_VERSION,
+                before: previous,
+                after: null
+              })
+            }, nextGlobalSequence(state)));
+          }
+          continue;
+        }
+        const next = {
+          batch: decision.batch,
+          rank: decision.rank,
+          reasonCodes: decision.reasonCodes,
+          compute: decision.compute,
+          recommendedAgent: decision.recommendedAgent,
+          recommendedModelRef: decision.recommendedModelRef,
+          estimateMinutes: decision.estimateMinutes,
+          recommendationSource: decision.recommendationSource,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          decidedAt: decision.decidedAt
+        };
+        const same = previous
+          && previous.batch === next.batch
+          && previous.rank === next.rank
+          && previous.policyVersion === next.policyVersion
+          && previous.compute === next.compute
+          && previous.recommendedAgent === next.recommendedAgent
+          && previous.recommendedModelRef === next.recommendedModelRef
+          && previous.estimateMinutes === next.estimateMinutes
+          && previous.recommendationSource === next.recommendationSource
+          && JSON.stringify(previous.reasonCodes ?? []) === JSON.stringify(next.reasonCodes);
+        if (same) next.decidedAt = previous.decidedAt;
+        else {
+          decisionChanges += 1;
+          state.events.push(createAuditEvent({
+            type: 'dispatch.decision_changed',
+            message: `Dispatch decision changed to ${next.batch} #${next.rank}`,
+            workItemId: task.id,
+            metadata: auditMetadata(context, {
+              projectId: task.projectId,
+              policyVersion: DISPATCH_POLICY_VERSION,
+              before: previous,
+              after: next
+            })
+          }, nextGlobalSequence(state)));
+        }
+      }
+
+      let phaseChanges = 0;
+      const changedProjectIds = new Set();
+      if (input?.applyPhaseStatus !== false) {
+        const computedByPhaseId = new Map(board.projects.flatMap((project) => (
+          project.phases.map((phase) => [phase.id, phase.computedStatus])
+        )));
+        for (const phase of state.phases) {
+          if (phase.status === 'CANCELLED') continue;
+          const computedStatus = computedByPhaseId.get(phase.id);
+          if (!computedStatus) continue;
+          const nextStatus = computedStatus === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE';
+          phase.computedStatus = computedStatus ?? phase.computedStatus ?? 'NOT_STARTED';
+          if (phase.status === nextStatus) continue;
+          const beforeStatus = phase.status;
+          phase.status = nextStatus;
+          phase.updatedAt = board.generatedAt;
+          phaseChanges += 1;
+          changedProjectIds.add(phase.projectId);
+          state.events.push(createAuditEvent({
+            type: 'phase.status_reconciled',
+            message: `Phase status reconciled from ${beforeStatus} to ${nextStatus}`,
+            metadata: auditMetadata(context, {
+              projectId: phase.projectId,
+              phaseId: phase.id,
+              policyVersion: DISPATCH_POLICY_VERSION,
+              beforeStatus,
+              afterStatus: nextStatus,
+              computedStatus,
+              before: { status: beforeStatus },
+              after: { status: nextStatus, computedStatus }
+            })
+          }, nextGlobalSequence(state)));
+        }
+      }
+
+      for (const projectId of changedProjectIds) {
+        const project = state.projects.find((entry) => entry.id === projectId);
+        if (project) bumpScheduleVersion(project);
+      }
+      state.events.push(createAuditEvent({
+        type: 'portfolio.rebalanced',
+        message: 'Autonomous dispatch decisions rebalanced',
+        metadata: auditMetadata(context, {
+          policyVersion: DISPATCH_POLICY_VERSION,
+          decisionChanges,
+          phaseChanges,
+          reason: 'AUTONOMOUS_REBALANCE',
+          before: null,
+          after: { decisionChanges, phaseChanges }
+        })
+      }, nextGlobalSequence(state)));
+      return deriveAutonomousBoard(state, { now: board.generatedAt, policy: input?.policy });
+    });
+  }
+
+  async claimNextTask(input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const existingRun = context.idempotencyKey
+        ? state.runs.find((run) => (
+            run.idempotencyKey === context.idempotencyKey
+              && run.createdBy === context.actor
+              && run.claimedAt
+          ))
+        : null;
+      if (existingRun) {
+        const task = state.workItems.find((entry) => entry.id === existingRun.workItemId);
+        const project = task ? state.projects.find((entry) => entry.id === task.projectId) : null;
+        if (project) touchAgentContactFromContext(state, project, context, input?.source);
+        return claimResultFromState(state, existingRun);
+      }
+
+      const claimedAt = options.authoritativeAgentClock
+        ? nowIso()
+        : normalizeIsoTimestamp(input?.claimedAt ?? nowIso(), 'claimedAt');
+      releaseExpiredClaimLeases(state, claimedAt, context);
+      const mode = normalizeClaimMode(input?.mode);
+      const agentId = normalizeRequiredText(input?.agentId, 'agentId', 160);
+      const modelRef = normalizeRequiredText(input?.modelRef, 'modelRef', 240);
+      const allowedCompute = normalizeOptionalEnumList(input?.computeClasses, 'computeClasses', ['low', 'medium', 'high']);
+      const allowedRisk = normalizeOptionalEnumList(input?.riskTiers, 'riskTiers', ['low', 'medium', 'high', 'critical']);
+      const allowedCapabilities = normalizeOptionalTextList(input?.capabilities, 'capabilities');
+      const allowedProjectIds = normalizeOptionalTextList(input?.projectIds, 'projectIds');
+      for (const projectId of allowedProjectIds) {
+        touchAgentContactFromContext(
+          state,
+          requireEntity(state.projects, projectId, 'project'),
+          context,
+          input?.source
+        );
+      }
+      const board = deriveAutonomousBoard(state, { now: claimedAt });
+      const taskById = new Map(state.workItems.map((task) => [task.id, task]));
+      const candidateDecision = board.lanes.next.find((decision) => {
+        if (decision.mode !== mode) return false;
+        const task = taskById.get(decision.taskId);
+        if (!task) return false;
+        if (allowedCompute.length > 0 && !allowedCompute.includes(decision.compute)) return false;
+        if (allowedRisk.length > 0 && !allowedRisk.includes(task.riskTier)) return false;
+        if (allowedCapabilities.length > 0 && !allowedCapabilities.includes(task.recommendation?.capability)) return false;
+        if (allowedProjectIds.length > 0 && !allowedProjectIds.includes(task.projectId)) return false;
+        if (mode === 'REVIEW') {
+          const completion = latestCompletionRecord(state, task.id);
+          const submitter = completion?.agentId ?? completion?.submittedBy ?? null;
+          if (!completion || submitter === agentId) return false;
+        }
+        return true;
+      });
+      if (!candidateDecision) {
+        return {
+          task: null,
+          run: null,
+          lease: null,
+          decision: null,
+          dispatch: board.summary
+        };
+      }
+
+      const taskIndex = findIndexOrThrow(state.workItems, candidateDecision.taskId, 'work item');
+      let task = state.workItems[taskIndex];
+      if (allowedProjectIds.length === 0) {
+        touchAgentContactFromContext(
+          state,
+          requireEntity(state.projects, task.projectId, 'project'),
+          context,
+          input?.source
+        );
+      }
+      const lease = createClaimLease(task, {
+        agentId,
+        modelRef,
+        claimedAt,
+        estimateMinutes: candidateDecision.estimateMinutes
+      });
+      const run = {
+        id: lease.runId,
+        workItemId: task.id,
+        kind: mode === 'REVIEW' ? RUN_KIND.AGENT_REVIEW : RUN_KIND.AGENT,
+        executor: normalizeOptionalText(input?.executor, 'executor', 160) ?? task.recommendation?.executor ?? 'agent',
+        agentId,
+        provider: normalizeOptionalText(input?.provider, 'provider', 160),
+        modelRef,
+        modelSnapshot: input?.modelSnapshot ?? null,
+        reasoningEffort: normalizeOptionalText(input?.reasoningEffort, 'reasoningEffort', 80)
+          ?? task.recommendation?.reasoningEffort
+          ?? null,
+        status: RUN_STATUS.RUNNING,
+        stage: 0,
+        attempt: nextRunAttempt(state, task.id),
+        onSuccessStatus: isRecurringWorkItem(task) ? WORK_ITEM_STATUS.RECURRING : WORK_ITEM_STATUS.VERIFIED,
+        error: null,
+        idempotencyKey: context.idempotencyKey,
+        createdBy: context.actor,
+        source: mutationSource(input, options),
+        claimMode: mode,
+        claimDecision: {
+          batch: candidateDecision.batch,
+          rank: candidateDecision.rank,
+          reasonCodes: candidateDecision.reasonCodes,
+          compute: candidateDecision.compute,
+          recommendedAgent: candidateDecision.recommendedAgent,
+          recommendedModelRef: candidateDecision.recommendedModelRef,
+          estimateMinutes: candidateDecision.estimateMinutes,
+          recommendationSource: candidateDecision.recommendationSource,
+          policyVersion: candidateDecision.policyVersion,
+          decidedAt: candidateDecision.decidedAt
+        },
+        claimedAt: lease.claimedAt,
+        leaseExpiresAt: lease.leaseExpiresAt,
+        createdAt: claimedAt,
+        startedAt: claimedAt,
+        finishedAt: null,
+        updatedAt: claimedAt
+      };
+
+      if (mode === 'EXECUTION') {
+        validateReadyContract(task);
+        assertDependenciesSatisfied(state, task);
+        if (task.status === WORK_ITEM_STATUS.PLANNED) {
+          task = transitionWorkItem(task, WORK_ITEM_STATUS.READY, claimedAt);
+        }
+        if (task.status !== WORK_ITEM_STATUS.READY) {
+          throw new DomainError('Only a NEXT execution task can be claimed', 'CLAIM_CONFLICT');
+        }
+        task = transitionWorkItem(task, WORK_ITEM_STATUS.QUEUED, claimedAt);
+        task = transitionWorkItem(task, WORK_ITEM_STATUS.RUNNING, claimedAt);
+        task.currentRunId = run.id;
+      } else {
+        if (task.status !== WORK_ITEM_STATUS.REVIEW || task.reviewRunId) {
+          throw new DomainError('Only an unclaimed REVIEW task can be claimed', 'CLAIM_CONFLICT');
+        }
+        task.reviewRunId = run.id;
+        task.reviewLease = lease;
+      }
+      task.dispatch = { batch: 'NOW', rank: 1 };
+      task.decision = {
+        ...run.claimDecision,
+        batch: 'NOW',
+        decidedAt: claimedAt
+      };
+      task.updatedAt = claimedAt;
+      state.workItems[taskIndex] = task;
+      state.runs.push(run);
+      state.events.push(createRunEvent(
+        state,
+        run,
+        mode === 'REVIEW' ? 'review.claimed' : 'run.claimed',
+        mode === 'REVIEW' ? 'Independent review task claimed' : 'Agent task claimed atomically',
+        auditMetadata(context, {
+          agentId,
+          modelRef,
+          leaseExpiresAt: lease.leaseExpiresAt,
+          decision: run.claimDecision
+        })
+      ));
+      return {
+        task: decorateTaskWithDecision(task, { ...task.decision, taskId: task.id }),
+        run,
+        lease,
+        decision: task.decision,
+        dispatch: deriveAutonomousBoard(state, { now: claimedAt }).summary
+      };
+    });
+  }
+
+  async extendTaskLease(runId, input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const replay = findIdempotentRunEvent(state, 'run.lease_extended', context, runId);
+      if (replay) {
+        const currentRun = requireEntity(state.runs, runId, 'run');
+        const replayedRun = {
+          ...currentRun,
+          leaseExpiresAt: replay.metadata.leaseExpiresAt,
+          updatedAt: replay.createdAt
+        };
+        return { run: replayedRun, lease: claimLeaseFromRun(replayedRun) };
+      }
+      const extendedAt = options.authoritativeAgentClock
+        ? nowIso()
+        : normalizeIsoTimestamp(input?.extendedAt ?? nowIso(), 'extendedAt');
+      releaseExpiredClaimLeases(state, extendedAt, context);
+      const run = requireEntity(state.runs, runId, 'run');
+      if (![RUN_KIND.AGENT, RUN_KIND.AGENT_REVIEW].includes(run.kind) || !run.claimedAt) {
+        throw new DomainError('Run does not have an Agent claim lease', 'LEASE_NOT_FOUND');
+      }
+      if (run.status !== RUN_STATUS.RUNNING || Date.parse(run.leaseExpiresAt ?? '') <= Date.parse(extendedAt)) {
+        throw new DomainError('Claim lease is no longer active', 'CLAIM_LEASE_EXPIRED');
+      }
+      const agentId = normalizeRequiredText(input?.agentId, 'agentId', 160);
+      if (run.agentId !== agentId) throw new DomainError('Lease belongs to another Agent', 'CLAIM_CONFLICT');
+      const extensionMinutes = normalizeLeaseExtensionMinutes(input?.extensionMinutes);
+      const maximumExpiryMs = Date.parse(run.claimedAt) + MAX_CLAIM_LEASE_MINUTES * 60_000;
+      const requestedExpiryMs = Math.max(Date.parse(run.leaseExpiresAt), Date.parse(extendedAt)) + extensionMinutes * 60_000;
+      const nextExpiryMs = Math.min(maximumExpiryMs, requestedExpiryMs);
+      if (nextExpiryMs <= Date.parse(run.leaseExpiresAt)) {
+        throw new DomainError('Claim lease has reached the 8 hour limit', 'LEASE_LIMIT_REACHED');
+      }
+      run.leaseExpiresAt = new Date(nextExpiryMs).toISOString();
+      run.updatedAt = extendedAt;
+      const task = requireEntity(state.workItems, run.workItemId, 'work item');
+      if (run.kind === RUN_KIND.AGENT_REVIEW && task.reviewRunId === run.id) {
+        task.reviewLease = {
+          ...task.reviewLease,
+          leaseExpiresAt: run.leaseExpiresAt
+        };
+        task.updatedAt = extendedAt;
+      }
+      state.events.push(createRunEvent(state, run, 'run.lease_extended', 'Agent claim lease extended', auditMetadata(context, {
+        agentId,
+        extensionMinutes,
+        leaseExpiresAt: run.leaseExpiresAt
+      })));
+      return {
+        run,
+        lease: claimLeaseFromRun(run)
+      };
+    });
+  }
+
+  async restoreWorkItem(workItemId, input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const index = findIndexOrThrow(state.workItems, workItemId, 'work item');
+      let task = state.workItems[index];
+      const replay = findIdempotentAuditEvent(state, 'work_item.restored', context, workItemId);
+      if (replay) return task;
+      if (task.status !== WORK_ITEM_STATUS.CANCELLED) {
+        throw new DomainError('Only a cancelled task can be restored', 'TASK_NOT_RESTORABLE');
+      }
+      const project = requireEntity(state.projects, task.projectId, 'project');
+      const beforeVersion = assertExpectedScheduleVersion(project, input?.expectedScheduleVersion);
+      const reason = normalizeRequiredText(input?.reason, 'reason', 1000);
+      const before = taskContractSnapshot(task);
+      for (const dependencyId of task.dependsOnTaskIds ?? []) {
+        const dependency = requireEntity(state.workItems, dependencyId, 'dependency task');
+        if (dependency.status === WORK_ITEM_STATUS.CANCELLED) {
+          throw new DomainError('Restore dependencies before restoring this task', 'INVALID_TASK_DEPENDENCY', {
+            dependencyId
+          });
+        }
+      }
+      task = transitionWorkItem(task, WORK_ITEM_STATUS.PLANNED);
+      task.restoredAt = nowIso();
+      task.restoredBy = context.actor;
+      task.restoreReason = reason;
+      task.lastMutationSource = mutationSource(input, options);
+      state.workItems[index] = task;
+      const afterVersion = bumpScheduleVersion(project);
+      const after = taskContractSnapshot(task);
+      state.events.push(createAuditEvent({
+        type: 'work_item.restored',
+        message: 'Cancelled task restored to the active schedule',
+        workItemId,
+        metadata: auditMetadata(context, {
+          projectId: project.id,
+          beforeVersion,
+          afterVersion,
+          reason,
+          previousCancelReason: task.cancelReason ?? null,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          before,
+          after
+        })
+      }, nextGlobalSequence(state)));
+      return task;
+    });
   }
 
   async listScanProposals(projectId, status = null) {
@@ -384,7 +847,24 @@ export class LifelineService {
 
   async getTaskDetails(workItemId) {
     const state = await this.#store.read();
-    return taskDetailsFromState(state, workItemId);
+    const details = taskDetailsFromState(state, workItemId);
+    const board = deriveAutonomousBoard(state);
+    const decision = board.decisions.find((entry) => entry.taskId === workItemId);
+    const project = board.projects.find((entry) => entry.id === details.project.id);
+    const phase = project?.phases.find((entry) => entry.id === details.phase?.id);
+    const task = decorateTaskWithDecision(details.task, decision);
+    const expiredLeaseRecovered = task.status !== task.storedStatus
+      && task.decision?.reasonCodes?.includes('LEASE_EXPIRED_RECOVERY_PENDING');
+    return {
+      ...details,
+      task,
+      ...(expiredLeaseRecovered ? {
+        run: null,
+        storedRun: details.run
+      } : {}),
+      project: project ?? details.project,
+      phase: phase ?? details.phase
+    };
   }
 
   async createWorkItem(input, options = {}) {
@@ -435,7 +915,14 @@ export class LifelineService {
         type: 'work_item.created',
         message: `Work item created in ${workItem.status}`,
         workItemId: workItem.id,
-        metadata: auditMetadata(context, { projectId: workItem.projectId, phaseId: phase.id, source: workItem.source })
+        metadata: auditMetadata(context, {
+          projectId: workItem.projectId,
+          phaseId: phase.id,
+          source: workItem.source,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          before: null,
+          after: taskContractSnapshot(workItem)
+        })
       }, nextGlobalSequence(state)));
       return workItem;
     });
@@ -555,17 +1042,27 @@ export class LifelineService {
         assertDependenciesSatisfied(state, validated);
       }
 
+      const requestedStatus = normalizeOptionalSchedulingStatus(input?.status) ?? workItem.status;
+      const editedAt = nowIso();
       const before = taskContractSnapshot(workItem);
-      const candidate = { ...workItem, ...validated, phaseId: phase.id };
+      const candidateBase = { ...workItem, ...validated, phaseId: phase.id };
+      const candidate = requestedStatus === workItem.status
+        ? candidateBase
+        : transitionWorkItem(candidateBase, requestedStatus, editedAt);
       assertTaskDependencies(state, candidate);
       assertProjectDependencyTopology(state, project.id, candidate);
       const after = taskContractSnapshot(candidate);
-      if (JSON.stringify(before) === JSON.stringify(after)) return workItem;
+      if (isDeepStrictEqual(before, after)) return workItem;
 
-      const contentChanged = JSON.stringify(taskContentSnapshot(workItem))
-        !== JSON.stringify(taskContentSnapshot(candidate));
+      const contentChanged = !isDeepStrictEqual(
+        taskContentSnapshot(workItem),
+        taskContentSnapshot(candidate)
+      );
+      const schedulingStatusChanged = workItem.status !== candidate.status;
+      const statusChangeReason = schedulingStatusChanged
+        ? normalizeRequiredText(input?.reason, 'reason', 1000)
+        : normalizeOptionalText(input?.reason, 'reason', 1000);
       const source = mutationSource(input, options);
-      const editedAt = nowIso();
       const existingProvenance = hydrateTaskProvenance(workItem);
       const editorOrigin = inferTaskOrigin(source);
       const editorType = ['HUMAN', 'AI'].includes(editorOrigin) ? editorOrigin : null;
@@ -590,15 +1087,27 @@ export class LifelineService {
         : existingProvenance;
       Object.assign(workItem, validated, {
         phaseId: phase.id,
+        status: candidate.status,
         editedBy: context.actor,
         lastMutationSource: source,
         provenance,
         updatedAt: editedAt
       });
+      if (schedulingStatusChanged && candidate.status === WORK_ITEM_STATUS.DEFERRED) {
+        workItem.deferredAt = editedAt;
+        workItem.deferredBy = context.actor;
+        workItem.deferReason = statusChangeReason;
+      } else if (schedulingStatusChanged && workItem.status === WORK_ITEM_STATUS.PLANNED) {
+        workItem.resumedAt = editedAt;
+        workItem.resumedBy = context.actor;
+        workItem.resumeReason = statusChangeReason;
+      }
       const afterVersion = bumpScheduleVersion(project);
       state.events.push(createAuditEvent({
         type: 'work_item.updated',
-        message: contentChanged ? 'Task execution contract updated' : 'Task schedule placement updated',
+        message: schedulingStatusChanged
+          ? (candidate.status === WORK_ITEM_STATUS.DEFERRED ? 'Task deferred from near-term dispatch' : 'Deferred task resumed to active planning')
+          : contentChanged ? 'Task execution contract updated' : 'Task schedule placement updated',
         workItemId,
         metadata: auditMetadata(context, {
           projectId: project.id,
@@ -606,8 +1115,92 @@ export class LifelineService {
           beforeVersion,
           afterVersion,
           source,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          reason: statusChangeReason,
+          statusChange: schedulingStatusChanged,
           before,
           after
+        })
+      }, nextGlobalSequence(state)));
+      return workItem;
+    });
+  }
+
+  async moveWorkItemOnClientBoard(workItemId, input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const index = findIndexOrThrow(state.workItems, workItemId, 'work item');
+      const workItem = state.workItems[index];
+      const replay = findIdempotentAuditEvent(state, 'work_item.client_board_moved', context, workItemId);
+      if (replay) return workItem;
+
+      const project = requireEntity(state.projects, workItem.projectId, 'project');
+      const beforeVersion = assertExpectedScheduleVersion(project, input?.expectedScheduleVersion);
+      const targetStatusId = normalizeClientBoardStatus(input?.statusId);
+      const targetPhase = requireEntity(state.phases, input?.phaseId, 'phase');
+      if (targetPhase.projectId !== project.id || targetPhase.status === 'CANCELLED') {
+        throw new DomainError('phase does not belong to project or is cancelled', 'INVALID_INPUT');
+      }
+      if (CLIENT_BOARD_TERMINAL_STATUSES.has(workItem.status)) {
+        throw new DomainError('Completed or archived tasks cannot return to the active client board', 'TASK_NOT_MOVABLE');
+      }
+
+      const currentPhaseId = workItem.phaseId ?? workItem.planning?.phaseId;
+      const currentStatusId = clientBoardStatusForWorkItem(workItem);
+      if (currentPhaseId === targetPhase.id && currentStatusId === targetStatusId) return workItem;
+
+      const movedAt = nowIso();
+      const taskOrder = targetPhase.id === currentPhaseId
+        ? workItem.planning.taskOrder
+        : Math.max(0, ...state.workItems
+          .filter((task) => (
+            task.id !== workItem.id
+              && task.status !== WORK_ITEM_STATUS.CANCELLED
+              && (task.phaseId === targetPhase.id || task.planning?.phaseId === targetPhase.id)
+          ))
+          .map((task) => Number(task.planning?.taskOrder) || 0)) + 1;
+      const candidateBase = {
+        ...workItem,
+        phaseId: targetPhase.id,
+        planning: {
+          ...workItem.planning,
+          phaseId: targetPhase.id,
+          phase: targetPhase.title,
+          phaseOrder: targetPhase.phaseOrder,
+          taskOrder
+        }
+      };
+      const candidate = currentStatusId === targetStatusId
+        ? candidateBase
+        : transitionWorkItemToClientBoardStatus(candidateBase, targetStatusId, movedAt);
+      assertTaskDependencies(state, candidate);
+      assertProjectDependencyTopology(state, project.id, candidate);
+
+      const before = taskContractSnapshot(workItem);
+      const source = mutationSource(input, options);
+      Object.assign(workItem, candidate, {
+        editedBy: context.actor,
+        lastMutationSource: source,
+        updatedAt: movedAt
+      });
+      reconcileRunsAfterClientBoardMove(state, workItem, targetStatusId, movedAt, context);
+      const afterVersion = bumpScheduleVersion(project);
+      state.events.push(createAuditEvent({
+        type: 'work_item.client_board_moved',
+        message: `Task moved to ${targetPhase.title} / ${targetStatusId}`,
+        workItemId,
+        metadata: auditMetadata(context, {
+          projectId: project.id,
+          phaseId: targetPhase.id,
+          beforeVersion,
+          afterVersion,
+          source,
+          fromPhaseId: currentPhaseId,
+          toPhaseId: targetPhase.id,
+          fromStatusId: currentStatusId,
+          toStatusId: targetStatusId,
+          before,
+          after: taskContractSnapshot(workItem)
         })
       }, nextGlobalSequence(state)));
       return workItem;
@@ -651,6 +1244,7 @@ export class LifelineService {
         task.updatedAt = nowIso();
       });
       const afterVersion = bumpScheduleVersion(project);
+      const reason = normalizeOptionalText(input?.reason, 'reason', 1000) ?? '任务优先级或依赖顺序调整';
       state.events.push(createAuditEvent({
         type: 'schedule.reordered',
         message: `Tasks reordered in ${phase.title}`,
@@ -659,8 +1253,12 @@ export class LifelineService {
           phaseId: phase.id,
           beforeVersion,
           afterVersion,
+          reason,
+          policyVersion: DISPATCH_POLICY_VERSION,
           beforeOrder,
-          afterOrder: orderedTaskIds
+          afterOrder: orderedTaskIds,
+          before: { orderedTaskIds: beforeOrder },
+          after: { orderedTaskIds }
         })
       }, nextGlobalSequence(state)));
       return scheduleFromState(state, projectId);
@@ -680,6 +1278,7 @@ export class LifelineService {
       const project = requireEntity(state.projects, workItem.projectId, 'project');
       const beforeVersion = assertExpectedScheduleVersion(project, input?.expectedScheduleVersion);
       const reason = normalizeRequiredText(input?.reason, 'reason', 1000);
+      const before = taskContractSnapshot(workItem);
       const activeDependents = state.workItems.filter((task) => (
         task.id !== workItemId
           && task.status !== WORK_ITEM_STATUS.CANCELLED
@@ -697,6 +1296,7 @@ export class LifelineService {
       workItem.lastMutationSource = mutationSource(input, options);
       state.workItems[index] = workItem;
       const afterVersion = bumpScheduleVersion(project);
+      const after = taskContractSnapshot(workItem);
       state.events.push(createAuditEvent({
         type: 'work_item.cancelled',
         message: 'Task removed from the active schedule',
@@ -705,7 +1305,10 @@ export class LifelineService {
           projectId: project.id,
           beforeVersion,
           afterVersion,
-          reason
+          reason,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          before,
+          after
         })
       }, nextGlobalSequence(state)));
       return workItem;
@@ -737,6 +1340,12 @@ export class LifelineService {
   }
 
   async startTask(workItemId, input = {}, options = {}) {
+    if (options.requireClaimLease) {
+      throw new DomainError(
+        'Scoped remote Agents must use the atomic claim workflow before execution',
+        'AGENT_CLAIM_REQUIRED'
+      );
+    }
     const context = mutationContext(this.#localUserId, options);
     return this.#store.mutate((state) => {
       const workItemIndex = findIndexOrThrow(state.workItems, workItemId, 'work item');
@@ -767,7 +1376,9 @@ export class LifelineService {
       workItem = transitionWorkItem(workItem, WORK_ITEM_STATUS.QUEUED);
       workItem = transitionWorkItem(workItem, WORK_ITEM_STATUS.RUNNING);
 
-      const startedAt = normalizeOptionalText(input?.startedAt, 'startedAt', 80) ?? nowIso();
+      const startedAt = options.authoritativeAgentClock
+        ? nowIso()
+        : normalizeOptionalText(input?.startedAt, 'startedAt', 80) ?? nowIso();
       const attempt = Number(input?.attempt ?? nextRunAttempt(state, workItemId));
       if (!Number.isInteger(attempt) || attempt < 1 || attempt > 1000) {
         throw new DomainError('attempt must be an integer between 1 and 1000', 'INVALID_INPUT');
@@ -809,6 +1420,13 @@ export class LifelineService {
   async submitCompletion(workItemId, input = {}, options = {}) {
     const context = mutationContext(this.#localUserId, options);
     return this.#store.mutate((state) => {
+      const contactTask = requireEntity(state.workItems, workItemId, 'work item');
+      touchAgentContactFromContext(
+        state,
+        requireEntity(state.projects, contactTask.projectId, 'project'),
+        context,
+        input?.source
+      );
       const existingRecord = state.completionRecords.find((record) => (
         record.taskId === workItemId
           && record.idempotencyKey === context.idempotencyKey
@@ -821,14 +1439,34 @@ export class LifelineService {
       const workItemIndex = findIndexOrThrow(state.workItems, workItemId, 'work item');
       let workItem = state.workItems[workItemIndex];
       const outcome = normalizeCompletionOutcome(input?.outcome);
+      if (input?.nextPlan && outcome !== 'COMPLETED') {
+        throw new DomainError('nextPlan is only allowed for a completed task result', 'INVALID_INPUT');
+      }
       const currentRun = workItem.currentRunId
         ? state.runs.find((entry) => entry.id === workItem.currentRunId)
         : null;
       const runId = input?.runId ?? (currentRun?.status === RUN_STATUS.RUNNING ? currentRun.id : null);
-      const completedAt = normalizeIsoTimestamp(input?.completedAt ?? nowIso(), 'completedAt');
       let run = runId ? requireEntity(state.runs, runId, 'run') : null;
+      if (options.requireClaimLease && (!run || !run.claimedAt)) {
+        throw new DomainError(
+          'Scoped remote completion requires an active Agent claim lease',
+          'AGENT_CLAIM_REQUIRED'
+        );
+      }
+      const completedAt = run?.claimedAt && options.authoritativeAgentClock
+        ? nowIso()
+        : normalizeIsoTimestamp(input?.completedAt ?? nowIso(), 'completedAt');
       if (run && run.workItemId !== workItemId) {
         throw new DomainError('run does not belong to task', 'INVALID_INPUT');
+      }
+      if (run?.leaseExpiresAt && Date.parse(run.leaseExpiresAt) <= Date.parse(completedAt)) {
+        throw new DomainError('Agent claim lease expired before completion was submitted', 'CLAIM_LEASE_EXPIRED', {
+          runId: run.id,
+          leaseExpiresAt: run.leaseExpiresAt
+        });
+      }
+      if (run?.agentId && input?.agentId && run.agentId !== input.agentId) {
+        throw new DomainError('Completion belongs to another Agent claim', 'CLAIM_CONFLICT');
       }
       if (!run) {
         validateReadyContract(workItem);
@@ -890,7 +1528,11 @@ export class LifelineService {
       }));
       state.evidence.push(...evidence);
 
-      const startedAt = normalizeIsoTimestamp(input?.startedAt ?? run.startedAt, 'startedAt', true);
+      const startedAt = normalizeIsoTimestamp(
+        run.claimedAt && options.authoritativeAgentClock ? run.startedAt : input?.startedAt ?? run.startedAt,
+        'startedAt',
+        true
+      );
       if (Date.parse(startedAt) > Date.parse(completedAt)) {
         throw new DomainError('startedAt must not be after completedAt', 'INVALID_INPUT');
       }
@@ -948,13 +1590,32 @@ export class LifelineService {
         evidenceIds: evidence.map((entry) => entry.id),
         outcome
       })));
-      return { task: workItem, run, completionRecord, evidence };
+      if (input?.nextPlan) {
+        const nextPlan = syncPlanInState(state, {
+          ...input.nextPlan,
+          projectId: workItem.projectId,
+          source: input.nextPlan.source ?? input.source
+        }, context);
+        completionRecord.nextPlan = {
+          planId: input.nextPlan.planId,
+          phaseId: nextPlan.phase.id,
+          taskIds: nextPlan.tasks.map((task) => task.id)
+        };
+      }
+      return completionResultFromState(state, completionRecord);
     });
   }
 
   async verifyTask(workItemId, input = {}, options = {}) {
     const context = mutationContext(this.#localUserId, options);
     return this.#store.mutate((state) => {
+      const contactTask = requireEntity(state.workItems, workItemId, 'work item');
+      touchAgentContactFromContext(
+        state,
+        requireEntity(state.projects, contactTask.projectId, 'project'),
+        context,
+        input?.source
+      );
       const existingEvidence = state.evidence.find((entry) => (
         entry.workItemId === workItemId
           && entry.type === 'VERIFICATION'
@@ -983,8 +1644,27 @@ export class LifelineService {
       if (verificationMethod === 'DETERMINISTIC_TEST' && !testEvidence.some(isPassingTestEvidence)) {
         throw new DomainError('Deterministic verification requires passing test evidence', 'INSUFFICIENT_EVIDENCE');
       }
-      if (verificationMethod === 'INDEPENDENT_REVIEW' && completionRecord.submittedBy === context.actor) {
+      const reviewerIdentity = normalizeOptionalText(input?.agentId, 'agentId', 160) ?? context.actor;
+      const submitterIdentity = completionRecord.agentId ?? completionRecord.submittedBy;
+      if (verificationMethod === 'INDEPENDENT_REVIEW' && submitterIdentity === reviewerIdentity) {
         throw new DomainError('Independent review must be submitted by a different actor', 'INSUFFICIENT_EVIDENCE');
+      }
+      const reviewRun = workItem.reviewRunId
+        ? state.runs.find((entry) => entry.id === workItem.reviewRunId)
+        : null;
+      if (options.requireClaimLease && !reviewRun) {
+        throw new DomainError(
+          'Scoped remote verification requires an independent review claim lease',
+          'AGENT_CLAIM_REQUIRED'
+        );
+      }
+      if (reviewRun) {
+        if (reviewRun.status !== RUN_STATUS.RUNNING || Date.parse(reviewRun.leaseExpiresAt ?? '') <= Date.now()) {
+          throw new DomainError('Independent review claim lease is no longer active', 'CLAIM_LEASE_EXPIRED');
+        }
+        if (reviewRun.agentId !== reviewerIdentity) {
+          throw new DomainError('Review task is claimed by another Agent', 'CLAIM_CONFLICT');
+        }
       }
 
       const referencedEvidenceIds = normalizeStringList(input?.evidenceIds ?? [], 'evidenceIds', 100);
@@ -1026,6 +1706,17 @@ export class LifelineService {
         ? WORK_ITEM_STATUS.RECURRING
         : WORK_ITEM_STATUS.VERIFIED;
       workItem = transitionWorkItem(workItem, successStatus);
+      if (reviewRun) {
+        reviewRun.status = RUN_STATUS.SUCCEEDED;
+        reviewRun.finishedAt = nowIso();
+        reviewRun.updatedAt = reviewRun.finishedAt;
+        state.events.push(createRunEvent(state, reviewRun, 'review.completed', 'Independent review completed', auditMetadata(context, {
+          verificationMethod,
+          evidenceId: verificationEvidence.id
+        })));
+      }
+      workItem.reviewRunId = null;
+      workItem.reviewLease = null;
       state.workItems[workItemIndex] = workItem;
       if (successStatus === WORK_ITEM_STATUS.VERIFIED) {
         const project = requireEntity(state.projects, workItem.projectId, 'project');
@@ -1044,7 +1735,7 @@ export class LifelineService {
           verificationMethod
         })
       }, nextGlobalSequence(state)));
-      return { task: workItem, completionRecord, evidence: verificationEvidence };
+      return verificationResultFromState(state, workItemId, completionRecord, verificationEvidence);
     });
   }
 
@@ -1173,35 +1864,61 @@ export class LifelineService {
 
   async dashboard() {
     const state = await this.#store.read();
+    const dispatchBoard = deriveAutonomousBoard(state);
+    const reporting = deriveAgentReporting(state, {
+      now: dispatchBoard.generatedAt,
+      boardProjects: dispatchBoard.projects,
+      decisions: dispatchBoard.decisions
+    });
+    const reportingByProjectId = new Map(reporting.projects.map((entry) => [entry.projectId, entry]));
+    const dashboardAtMs = Date.parse(dispatchBoard.generatedAt);
+    const dispatchProjects = new Map(dispatchBoard.projects.map((project) => [project.id, project]));
+    const dispatchDecisions = new Map(dispatchBoard.decisions.map((decision) => [decision.taskId, decision]));
     const projects = state.projects.filter((project) => project.status !== 'ARCHIVED').map((project) => {
       const workItems = state.workItems.filter((item) => (
         item.projectId === project.id && item.status !== WORK_ITEM_STATUS.CANCELLED
       ));
+      const effectiveWorkItems = workItems.map((item) => ({
+        ...item,
+        status: dispatchDecisions.get(item.id)?.effectiveStatus ?? item.status
+      }));
       const workItemIds = new Set(workItems.map((item) => item.id));
       const evidence = state.evidence.filter((entry) => workItemIds.has(entry.workItemId));
       const counts = Object.fromEntries(Object.values(WORK_ITEM_STATUS).map((status) => [status, 0]));
-      for (const item of workItems) counts[item.status] = (counts[item.status] ?? 0) + 1;
+      for (const item of effectiveWorkItems) counts[item.status] = (counts[item.status] ?? 0) + 1;
+      const derivedProject = dispatchProjects.get(project.id);
       return {
         ...project,
+        computedStatus: derivedProject?.computedStatus ?? project.status,
+        health: derivedProject?.health ?? null,
+        lastProgressAt: derivedProject?.lastProgressAt ?? null,
+        currentTaskId: derivedProject?.currentTaskId ?? null,
+        latestVerifiedTaskId: derivedProject?.latestVerifiedTaskId ?? null,
+        phases: derivedProject?.phases ?? [],
+        dispatch: derivedProject?.dispatch ?? null,
+        reporting: reportingByProjectId.get(project.id) ?? null,
         verifiedProgress: calculateProjectProgress(workItems, evidence),
         workItemCount: workItems.length,
         phaseCount: new Set(workItems.map((item) => item.planning.phaseOrder)).size,
-        unfinishedWorkItemCount: workItems.filter(isUnfinished).length,
-        nextWorkItemId: workItems.filter(isUnfinished).sort(compareCandidateWorkItems)[0]?.id ?? null,
+        unfinishedWorkItemCount: effectiveWorkItems.filter(isUnfinished).length,
+        nextWorkItemId: dispatchBoard.lanes.next.find((entry) => entry.projectId === project.id)?.taskId ?? null,
         statusCounts: counts,
         lastEvidenceAt: latestTimestamp(evidence.map((entry) => entry.createdAt))
       };
     }).sort(compareProjects);
 
     return {
-      generatedAt: nowIso(),
+      generatedAt: dispatchBoard.generatedAt,
       projects,
       activeRuns: state.runs.filter((run) => (
         run.kind === RUN_KIND.AGENT && [RUN_STATUS.QUEUED, RUN_STATUS.RUNNING].includes(run.status)
+          && (!run.leaseExpiresAt || Date.parse(run.leaseExpiresAt) > dashboardAtMs)
       )).length,
       totalRuns: state.runs.filter((run) => run.kind === RUN_KIND.AGENT).length,
       legacyMockRuns: state.runs.filter((run) => run.kind === RUN_KIND.INTERNAL_MOCK).length,
       evidenceCount: state.evidence.length,
+      dispatch: dispatchBoard,
+      reporting,
       bootstrap: {
         portfolioV2: bootstrapStatusFromState(state, this.#localUserId)
       }
@@ -1336,152 +2053,110 @@ export class LifelineService {
     };
   }
 
-  #schedule(runId) {
-    if (this.#activeRuns.has(runId)) return;
-    queueMicrotask(() => this.#executeRun(runId));
-  }
-
-  async #executeRun(runId) {
-    if (this.#activeRuns.has(runId)) return;
-    this.#activeRuns.add(runId);
-    try {
-      await this.#markRunning(runId);
-      let run = await this.getRun(runId);
-      while (run.stage < this.#executor.stepCount) {
-        const workItem = await this.getWorkItem(run.workItemId);
-        await this.#appendRunEvent(runId, 'step.started', `Starting executor step ${run.stage + 1}`, {
-          stage: run.stage
-        });
-        const result = await this.#executor.executeStep(run.stage, workItem);
-        await this.#checkpointStep(runId, result);
-        run = await this.getRun(runId);
-      }
-      await this.#completeRun(runId);
-    } catch (error) {
-      await this.#failRun(runId, error);
-      this.#logger.error?.('Lifeline run failed', { runId, error: error?.message });
-    } finally {
-      this.#activeRuns.delete(runId);
-    }
-  }
-
-  async #markRunning(runId) {
-    await this.#store.mutate((state) => {
-      const runIndex = findIndexOrThrow(state.runs, runId, 'run');
-      const run = state.runs[runIndex];
-      if (run.status === RUN_STATUS.SUCCEEDED || run.status === RUN_STATUS.FAILED) return run;
-      run.status = RUN_STATUS.RUNNING;
-      run.startedAt ??= nowIso();
-      run.updatedAt = nowIso();
-
-      const itemIndex = findIndexOrThrow(state.workItems, run.workItemId, 'work item');
-      const workItem = state.workItems[itemIndex];
-      if (workItem.status === WORK_ITEM_STATUS.QUEUED) {
-        state.workItems[itemIndex] = transitionWorkItem(workItem, WORK_ITEM_STATUS.RUNNING);
-      }
-      state.events.push(createRunEvent(state, run, 'run.started', 'Run started'));
-      return run;
-    });
-  }
-
-  async #checkpointStep(runId, result) {
-    await this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      const evidenceKey = `${runId}:${result.evidence.type}`;
-      if (!state.evidence.some((entry) => entry.key === evidenceKey)) {
-        state.evidence.push({
-          id: createId('evidence'),
-          key: evidenceKey,
-          runId,
-          workItemId: run.workItemId,
-          type: result.evidence.type,
-          score: result.evidence.score,
-          summary: result.evidence.summary,
-          metadata: result.evidence.metadata ?? {},
-          createdAt: nowIso()
-        });
-      }
-      run.stage += 1;
-      run.updatedAt = nowIso();
-      state.events.push(createRunEvent(state, run, 'step.completed', result.message, {
-        step: result.step,
-        stage: run.stage,
-        evidenceType: result.evidence.type,
-        evidenceScore: result.evidence.score
-      }));
-      return run;
-    });
-  }
-
-  async #completeRun(runId) {
-    await this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      const itemIndex = findIndexOrThrow(state.workItems, run.workItemId, 'work item');
-      let workItem = state.workItems[itemIndex];
-      if (workItem.status === WORK_ITEM_STATUS.RUNNING) {
-        workItem = transitionWorkItem(workItem, WORK_ITEM_STATUS.REVIEW);
-      }
-      if (workItem.status === WORK_ITEM_STATUS.REVIEW) {
-        workItem = transitionWorkItem(
-          workItem,
-          run.onSuccessStatus === WORK_ITEM_STATUS.RECURRING
-            ? WORK_ITEM_STATUS.RECURRING
-            : WORK_ITEM_STATUS.VERIFIED
-        );
-      }
-      state.workItems[itemIndex] = workItem;
-      if (workItem.status === WORK_ITEM_STATUS.VERIFIED) {
-        const project = requireEntity(state.projects, workItem.projectId, 'project');
-        project.currentTaskId = workItem.id;
-        project.updatedAt = nowIso();
-      }
-      run.status = RUN_STATUS.SUCCEEDED;
-      run.finishedAt = nowIso();
-      run.updatedAt = run.finishedAt;
-      state.events.push(createRunEvent(
-        state,
-        run,
-        'run.succeeded',
-        workItem.status === WORK_ITEM_STATUS.RECURRING
-          ? 'Run completed and recurring task returned to its cycle'
-          : 'Run completed and work item verified'
-      ));
-      return run;
-    });
-  }
-
-  async #failRun(runId, error) {
-    await this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      run.status = RUN_STATUS.FAILED;
-      run.error = {
-        code: error?.code ?? 'EXECUTOR_FAILURE',
-        message: error?.message ?? String(error)
-      };
-      run.finishedAt = nowIso();
-      run.updatedAt = run.finishedAt;
-      const itemIndex = findIndexOrThrow(state.workItems, run.workItemId, 'work item');
-      const workItem = state.workItems[itemIndex];
-      if ([WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.REVIEW].includes(workItem.status)) {
-        state.workItems[itemIndex] = transitionWorkItem(workItem, WORK_ITEM_STATUS.BLOCKED);
-      }
-      state.events.push(createRunEvent(state, run, 'run.failed', run.error.message, { error: run.error }));
-      return run;
-    });
-  }
-
-  async #appendRunEvent(runId, type, message, metadata = {}) {
-    return this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      const event = createRunEvent(state, run, type, message, metadata);
-      state.events.push(event);
-      return event;
-    });
-  }
 }
 
 export function isTerminalRunStatus(status) {
   return [RUN_STATUS.SUCCEEDED, RUN_STATUS.FAILED, RUN_STATUS.CANCELLED].includes(status);
+}
+
+const CLIENT_BOARD_STATUS_IDS = Object.freeze(['pending', 'scheduled', 'running', 'review']);
+const CLIENT_BOARD_TERMINAL_STATUSES = new Set([
+  WORK_ITEM_STATUS.CANCELLED,
+  WORK_ITEM_STATUS.VERIFIED,
+  WORK_ITEM_STATUS.RELEASED,
+  WORK_ITEM_STATUS.ARCHIVED
+]);
+
+function normalizeClientBoardStatus(value) {
+  const statusId = normalizeRequiredText(value, 'statusId', 40).toLowerCase();
+  if (!CLIENT_BOARD_STATUS_IDS.includes(statusId)) {
+    throw new DomainError(`statusId must be one of: ${CLIENT_BOARD_STATUS_IDS.join(', ')}`, 'INVALID_INPUT');
+  }
+  return statusId;
+}
+
+function clientBoardStatusForWorkItem(workItem) {
+  if (workItem.status === WORK_ITEM_STATUS.RUNNING) return 'running';
+  if (workItem.status === WORK_ITEM_STATUS.REVIEW) return 'review';
+  if (workItem.status === WORK_ITEM_STATUS.DEFERRED || workItem.planning?.commitment !== 'COMMITTED') return 'pending';
+  return 'scheduled';
+}
+
+function transitionWorkItemToClientBoardStatus(workItem, statusId, at) {
+  let task = transitionActiveWorkItemToPlanned(workItem, at);
+  if (statusId === 'running' || statusId === 'review') {
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.READY, at);
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.QUEUED, at);
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.RUNNING, at);
+  }
+  if (statusId === 'review') task = transitionWorkItem(task, WORK_ITEM_STATUS.REVIEW, at);
+  return {
+    ...task,
+    planning: {
+      ...task.planning,
+      commitment: statusId === 'pending' ? 'TENTATIVE' : 'COMMITTED'
+    }
+  };
+}
+
+function transitionActiveWorkItemToPlanned(workItem, at) {
+  const paths = {
+    [WORK_ITEM_STATUS.DISCOVERED]: [WORK_ITEM_STATUS.TRIAGED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.TRIAGED]: [WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.PLANNED]: [],
+    [WORK_ITEM_STATUS.DEFERRED]: [WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.READY]: [WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.QUEUED]: [WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.RUNNING]: [WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.REVIEW]: [WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.BLOCKED]: [WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.RECURRING]: [WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED]
+  };
+  const path = paths[workItem.status];
+  if (!path) throw new DomainError(`Task cannot move from ${workItem.status} on the active client board`, 'TASK_NOT_MOVABLE');
+  return path.reduce((task, nextStatus) => transitionWorkItem(task, nextStatus, at), workItem);
+}
+
+function reconcileRunsAfterClientBoardMove(state, workItem, targetStatusId, at, context) {
+  const executionRun = workItem.currentRunId
+    ? state.runs.find((run) => run.id === workItem.currentRunId) ?? null
+    : null;
+  const keepExecutionRun = targetStatusId === 'running' && executionRun?.status === RUN_STATUS.RUNNING;
+  if (executionRun?.status === RUN_STATUS.RUNNING && !keepExecutionRun) {
+    cancelRunForClientBoardMove(state, executionRun, at, context, targetStatusId);
+  }
+  if (targetStatusId === 'running') {
+    if (!keepExecutionRun) workItem.currentRunId = null;
+  } else if (targetStatusId !== 'review' || executionRun?.status === RUN_STATUS.RUNNING) {
+    workItem.currentRunId = null;
+  }
+
+  const reviewRun = workItem.reviewRunId
+    ? state.runs.find((run) => run.id === workItem.reviewRunId) ?? null
+    : null;
+  const keepReviewRun = targetStatusId === 'review' && reviewRun?.status === RUN_STATUS.RUNNING;
+  if (reviewRun?.status === RUN_STATUS.RUNNING && !keepReviewRun) {
+    cancelRunForClientBoardMove(state, reviewRun, at, context, targetStatusId);
+  }
+  if (!keepReviewRun) {
+    workItem.reviewRunId = null;
+    workItem.reviewLease = null;
+  }
+}
+
+function cancelRunForClientBoardMove(state, run, at, context, targetStatusId) {
+  run.status = RUN_STATUS.CANCELLED;
+  run.finishedAt = at;
+  run.updatedAt = at;
+  run.error = null;
+  run.releaseReason = 'CLIENT_BOARD_MOVE';
+  state.events.push(createRunEvent(
+    state,
+    run,
+    'run.client_board_released',
+    'Active Run ended after a manual client board move',
+    auditMetadata(context, { targetStatusId })
+  ));
 }
 
 const EDITABLE_WORK_ITEM_STATUSES = new Set([
@@ -1619,6 +2294,144 @@ function hashSnapshot(value) {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
 
+function syncPlanInState(state, input, context) {
+  const project = requireEntity(state.projects, input?.projectId, 'project');
+  const planId = normalizeRequiredText(input?.planId, 'planId', 256);
+  const reportedSource = {
+    ...(normalizeSource(input?.source) ?? {}),
+    kind: 'codex-plan',
+    planId
+  };
+  const entitySource = normalizeSource({
+    reportedSource,
+    kind: 'codex-plan',
+    tool: 'lifeline_sync_plan'
+  });
+  touchAgentContactFromContext(state, project, context, reportedSource);
+
+  let phase;
+  if (input?.phase?.phaseId) {
+    phase = requireEntity(state.phases, input.phase.phaseId, 'phase');
+    if (phase.projectId !== project.id || phase.status === 'CANCELLED') {
+      throw new DomainError('phase does not belong to project or is cancelled', 'INVALID_INPUT');
+    }
+  } else {
+    const phaseKey = planScopedIdempotencyKey(planId, 'phase');
+    phase = state.phases.find((entry) => (
+      entry.idempotencyKey === phaseKey && entry.createdBy === context.actor
+    ));
+    if (!phase) {
+      phase = createPhase({
+        projectId: project.id,
+        title: input?.phase?.title,
+        goal: input?.phase?.goal ?? '',
+        rank: Number(input?.phase?.phaseOrder ?? nextPhaseOrder(state, project.id)) * 1024,
+        createdBy: context.actor
+      });
+      phase.idempotencyKey = phaseKey;
+      phase.source = entitySource;
+      state.phases.push(phase);
+      bumpScheduleVersion(project);
+      state.events.push(createAuditEvent({
+        type: 'phase.created',
+        message: `Phase created: ${phase.title}`,
+        metadata: auditMetadata(context, { projectId: project.id, phaseId: phase.id, planId })
+      }, nextGlobalSequence(state)));
+    }
+  }
+
+  const tasks = [];
+  for (const draft of input?.tasks ?? []) {
+    const taskKey = planScopedIdempotencyKey(planId, `task:${shortHash(`${draft.taskOrder}:${draft.title}`)}`);
+    let task = state.workItems.find((entry) => (
+      entry.idempotencyKey === taskKey && entry.createdBy === context.actor
+    ));
+    if (!task) {
+      task = createWorkItem({
+        projectId: project.id,
+        phaseId: phase.id,
+        title: draft.title,
+        objective: draft.objective,
+        nonGoals: draft.nonGoals ?? [],
+        acceptanceCriteria: draft.acceptanceCriteria ?? [],
+        testCommands: draft.testCommands ?? [],
+        issue: draft.issue,
+        starred: draft.starred ?? false,
+        scheduledFor: draft.scheduledFor,
+        dependsOnTaskIds: draft.dependsOnTaskIds ?? [],
+        parallelPolicy: draft.parallelPolicy ?? 'AUTO',
+        riskTier: draft.riskTier ?? 'medium',
+        weight: draft.weight ?? 1,
+        resourceProfile: draft.resourceProfile ?? {
+          cpu: 1,
+          memoryGb: 1,
+          apiBudgetUsd: 0,
+          humanReviewMinutes: 5
+        },
+        planning: {
+          phaseId: phase.id,
+          phase: phase.title,
+          phaseOrder: phase.phaseOrder,
+          taskOrder: draft.taskOrder,
+          kind: draft.kind ?? 'feature',
+          priority: draft.priority ?? 'P1',
+          commitment: draft.commitment ?? 'TENTATIVE'
+        },
+        recommendation: draft.recommendation
+      });
+      assertTaskDependencies(state, task);
+      task.createdBy = context.actor;
+      task.idempotencyKey = taskKey;
+      task.source = entitySource;
+      task.provenance = hydrateTaskProvenance(task);
+      state.workItems.push(task);
+      bumpScheduleVersion(project);
+      state.events.push(createAuditEvent({
+        type: 'work_item.created',
+        message: `Work item created in ${task.status}`,
+        workItemId: task.id,
+        metadata: auditMetadata(context, {
+          projectId: project.id,
+          phaseId: phase.id,
+          planId,
+          source: task.source,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          before: null,
+          after: taskContractSnapshot(task)
+        })
+      }, nextGlobalSequence(state)));
+    }
+    tasks.push(task);
+  }
+
+  if (tasks.length === 0) {
+    throw new DomainError('next plan must contain at least one task', 'INVALID_INPUT');
+  }
+  return { projectId: project.id, phase, tasks, createdOrReused: tasks.length };
+}
+
+function touchAgentContactFromContext(state, project, context, reportedSource = {}) {
+  if (!context.client && !context.tool) return null;
+  return upsertAgentContact(state, {
+    projectId: project.id,
+    actor: context.actor,
+    client: context.client,
+    tool: context.tool,
+    at: nowIso(),
+    repositoryPath: reportedSource?.repositoryPath ?? null,
+    repositoryUrl: reportedSource?.repositoryUrl ?? project.repositoryUrl ?? null
+  });
+}
+
+function planScopedIdempotencyKey(planId, suffix) {
+  const legacyKey = `${planId}:${suffix}`;
+  return legacyKey.length <= 256 ? legacyKey : `plan:${shortHash(planId)}:${suffix}`;
+}
+
+function shortHash(value) {
+  return createHash('sha256').update(String(value)).digest('hex').slice(0, 16);
+}
+
 function mutationContext(defaultActor, options = {}) {
   return {
     actor: normalizeRequiredText(options?.actor ?? defaultActor, 'actor', 160),
@@ -1642,6 +2455,16 @@ function findIdempotentAuditEvent(state, type, context, workItemId = null) {
   return state.events.find((event) => (
     event.type === type
       && (workItemId === null || event.workItemId === workItemId)
+      && event.metadata?.actor === context.actor
+      && event.metadata?.idempotencyKey === context.idempotencyKey
+  )) ?? null;
+}
+
+function findIdempotentRunEvent(state, type, context, runId) {
+  if (!context.idempotencyKey) return null;
+  return state.events.find((event) => (
+    event.type === type
+      && event.runId === runId
       && event.metadata?.actor === context.actor
       && event.metadata?.idempotencyKey === context.idempotencyKey
   )) ?? null;
@@ -1799,6 +2622,7 @@ function taskCompletionTime(task, completionTime) {
 
 function taskContractSnapshot(workItem) {
   return {
+    status: workItem.status,
     title: workItem.title,
     objective: workItem.objective,
     nonGoals: workItem.nonGoals,
@@ -1816,6 +2640,15 @@ function taskContractSnapshot(workItem) {
     planning: workItem.planning,
     recommendation: workItem.recommendation
   };
+}
+
+function latestRecordedDispatchDecision(state, task) {
+  const event = state.events.findLast((entry) => (
+    entry.type === 'dispatch.decision_changed' && entry.workItemId === task.id
+  ));
+  if (event) return event.metadata?.after ?? null;
+  if (task.decision) return task.decision;
+  return task.dispatch ? { ...task.dispatch } : null;
 }
 
 function taskContentSnapshot(workItem) {
@@ -1882,8 +2715,11 @@ function comparePhases(left, right) {
     || String(left.title).localeCompare(String(right.title), 'zh-CN');
 }
 
-function scheduleFromState(state, projectId) {
+function scheduleFromState(state, projectId, autonomousBoard = deriveAutonomousBoard(state)) {
   const project = requireEntity(state.projects, projectId, 'project');
+  const derivedProject = autonomousBoard.projects.find((entry) => entry.id === projectId);
+  const decisionByTaskId = new Map(autonomousBoard.decisions.map((decision) => [decision.taskId, decision]));
+  const computedPhaseById = new Map((derivedProject?.phases ?? []).map((phase) => [phase.id, phase]));
   const tasks = state.workItems.filter((item) => (
     item.projectId === projectId && item.status !== WORK_ITEM_STATUS.CANCELLED
   ));
@@ -1894,19 +2730,29 @@ function scheduleFromState(state, projectId) {
       const phaseTasks = tasks
         .filter((task) => task.phaseId === phase.id || task.planning?.phaseId === phase.id)
         .sort(compareWorkItems);
+      const phaseTaskViews = phaseTasks.map((task) => decorateTaskWithDecision(
+        taskScheduleView(state, task),
+        decisionByTaskId.get(task.id)
+      ));
+      const computedPhase = computedPhaseById.get(phase.id);
       return {
         ...phase,
-        parallelTaskIds: phaseTasks.filter((task) => isParallelCandidate(state, task)).map((task) => task.id),
-        tasks: phaseTasks.map((task) => taskScheduleView(state, task))
+        computedStatus: computedPhase?.computedStatus ?? phase.status,
+        currentTaskId: computedPhase?.currentTaskId ?? null,
+        parallelTaskIds: phaseTaskViews.filter((task) => isParallelCandidate(state, task)).map((task) => task.id),
+        tasks: phaseTaskViews
       };
     });
   const mappedTaskIds = new Set(phases.flatMap((phase) => phase.tasks.map((task) => task.id)));
   const unscheduledTasks = tasks.filter((task) => !mappedTaskIds.has(task.id)).sort(compareWorkItems);
   return {
-    project,
+    project: derivedProject ? { ...project, ...derivedProject, phases: undefined } : project,
     scheduleVersion: Number(project.scheduleVersion ?? 0),
     phases,
-    unscheduledTasks: unscheduledTasks.map((task) => taskScheduleView(state, task)),
+    unscheduledTasks: unscheduledTasks.map((task) => decorateTaskWithDecision(
+      taskScheduleView(state, task),
+      decisionByTaskId.get(task.id)
+    )),
     taskCount: tasks.length,
     lastModified: latestTimestamp([
       project.updatedAt,
@@ -1935,13 +2781,58 @@ function taskScheduleView(state, task) {
   };
 }
 
+function decorateTaskWithDecision(task, decision) {
+  const effectiveStatus = decision?.effectiveStatus ?? decision?.status ?? task.status;
+  const expiredLeaseRecovered = effectiveStatus !== task.status
+    && decision?.reasonCodes?.includes('LEASE_EXPIRED_RECOVERY_PENDING');
+  const taskView = {
+    ...task,
+    storedStatus: task.status,
+    status: effectiveStatus,
+    effectiveStatus,
+    ...(expiredLeaseRecovered ? {
+      storedCurrentRunId: task.currentRunId ?? null,
+      currentRunId: null,
+      ...('currentRun' in task ? { currentRun: null } : {})
+    } : {})
+  };
+  if (!decision) return { ...taskView, dispatch: null, decision: null };
+  return {
+    ...taskView,
+    dispatch: {
+      batch: decision.batch,
+      rank: decision.rank
+    },
+    decision: {
+      batch: decision.batch,
+      rank: decision.rank,
+      reasonCodes: [...decision.reasonCodes],
+      compute: decision.compute,
+      recommendedAgent: decision.recommendedAgent,
+      recommendedModelRef: decision.recommendedModelRef,
+      estimateMinutes: decision.estimateMinutes,
+      recommendationSource: decision.recommendationSource,
+      policyVersion: decision.policyVersion,
+      decidedAt: decision.decidedAt
+    }
+  };
+}
+
 function taskDetailsFromState(state, workItemId) {
   const task = requireEntity(state.workItems, workItemId, 'work item');
+  const currentRun = task.currentRunId
+    ? state.runs.find((run) => run.id === task.currentRunId) ?? null
+    : null;
+  const reviewRun = task.reviewRunId
+    ? state.runs.find((run) => run.id === task.reviewRunId) ?? null
+    : null;
   return {
     task,
     project: requireEntity(state.projects, task.projectId, 'project'),
     phase: state.phases.find((phase) => phase.id === (task.phaseId ?? task.planning?.phaseId)) ?? null,
-    run: task.currentRunId ? state.runs.find((run) => run.id === task.currentRunId) ?? null : null,
+    run: currentRun,
+    reviewRun,
+    runs: state.runs.filter((run) => run.workItemId === workItemId),
     evidence: state.evidence.filter((entry) => entry.workItemId === workItemId),
     completionRecords: state.completionRecords.filter((entry) => entry.taskId === workItemId),
     auditEvents: state.events.filter((entry) => entry.workItemId === workItemId)
@@ -1950,7 +2841,7 @@ function taskDetailsFromState(state, workItemId) {
 
 function completionResultFromState(state, completionRecord) {
   return {
-    task: requireEntity(state.workItems, completionRecord.taskId, 'work item'),
+    task: taskWithCurrentDecision(state, completionRecord.taskId),
     run: completionRecord.runId ? requireEntity(state.runs, completionRecord.runId, 'run') : null,
     completionRecord,
     evidence: state.evidence.filter((entry) => (
@@ -1961,10 +2852,16 @@ function completionResultFromState(state, completionRecord) {
 
 function verificationResultFromState(state, workItemId, completionRecord, evidence) {
   return {
-    task: requireEntity(state.workItems, workItemId, 'work item'),
+    task: taskWithCurrentDecision(state, workItemId),
     completionRecord: completionRecord ?? null,
     evidence
   };
+}
+
+function taskWithCurrentDecision(state, workItemId) {
+  const task = requireEntity(state.workItems, workItemId, 'work item');
+  const decision = deriveAutonomousBoard(state).decisions.find((entry) => entry.taskId === workItemId);
+  return decorateTaskWithDecision(task, decision);
 }
 
 function normalizeCompletionEvidence(value) {
@@ -2057,6 +2954,125 @@ function normalizeRequiredText(value, name, maxLength) {
 function normalizeOptionalText(value, name, maxLength) {
   if (value === undefined || value === null || value === '') return null;
   return normalizeRequiredText(value, name, maxLength);
+}
+
+function normalizeOptionalSchedulingStatus(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (![WORK_ITEM_STATUS.PLANNED, WORK_ITEM_STATUS.DEFERRED].includes(value)) {
+    throw new DomainError('status can only be PLANNED or DEFERRED when editing an unstarted task', 'INVALID_INPUT');
+  }
+  return value;
+}
+
+function normalizeClaimMode(value = 'EXECUTION') {
+  const mode = normalizeRequiredText(value, 'mode', 20).toUpperCase();
+  if (!['EXECUTION', 'REVIEW'].includes(mode)) {
+    throw new DomainError('mode must be EXECUTION or REVIEW', 'INVALID_INPUT');
+  }
+  return mode;
+}
+
+function normalizeOptionalEnumList(value, name, allowed) {
+  if (value === undefined || value === null) return [];
+  const entries = normalizeStringList(value, name, 20);
+  for (const entry of entries) {
+    if (!allowed.includes(entry)) {
+      throw new DomainError(`${name} entries must be one of: ${allowed.join(', ')}`, 'INVALID_INPUT');
+    }
+  }
+  return [...new Set(entries)];
+}
+
+function normalizeOptionalTextList(value, name) {
+  if (value === undefined || value === null) return [];
+  return [...new Set(normalizeStringList(value, name, 100))];
+}
+
+function normalizeLeaseExtensionMinutes(value = 30) {
+  const minutes = Number(value);
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_CLAIM_LEASE_MINUTES) {
+    throw new DomainError(`extensionMinutes must be an integer between 1 and ${MAX_CLAIM_LEASE_MINUTES}`, 'INVALID_INPUT');
+  }
+  return minutes;
+}
+
+function createClaimLease(task, { agentId, modelRef, claimedAt, estimateMinutes: decisionEstimateMinutes }) {
+  const estimateMinutes = Math.max(
+    1,
+    Number(decisionEstimateMinutes) || Number(task.recommendation?.estimateMinutes) || 1
+  );
+  const leaseMinutes = Math.min(
+    MAX_CLAIM_LEASE_MINUTES,
+    Math.max(MIN_CLAIM_LEASE_MINUTES, Math.ceil(estimateMinutes * 2))
+  );
+  return {
+    runId: createId('run'),
+    agentId,
+    modelRef,
+    claimedAt,
+    leaseExpiresAt: new Date(Date.parse(claimedAt) + leaseMinutes * 60_000).toISOString()
+  };
+}
+
+function claimLeaseFromRun(run) {
+  return {
+    runId: run.id,
+    agentId: run.agentId,
+    modelRef: run.modelRef,
+    claimedAt: run.claimedAt,
+    leaseExpiresAt: run.leaseExpiresAt
+  };
+}
+
+function claimResultFromState(state, run) {
+  const task = requireEntity(state.workItems, run.workItemId, 'work item');
+  return {
+    task,
+    run,
+    lease: claimLeaseFromRun(run),
+    decision: run.claimDecision ?? task.decision ?? null,
+    dispatch: deriveAutonomousBoard(state).summary
+  };
+}
+
+function latestCompletionRecord(state, workItemId) {
+  return state.completionRecords
+    .filter((record) => (record.taskId ?? record.workItemId) === workItemId)
+    .sort((left, right) => String(left.completedAt ?? left.submittedAt ?? '').localeCompare(
+      String(right.completedAt ?? right.submittedAt ?? '')
+    ))
+    .at(-1) ?? null;
+}
+
+function releaseExpiredClaimLeases(state, at, context) {
+  const atMs = Date.parse(at);
+  for (const run of state.runs) {
+    if (run.status !== RUN_STATUS.RUNNING || !run.leaseExpiresAt || Date.parse(run.leaseExpiresAt) > atMs) continue;
+    if (![RUN_KIND.AGENT, RUN_KIND.AGENT_REVIEW].includes(run.kind) || !run.claimedAt) continue;
+    const task = state.workItems.find((entry) => entry.id === run.workItemId);
+    if (!task) continue;
+    if (run.kind === RUN_KIND.AGENT && task.currentRunId === run.id) {
+      task.status = WORK_ITEM_STATUS.READY;
+      task.currentRunId = null;
+      task.updatedAt = at;
+    } else if (run.kind === RUN_KIND.AGENT_REVIEW && task.reviewRunId === run.id) {
+      task.reviewRunId = null;
+      task.reviewLease = null;
+      task.updatedAt = at;
+    } else {
+      continue;
+    }
+    run.status = RUN_STATUS.CANCELLED;
+    run.finishedAt = at;
+    run.updatedAt = at;
+    run.error = null;
+    run.releaseReason = 'LEASE_EXPIRED';
+    state.events.push(createRunEvent(state, run, 'run.lease_expired', 'Agent claim lease expired and task returned to dispatch', auditMetadata(context, {
+      agentId: run.agentId,
+      leaseExpiresAt: run.leaseExpiresAt,
+      returnedStatus: task.status
+    })));
+  }
 }
 
 function normalizeScanSeverity(value = 'medium') {

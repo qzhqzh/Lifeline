@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/server';
@@ -15,15 +14,19 @@ const MAX_PAGE_SIZE = 100;
 
 export const LIFELINE_MCP_INSTRUCTIONS = [
   'Before planning work, call lifeline_list_projects and lifeline_get_schedule.',
+  'lifeline_get_dispatch_board defaults to a compact decision view so large portfolios do not destabilize the MCP session; request detail=full only for explicit diagnostics.',
   'Use each Phase parallelTaskIds as candidate hints; the primary Agent must still check scope and shared files before optionally delegating independent work.',
   'Decompose requested functionality into Project → Phase → Task only; use lifeline_sync_plan with a stable planId and complete objectives, acceptance criteria, and test commands.',
   'Reuse existing phases and tasks when they already cover the work; never create duplicates to make progress look larger.',
   'Repository scanners must call lifeline_propose_scan_finding with a stable fingerprint, then use lifeline_review_scan_proposal before a finding becomes a scheduled Task.',
   'Before editing, reordering, or cancelling tasks, read the current scheduleVersion and pass it as expectedScheduleVersion.',
   'Use dependsOnTaskIds only for hard same-project predecessors and parallelPolicy for execution intent; dependencies must stay acyclic and before the dependent task.',
-  'By default, report a tracked task once at the end with lifeline_submit_completion, including the actual startedAt, completedAt, model, outcome, and result. A prior lifeline_start_task call is optional and remains available when live RUNNING visibility is needed.',
+  'For autonomous execution, call lifeline_get_dispatch_board then lifeline_claim_next_task. Claiming is the only required start handshake and creates a bounded lease; do not send heartbeat or internal reasoning updates.',
+  'By default, report a tracked task once at the end with lifeline_submit_completion, including the actual startedAt, completedAt, model, outcome, and result. lifeline_start_task and one-shot completion without a claim are local stdio compatibility paths only; scoped LAN Agents must claim first.',
+  'When completing the last actionable task and concrete follow-up work is supported by repository evidence, include nextPlan in the same completion report; do not invent filler tasks merely to keep a queue non-empty.',
+  'Pass source.repositoryPath and source.repositoryUrl when the tool accepts source so Lifeline can distinguish real project contact from stale historical data.',
   'lifeline_submit_completion creates a real Agent Run when none exists. COMPLETED moves only to REVIEW; FAILED or BLOCKED ends the Run without creating verified progress.',
-  'Call lifeline_verify_task only after deterministic tests, independent review, or explicit human approval. Never claim VERIFIED from an Agent statement alone; a recurring task returns to RECURRING after each verified cycle.'
+  'Call lifeline_verify_task only after deterministic tests, independent review, or explicit human approval. HUMAN_APPROVAL is restricted to the local project owner; scoped LAN Agents cannot declare it. Never claim VERIFIED from an Agent statement alone; a recurring task returns to RECURRING after each verified cycle.'
 ].join(' ');
 
 const idempotencyKeySchema = z.string().trim().min(1).max(256);
@@ -51,7 +54,23 @@ const taskDraftSchema = z.object({
   riskTier: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
   weight: z.number().positive().max(100).default(1)
 });
+const phasePlanSchema = z.union([
+  z.object({ phaseId: z.string().trim().min(3).max(160) }),
+  z.object({
+    title: z.string().trim().min(1).max(180),
+    goal: z.string().trim().max(2000).default(''),
+    phaseOrder: z.number().int().min(1).max(999).optional()
+  })
+]);
+const nextPlanSchema = z.object({
+  planId: idempotencyKeySchema,
+  phase: phasePlanSchema,
+  tasks: z.array(taskDraftSchema).min(1).max(50),
+  source: sourceSchema
+});
 const taskUpdateSchema = z.object({
+  status: z.enum(['PLANNED', 'DEFERRED']).optional(),
+  reason: z.string().trim().min(1).max(1000).optional(),
   title: z.string().trim().min(3).max(180).optional(),
   objective: z.string().trim().min(8).max(4000).optional(),
   acceptanceCriteria: z.array(z.string().trim().min(1).max(1000)).max(30).optional(),
@@ -87,7 +106,7 @@ const scanProposalDraftSchema = z.object({
   weight: z.number().positive().max(100).default(1)
 });
 
-export function createLifelineMcpServer({ service, actor = 'local-owner', clientName = 'codex' }) {
+export function createLifelineMcpServer({ service, actor = 'local-owner', clientName = 'codex', scopes = null }) {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
@@ -102,13 +121,14 @@ export function createLifelineMcpServer({ service, actor = 'local-owner', client
     }
   );
 
-  registerResources(server, service);
-  registerReadTools(server, service);
-  registerWriteTools(server, service, { actor, clientName });
+  const identity = { actor, clientName, scopes };
+  registerResources(server, service, identity);
+  registerReadTools(server, service, identity);
+  registerWriteTools(server, service, identity);
   return server;
 }
 
-function registerResources(server, service) {
+function registerResources(server, service, identity) {
   server.registerResource(
     'portfolio',
     'lifeline://portfolio',
@@ -118,21 +138,42 @@ function registerResources(server, service) {
       mimeType: 'application/json',
       cacheHint: { ttlMs: 1_000, cacheScope: 'private' }
     },
-    async (uri) => resourceResult(uri, await service.dashboard())
+    async (uri) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return resourceResult(uri, await service.dashboard());
+    }
+  );
+
+  server.registerResource(
+    'dispatch-board',
+    'lifeline://portfolio/dispatch',
+    {
+      title: 'Lifeline Autonomous Dispatch Board',
+      description: 'Derived project health, NOW/NEXT/RESERVE/BACKLOG batches and capacity.',
+      mimeType: 'application/json',
+      cacheHint: { ttlMs: 500, cacheScope: 'private' }
+    },
+    async (uri) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return resourceResult(uri, compactDispatchBoard(await service.getDispatchBoard()));
+    }
   );
 
   server.registerResource(
     'project',
     new ResourceTemplate('lifeline://projects/{projectId}', {
-      list: async () => ({
-        resources: (await service.listProjects()).map((project) => ({
-          uri: `lifeline://projects/${encodeURIComponent(project.id)}`,
-          name: project.name,
-          title: project.headline ?? project.name,
-          description: project.description,
-          mimeType: 'application/json'
-        }))
-      })
+      list: async () => {
+        requireAgentScope(identity, 'portfolio:read');
+        return {
+          resources: (await service.listProjects()).map((project) => ({
+            uri: `lifeline://projects/${encodeURIComponent(project.id)}`,
+            name: project.name,
+            title: project.headline ?? project.name,
+            description: project.description,
+            mimeType: 'application/json'
+          }))
+        };
+      }
     }),
     {
       title: 'Lifeline Project',
@@ -140,7 +181,10 @@ function registerResources(server, service) {
       mimeType: 'application/json',
       cacheHint: { ttlMs: 1_000, cacheScope: 'private' }
     },
-    async (uri, variables) => resourceResult(uri, await service.getProject(singleVariable(variables.projectId)))
+    async (uri, variables) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return resourceResult(uri, await service.getProject(singleVariable(variables.projectId)));
+    }
   );
 
   server.registerResource(
@@ -152,7 +196,10 @@ function registerResources(server, service) {
       mimeType: 'application/json',
       cacheHint: { ttlMs: 1_000, cacheScope: 'private' }
     },
-    async (uri, variables) => resourceResult(uri, await service.getSchedule(singleVariable(variables.projectId)))
+    async (uri, variables) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return resourceResult(uri, await service.getSchedule(singleVariable(variables.projectId)));
+    }
   );
 
   server.registerResource(
@@ -164,7 +211,10 @@ function registerResources(server, service) {
       mimeType: 'application/json',
       cacheHint: { ttlMs: 1_000, cacheScope: 'private' }
     },
-    async (uri, variables) => resourceResult(uri, await service.getTaskDetails(singleVariable(variables.taskId)))
+    async (uri, variables) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return resourceResult(uri, await service.getTaskDetails(singleVariable(variables.taskId)));
+    }
   );
 
   server.registerResource(
@@ -176,11 +226,32 @@ function registerResources(server, service) {
       mimeType: 'application/json',
       cacheHint: { ttlMs: 500, cacheScope: 'private' }
     },
-    async (uri, variables) => resourceResult(uri, await service.getRun(singleVariable(variables.runId)))
+    async (uri, variables) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return resourceResult(uri, await service.getRun(singleVariable(variables.runId)));
+    }
   );
 }
 
-function registerReadTools(server, service) {
+function registerReadTools(server, service, identity) {
+  server.registerTool(
+    'lifeline_get_dispatch_board',
+    {
+      title: 'Get autonomous dispatch board',
+      description: 'Read project health, dynamic execution batches, capacity and structured scheduling reasons.',
+      inputSchema: z.object({
+        detail: z.enum(['compact', 'full']).default('compact')
+      }),
+      outputSchema,
+      annotations: readOnlyAnnotations()
+    },
+    async (input) => {
+      requireAgentScope(identity, 'portfolio:read');
+      const board = await service.getDispatchBoard();
+      return toolResult(input.detail === 'full' ? board : compactDispatchBoard(board));
+    }
+  );
+
   server.registerTool(
     'lifeline_list_projects',
     {
@@ -191,6 +262,7 @@ function registerReadTools(server, service) {
       annotations: readOnlyAnnotations()
     },
     async (input) => {
+      requireAgentScope(identity, 'portfolio:read');
       const projects = (await service.listProjects()).map((project) => ({
         id: project.id,
         name: project.name,
@@ -199,7 +271,8 @@ function registerReadTools(server, service) {
         repositoryUrl: project.repositoryUrl,
         strategicValue: project.strategicValue,
         scheduleVersion: Number(project.scheduleVersion ?? 0),
-        updatedAt: project.updatedAt
+        updatedAt: project.updatedAt,
+        reporting: project.reporting ?? null
       }));
       return toolResult(paginate(projects, input));
     }
@@ -214,12 +287,21 @@ function registerReadTools(server, service) {
         projectId: z.string().trim().min(3).max(160),
         status: z.string().trim().min(1).max(80).optional(),
         kind: z.enum(['feature', 'bug', 'scan', 'research', 'ops', 'review']).optional(),
+        source: sourceSchema,
         ...paginationSchema
       }),
       outputSchema,
       annotations: readOnlyAnnotations()
     },
-    async (input) => toolResult(filterSchedule(await service.getSchedule(input.projectId), input))
+    async (input) => {
+      requireAgentScope(identity, 'portfolio:read');
+      await service.recordAgentContact(
+        input.projectId,
+        { source: input.source },
+        contactOptions(identity, 'lifeline_get_schedule', input.source)
+      );
+      return toolResult(filterSchedule(await service.getSchedule(input.projectId), input));
+    }
   );
 
   server.registerTool(
@@ -227,15 +309,111 @@ function registerReadTools(server, service) {
     {
       title: 'Get a Lifeline task',
       description: 'Read a task contract, current Run, completion records, evidence, and audit history.',
-      inputSchema: z.object({ taskId: z.string().trim().min(3).max(160) }),
+      inputSchema: z.object({
+        taskId: z.string().trim().min(3).max(160),
+        source: sourceSchema
+      }),
       outputSchema,
       annotations: readOnlyAnnotations()
     },
-    async ({ taskId }) => toolResult(await service.getTaskDetails(taskId))
+    async ({ taskId, source }) => {
+      requireAgentScope(identity, 'portfolio:read');
+      const details = await service.getTaskDetails(taskId);
+      await service.recordAgentContact(
+        details.project.id,
+        { source },
+        contactOptions(identity, 'lifeline_get_task', source)
+      );
+      return toolResult(details);
+    }
   );
 }
 
 function registerWriteTools(server, service, identity) {
+  server.registerTool(
+    'lifeline_claim_next_task',
+    {
+      title: 'Claim the next autonomous task',
+      description: 'Atomically select one eligible NEXT task, create a real Agent Run and write a bounded claim lease. Use mode REVIEW for an independent reviewer.',
+      inputSchema: z.object({
+        mode: z.enum(['EXECUTION', 'REVIEW']).default('EXECUTION'),
+        agentId: z.string().trim().min(1).max(160),
+        executor: z.string().trim().min(1).max(160).optional(),
+        provider: z.string().trim().min(1).max(160).optional(),
+        modelRef: z.string().trim().min(1).max(240),
+        modelSnapshot: z.record(z.string(), z.unknown()).optional(),
+        reasoningEffort: z.string().trim().min(1).max(80).optional(),
+        capabilities: z.array(z.string().trim().min(1).max(1000)).max(100).optional(),
+        computeClasses: z.array(z.enum(['low', 'medium', 'high'])).max(3).optional(),
+        riskTiers: z.array(z.enum(['low', 'medium', 'high', 'critical'])).max(4).optional(),
+        projectIds: z.array(z.string().trim().min(3).max(160)).max(100).optional(),
+        idempotencyKey: idempotencyKeySchema,
+        source: sourceSchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'task:claim');
+      requireAgentIdentity(identity, input.agentId);
+      return toolResult(await service.claimNextTask(
+        input,
+        mutationOptions(identity, 'lifeline_claim_next_task', input)
+      ));
+    }
+  );
+
+  server.registerTool(
+    'lifeline_extend_task_lease',
+    {
+      title: 'Extend an active task claim lease',
+      description: 'Extend a still-active Agent claim without adding heartbeat or progress events; the total lease cannot exceed eight hours.',
+      inputSchema: z.object({
+        runId: z.string().trim().min(3).max(160),
+        agentId: z.string().trim().min(1).max(160),
+        extensionMinutes: z.number().int().min(1).max(480).default(30),
+        idempotencyKey: idempotencyKeySchema,
+        source: sourceSchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'task:claim');
+      requireAgentIdentity(identity, input.agentId);
+      return toolResult(await service.extendTaskLease(
+        input.runId,
+        input,
+        mutationOptions(identity, 'lifeline_extend_task_lease', input)
+      ));
+    }
+  );
+
+  server.registerTool(
+    'lifeline_restore_task',
+    {
+      title: 'Restore a cancelled task',
+      description: 'Return one cancelled task to PLANNED while preserving its cancellation and restoration audit history.',
+      inputSchema: z.object({
+        taskId: z.string().trim().min(3).max(160),
+        reason: z.string().trim().min(1).max(1000),
+        expectedScheduleVersion: z.number().int().nonnegative(),
+        idempotencyKey: idempotencyKeySchema,
+        source: sourceSchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'schedule:write');
+      return toolResult(await service.restoreWorkItem(
+        input.taskId,
+        input,
+        mutationOptions(identity, 'lifeline_restore_task', input)
+      ));
+    }
+  );
+
   server.registerTool(
     'lifeline_create_project',
     {
@@ -253,7 +431,10 @@ function registerWriteTools(server, service, identity) {
       outputSchema,
       annotations: writeAnnotations(true)
     },
-    async (input) => toolResult(await service.createProject(input, mutationOptions(identity, 'lifeline_create_project', input)))
+    async (input) => {
+      requireAgentScope(identity, 'schedule:write');
+      return toolResult(await service.createProject(input, mutationOptions(identity, 'lifeline_create_project', input)));
+    }
   );
 
   server.registerTool(
@@ -328,7 +509,10 @@ function registerWriteTools(server, service, identity) {
       outputSchema,
       annotations: readOnlyAnnotations()
     },
-    async (input) => toolResult(paginate(await service.listScanProposals(input.projectId, input.status), input))
+    async (input) => {
+      requireAgentScope(identity, 'portfolio:read');
+      return toolResult(paginate(await service.listScanProposals(input.projectId, input.status), input));
+    }
   );
 
   server.registerTool(
@@ -378,7 +562,7 @@ function registerWriteTools(server, service, identity) {
     'lifeline_update_task',
     {
       title: 'Update a planned task',
-      description: 'Edit an unfinished task contract or move it to another Phase using optimistic schedule version checks; Issue metadata may also be linked to locked history without changing its status.',
+      description: 'Edit an unfinished task contract, move it to another Phase, or switch PLANNED/DEFERRED with an audit reason; Issue metadata may also be linked to locked history without changing its status.',
       inputSchema: taskUpdateSchema.extend({
         taskId: z.string().trim().min(3).max(160),
         phaseId: z.string().trim().min(3).max(160).optional(),
@@ -405,6 +589,7 @@ function registerWriteTools(server, service, identity) {
         projectId: z.string().trim().min(3).max(160),
         phaseId: z.string().trim().min(3).max(160),
         orderedTaskIds: z.array(z.string().trim().min(3).max(160)).max(1000),
+        reason: z.string().trim().min(1).max(1000).optional(),
         expectedScheduleVersion: z.number().int().nonnegative(),
         idempotencyKey: idempotencyKeySchema,
         source: sourceSchema
@@ -449,51 +634,24 @@ function registerWriteTools(server, service, identity) {
       inputSchema: z.object({
         projectId: z.string().trim().min(3).max(160),
         planId: idempotencyKeySchema,
-        phase: z.union([
-          z.object({ phaseId: z.string().trim().min(3).max(160) }),
-          z.object({
-            title: z.string().trim().min(1).max(180),
-            goal: z.string().trim().max(2000).default(''),
-            phaseOrder: z.number().int().min(1).max(999).optional()
-          })
-        ]),
+        phase: phasePlanSchema,
         tasks: z.array(taskDraftSchema).min(1).max(50),
         source: sourceSchema
       }),
       outputSchema,
       annotations: writeAnnotations(true)
     },
-    async (input) => {
-      const source = { ...(input.source ?? {}), kind: 'codex-plan', planId: input.planId };
-      const phase = 'phaseId' in input.phase
-        ? (await service.listPhases(input.projectId)).find((entry) => entry.id === input.phase.phaseId)
-        : await service.createPhase(
-          { projectId: input.projectId, ...input.phase, source },
-          mutationOptions(identity, 'lifeline_sync_plan', {
-            idempotencyKey: planScopedKey(input.planId, 'phase'),
-            source
-          })
-        );
-      if (!phase) throw new Error(`Phase not found in project: ${input.phase.phaseId}`);
-
-      const tasks = [];
-      for (const task of input.tasks) {
-        const taskKey = planScopedKey(input.planId, `task:${shortHash(`${task.taskOrder}:${task.title}`)}`);
-        tasks.push(await createTaskFromMcp(
-          service,
-          { ...task, projectId: input.projectId, phaseId: phase.id, idempotencyKey: taskKey, source },
-          mutationOptions(identity, 'lifeline_sync_plan', { idempotencyKey: taskKey, source })
-        ));
-      }
-      return toolResult({ projectId: input.projectId, phase, tasks, createdOrReused: tasks.length });
-    }
+    async (input) => toolResult(await service.syncPlan(
+      input,
+      mutationOptions(identity, 'lifeline_sync_plan', input)
+    ))
   );
 
   server.registerTool(
     'lifeline_start_task',
     {
       title: 'Start an Agent task',
-      description: 'Create a durable Agent Run and move a ready or recurring execution contract into RUNNING.',
+      description: 'Local stdio compatibility path that creates a durable Agent Run. Scoped LAN Agents must use lifeline_claim_next_task instead.',
       inputSchema: z.object({
         taskId: z.string().trim().min(3).max(160),
         agentId: z.string().trim().min(1).max(160).optional(),
@@ -509,18 +667,22 @@ function registerWriteTools(server, service, identity) {
       outputSchema,
       annotations: writeAnnotations(true)
     },
-    async (input) => toolResult(await service.startTask(
-      input.taskId,
-      input,
-      mutationOptions(identity, 'lifeline_start_task', input)
-    ))
+    async (input) => {
+      requireAgentIdentity(identity, input.agentId);
+      const agentInput = bindScopedAgentIdentity(identity, input);
+      return toolResult(await service.startTask(
+        input.taskId,
+        agentInput,
+        mutationOptions(identity, 'lifeline_start_task', input)
+      ));
+    }
   );
 
   server.registerTool(
     'lifeline_submit_completion',
     {
       title: 'Submit Agent completion',
-      description: 'Report one real task result. Without a prior Run, include startedAt, completedAt, and modelRef; elapsed time is derived from those timestamps. COMPLETED moves only to REVIEW, while FAILED or BLOCKED leaves the task blocked. This never verifies the task.',
+      description: 'Report one real task result. Scoped LAN Agents must reference their active claimed Run; local stdio callers may use the compatibility one-shot path with startedAt, completedAt, and modelRef. COMPLETED moves only to REVIEW, while FAILED or BLOCKED leaves the task blocked. This never verifies the task.',
       inputSchema: z.object({
         taskId: z.string().trim().min(3).max(160),
         runId: z.string().trim().min(3).max(160).optional(),
@@ -548,27 +710,34 @@ function registerWriteTools(server, service, identity) {
         commitSha: z.string().trim().min(1).max(200).optional(),
         prUrl: z.string().trim().url().max(1000).optional(),
         artifactUris: z.array(z.string().trim().min(1).max(1000)).max(100).optional(),
+        nextPlan: nextPlanSchema.optional(),
         idempotencyKey: idempotencyKeySchema,
         source: sourceSchema
       }),
       outputSchema,
       annotations: writeAnnotations(true)
     },
-    async (input) => toolResult(await service.submitCompletion(
-      input.taskId,
-      input,
-      mutationOptions(identity, 'lifeline_submit_completion', input)
-    ))
+    async (input) => {
+      requireAgentScope(identity, 'completion:write');
+      requireAgentIdentity(identity, input.agentId);
+      const agentInput = bindScopedAgentIdentity(identity, input);
+      return toolResult(await service.submitCompletion(
+        input.taskId,
+        agentInput,
+        mutationOptions(identity, 'lifeline_submit_completion', input)
+      ));
+    }
   );
 
   server.registerTool(
     'lifeline_verify_task',
     {
       title: 'Verify a reviewed task',
-      description: 'Verify REVIEW with deterministic tests, independent review, or explicit human approval; recurring tasks return to RECURRING, others move to VERIFIED.',
+      description: 'Verify REVIEW with deterministic tests, independent review, or explicit local-owner approval; scoped LAN Agents cannot declare HUMAN_APPROVAL. Recurring tasks return to RECURRING, others move to VERIFIED.',
       inputSchema: z.object({
         taskId: z.string().trim().min(3).max(160),
         completionRecordId: z.string().trim().min(3).max(160).optional(),
+        agentId: z.string().trim().min(1).max(160).optional(),
         verificationMethod: z.enum(['DETERMINISTIC_TEST', 'INDEPENDENT_REVIEW', 'HUMAN_APPROVAL']),
         summary: z.string().trim().min(1).max(2000),
         evidenceIds: z.array(z.string().trim().min(1).max(1000)).max(100).optional(),
@@ -578,11 +747,17 @@ function registerWriteTools(server, service, identity) {
       outputSchema,
       annotations: writeAnnotations(true)
     },
-    async (input) => toolResult(await service.verifyTask(
-      input.taskId,
-      input,
-      mutationOptions(identity, 'lifeline_verify_task', input)
-    ))
+    async (input) => {
+      requireAgentScope(identity, 'verification:write');
+      requireHumanVerificationBoundary(identity, input.verificationMethod);
+      requireAgentIdentity(identity, input.agentId);
+      const agentInput = bindScopedAgentIdentity(identity, input);
+      return toolResult(await service.verifyTask(
+        input.taskId,
+        agentInput,
+        mutationOptions(identity, 'lifeline_verify_task', input)
+      ));
+    }
   );
 }
 
@@ -620,6 +795,8 @@ function mcpTaskUpdateInput(input) {
     .map((field) => [field, input[field]]));
   return {
     expectedScheduleVersion: input.expectedScheduleVersion,
+    status: input.status,
+    reason: input.reason,
     phaseId: input.phaseId,
     title: input.title,
     objective: input.objective,
@@ -639,12 +816,15 @@ function mcpTaskUpdateInput(input) {
 }
 
 function mutationOptions(identity, tool, input) {
+  requireAgentScope(identity, requiredScopeForTool(tool));
   const reportedSource = input.source;
   return {
     actor: identity.actor,
     client: identity.clientName,
     tool,
     idempotencyKey: input.idempotencyKey,
+    authoritativeAgentClock: Array.isArray(identity.scopes),
+    requireClaimLease: Array.isArray(identity.scopes),
     source: {
       ...(reportedSource ? { reportedSource } : {}),
       kind: tool === 'lifeline_sync_plan' ? 'codex-plan' : 'codex-mcp',
@@ -653,11 +833,125 @@ function mutationOptions(identity, tool, input) {
   };
 }
 
+function contactOptions(identity, tool, source) {
+  return {
+    actor: identity.actor,
+    client: identity.clientName,
+    tool,
+    source: source ? { reportedSource: source, kind: 'codex-mcp', tool } : { kind: 'codex-mcp', tool }
+  };
+}
+
+function bindScopedAgentIdentity(identity, input) {
+  return Array.isArray(identity.scopes)
+    ? { ...input, agentId: identity.actor }
+    : input;
+}
+
+function requiredScopeForTool(tool) {
+  if (['lifeline_claim_next_task', 'lifeline_extend_task_lease', 'lifeline_start_task'].includes(tool)) return 'task:claim';
+  if (tool === 'lifeline_submit_completion') return 'completion:write';
+  if (tool === 'lifeline_verify_task') return 'verification:write';
+  return 'schedule:write';
+}
+
+function requireAgentScope(identity, scope) {
+  if (!identity?.scopes) return;
+  if (identity.scopes.includes(scope)) return;
+  const error = new Error(`Agent token is missing required scope: ${scope}`);
+  error.code = 'MCP_SCOPE_DENIED';
+  throw error;
+}
+
+function requireAgentIdentity(identity, reportedAgentId) {
+  if (!identity?.scopes || !reportedAgentId || reportedAgentId === identity.actor) return;
+  const error = new Error(`Agent token identity ${identity.actor} cannot act as ${reportedAgentId}`);
+  error.code = 'MCP_AGENT_IDENTITY_MISMATCH';
+  throw error;
+}
+
+function requireHumanVerificationBoundary(identity, verificationMethod) {
+  if (!Array.isArray(identity?.scopes) || verificationMethod !== 'HUMAN_APPROVAL') return;
+  const error = new Error('Scoped Agent tokens cannot declare HUMAN_APPROVAL; use local owner approval or an independent review method');
+  error.code = 'MCP_HUMAN_APPROVAL_REQUIRED';
+  throw error;
+}
+
 function toolResult(result) {
   const payload = { result };
   return {
     content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
     structuredContent: payload
+  };
+}
+
+export function compactDispatchBoard(board) {
+  const laneLimit = { now: 10, next: 20, reserve: 10, backlog: 10 };
+  const lanes = Object.fromEntries(Object.entries(board.lanes ?? {}).map(([name, entries]) => [
+    name,
+    (entries ?? []).slice(0, laneLimit[name] ?? 10).map(compactDecision)
+  ]));
+  return {
+    generatedAt: board.generatedAt,
+    policy: board.policy,
+    summary: board.summary,
+    recommendations: Object.fromEntries(Object.entries(board.recommendations ?? {}).map(([name, decision]) => [
+      name,
+      decision ? compactDecision(decision) : null
+    ])),
+    projects: (board.projects ?? []).map((project) => ({
+      id: project.id,
+      name: project.name,
+      strategicValue: project.strategicValue,
+      health: project.health,
+      computedStatus: project.computedStatus,
+      lastProgressAt: project.lastProgressAt,
+      currentTaskId: project.currentTaskId,
+      latestVerifiedTaskId: project.latestVerifiedTaskId,
+      dispatch: project.dispatch
+    })),
+    lanes,
+    laneCounts: Object.fromEntries(Object.entries(board.lanes ?? {}).map(([name, entries]) => [name, entries.length])),
+    recentChanges: (board.recentChanges ?? []).slice(0, 5).map((change) => ({
+      id: change.id,
+      type: change.type,
+      message: change.message,
+      createdAt: change.createdAt,
+      projectId: change.projectId,
+      taskId: change.taskId,
+      taskTitle: change.taskTitle,
+      reason: change.reason,
+      reversible: change.reversible,
+      reversalAction: change.reversalAction
+    })),
+    efficiency: board.efficiency ? {
+      window: board.efficiency.window,
+      confidence: board.efficiency.confidence,
+      sampleThreshold: board.efficiency.sampleThreshold,
+      summary: board.efficiency.summary,
+      calibrationCount: board.efficiency.calibrations?.length ?? 0,
+      routingCalibrationCount: board.efficiency.routingCalibrations?.length ?? 0
+    } : null
+  };
+}
+
+function compactDecision(decision) {
+  return {
+    taskId: decision.taskId,
+    projectId: decision.projectId,
+    phaseId: decision.phaseId,
+    title: decision.title,
+    effectiveStatus: decision.effectiveStatus ?? decision.status,
+    mode: decision.mode,
+    batch: decision.batch,
+    rank: decision.rank,
+    compute: decision.compute,
+    recommendedAgent: decision.recommendedAgent,
+    recommendedModelRef: decision.recommendedModelRef,
+    estimateMinutes: decision.estimateMinutes,
+    reasonCodes: decision.reasonCodes,
+    policyVersion: decision.policyVersion,
+    leaseExpiresAt: decision.leaseExpiresAt ?? null
   };
 }
 
@@ -719,15 +1013,6 @@ function decodeCursor(cursor) {
   } catch {
     throw new Error('cursor is invalid or expired');
   }
-}
-
-function shortHash(value) {
-  return createHash('sha256').update(value).digest('hex').slice(0, 16);
-}
-
-function planScopedKey(planId, suffix) {
-  const legacyKey = `${planId}:${suffix}`;
-  return legacyKey.length <= 256 ? legacyKey : `plan:${shortHash(planId)}:${suffix}`;
 }
 
 function singleVariable(value) {

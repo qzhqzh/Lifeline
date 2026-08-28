@@ -9,21 +9,32 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "build:logo-3d": "npm --prefix artifacts/img2threejs-lifeline-logo run build:lifeline",
     "dev": "LIFELINE_SEED_DEMO=1 LIFELINE_DEV_RELOAD=1 node --watch --watch-path=src --watch-path=public --watch-path=openapi.json src/server.js",
     "dev:docker": "docker compose -f compose.yaml -f compose.dev.yaml up --build",
     "dev:docker:down": "docker compose -f compose.yaml -f compose.dev.yaml down",
     "merge:lifeline-projects": "node scripts/merge-lifeline-projects.mjs",
     "reconcile:lifeline-schedule": "node scripts/reconcile-lifeline-schedule.mjs",
     "repair:agent-run": "node scripts/repair-agent-run-autocomplete.mjs",
+    "build:test-catalog": "node scripts/build-test-catalog.mjs",
+    "analyze:test-catalog": "node scripts/analyze-test-catalog.mjs",
+    "build:test-map": "npm run build:test-catalog && esbuild public/quality-map.js --bundle --format=esm --minify --sourcemap --outfile=public/quality-map.bundle.js",
+    "install:codex-workflow": "node scripts/install-codex-lifeline-workflow.mjs",
+    "canvas:secret": "node scripts/ensure-wbo-secret.mjs",
     "mcp": "node src/mcp-server.js",
-    "pretest": "node scripts/ensure-test-dependencies.mjs",
+    "agent-token": "node scripts/generate-agent-token.mjs",
     "test": "node --test",
-    "precheck": "node scripts/ensure-test-dependencies.mjs",
-    "check": "node --check src/domain.js && node --check src/store.js && node --check src/executor.js && node --check src/service.js && node --check src/server.js && node --check src/mcp-server.js && node --test"
+    "check": "npm run build:test-map && node --check src/domain.js && node --check src/store.js && node --check src/autonomous-board.js && node --check src/agent-reporting.js && node --check src/agent-auth.js && node --check src/canvas.js && node --check src/quality-map-labels.js && node --check src/quality-map-layout.js && node --check src/test-catalog-analyzer.js && node --check src/test-map-overview-layouts.js && node --check src/test-map-catalog.js && node --check src/test-map.js && node --check src/service.js && node --check src/subscriptions.js && node --check src/server.js && node --check src/mcp-server.js && node --check scripts/generate-agent-token.mjs && node --check scripts/install-codex-lifeline-workflow.mjs && node --check scripts/ensure-wbo-secret.mjs && node --check scripts/build-test-catalog.mjs && node --check scripts/analyze-test-catalog.mjs && node --check public/app.js && node --check public/client-data.js && node --check public/client.js && node --check public/canvas.js && node --check public/quality-map.js && node --check public/subscriptions.js && node --check extension/adapters.js && node --check extension/background.js && node --check extension/content.js && node --check extension/popup.js && node --test"
   },
   "dependencies": {
-    "@modelcontextprotocol/client": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "elkjs": "^0.12.0",
+    "esbuild": "^0.25.9",
+    "graphology": "^0.26.0",
+    "sigma": "^3.0.3"
   }
 }
