@@ -4,11 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { CURRENT_SCHEMA_VERSION } from '../src/domain.js';
-import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore, migrateState } from '../src/store.js';
-
-const silentLogger = { error() {} };
 
 test('schema migration adds the durable scan proposal collection without discarding unknown data', () => {
   const migrated = migrateState({ schemaVersion: 3, projects: [], custom: { keep: true } }).state;
@@ -89,9 +86,7 @@ test('scan findings deduplicate before review and only accepted proposals become
 async function createService(file) {
   const service = new LifelineService({
     store: new JsonStore(file),
-    executor: new MockExecutor({ delayMs: 0 }),
-    localUserId: 'local-owner',
-    logger: silentLogger
+    localUserId: 'local-owner'
   });
   await service.start();
   return service;

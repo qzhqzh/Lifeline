@@ -4,12 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { CURRENT_SCHEMA_VERSION } from '../src/domain.js';
-import { MockExecutor } from '../src/executor.js';
 import { getPortfolioV2Template } from '../src/portfolio-v2-template.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore, migrateState } from '../src/store.js';
-
-const logger = { error() {} };
 
 test('portfolio bootstrap is atomic, idempotent, and restart-safe', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-pv2-'));
@@ -222,8 +219,6 @@ test('schema migration repairs active tasks that have no durable active run', ()
 async function createService(file, localUserId) {
   const service = new LifelineService({
     store: new JsonStore(file),
-    executor: new MockExecutor({ delayMs: 0 }),
-    logger,
     localUserId
   });
   await service.start();

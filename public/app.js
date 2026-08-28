@@ -11,11 +11,12 @@ const state = {
   selectedProjectId: new URLSearchParams(window.location.search).get('project'),
   detailFocusPending: true,
   detailSchedule: null,
-  creationSchedule: null,
   creationMode: 'task',
   creationDraftSnapshot: null,
   editingTaskId: null,
   taskEditorMode: 'edit',
+  taskEditorProjectId: null,
+  taskEditorSchedule: null,
   detailView: readDetailView(),
   draggedTaskId: null,
   dragPlaceholder: null,
@@ -52,14 +53,7 @@ const elements = {
   creationDrawer: document.querySelector('#creationDrawer'),
   closeCreationDrawer: document.querySelector('#closeCreationDrawer'),
   projectForm: document.querySelector('#projectForm'),
-  workItemForm: document.querySelector('#workItemForm'),
-  createPhaseId: document.querySelector('#createPhaseId'),
-  createNewPhaseFields: document.querySelector('#createNewPhaseFields'),
-  createNewPhaseTitle: document.querySelector('#createNewPhaseTitle'),
-  createNewPhaseOrder: document.querySelector('#createNewPhaseOrder'),
-  createPriority: document.querySelector('#createPriority'),
-  createDependencies: document.querySelector('#createDependencies'),
-  createParallelPolicy: document.querySelector('#createParallelPolicy'),
+  taskLauncherForm: document.querySelector('#taskLauncherForm'),
   strategicValue: document.querySelector('#strategicValue'),
   strategicValueOutput: document.querySelector('#strategicValueOutput'),
   toast: document.querySelector('#toast'),
@@ -68,6 +62,7 @@ const elements = {
   boardDescription: document.querySelector('#portfolioDescription'),
   backToPortfolio: document.querySelector('#backToPortfolio'),
   detailControls: document.querySelector('#detailControls'),
+  clientViewLink: document.querySelector('#clientViewLink'),
   addDetailTask: document.querySelector('#addDetailTask'),
   taskEditor: document.querySelector('#taskEditor'),
   taskEditorForm: document.querySelector('#taskEditorForm'),
@@ -120,12 +115,7 @@ elements.creationDrawer.addEventListener('click', (event) => {
   if (button) setCreationMode(button.dataset.createMode);
 });
 elements.projectForm.addEventListener('submit', createProject);
-elements.workItemForm.addEventListener('submit', createWorkItem);
-elements.projectId.addEventListener('change', loadCreationSchedule);
-elements.createPhaseId.addEventListener('change', () => {
-  syncCreateNewPhaseFields();
-  populateCreationDependencyOptions();
-});
+elements.taskLauncherForm.addEventListener('submit', openGlobalTaskCreator);
 elements.backToPortfolio.addEventListener('click', () => closeProjectDetail());
 elements.addDetailTask.addEventListener('click', openTaskCreator);
 elements.detailControls.addEventListener('click', (event) => {
@@ -244,15 +234,14 @@ async function refresh() {
   state.refreshInFlight = true;
   elements.refresh.disabled = true;
   try {
-    const [dashboard, projects, workItems, trajectory] = await Promise.all([
+    const [dashboard, workItems, trajectory] = await Promise.all([
       api('/api/dashboard'),
-      api('/api/projects'),
       api('/api/work-items'),
       api(`/api/trajectory?window=${encodeURIComponent(state.trajectoryWindow)}`)
     ]);
-    state.projects = projects.items;
     state.workItems = workItems.items.map(hydrateWorkItem);
     state.dashboard = hydrateDashboard(dashboard, state.workItems);
+    state.projects = state.dashboard.projects;
     state.dispatch = dashboard.dispatch ?? null;
     state.trajectory = trajectory;
     state.bootstrap = dashboard.bootstrap?.portfolioV2 ?? dashboard.bootstrap ?? null;
@@ -323,7 +312,7 @@ async function openCreationDrawer() {
   await setCreationMode(state.projects.length > 0 ? 'task' : 'project');
   elements.creationDrawer.showModal();
   state.creationDraftSnapshot = creationDraftSnapshot();
-  const firstField = state.creationMode === 'task' ? document.querySelector('#title') : document.querySelector('#projectName');
+  const firstField = state.creationMode === 'task' ? elements.projectId : document.querySelector('#projectName');
   firstField?.focus();
 }
 
@@ -331,14 +320,12 @@ function closeCreationDrawer(force = false) {
   if (!force && creationDraftChanged()) {
     if (!window.confirm('关闭后会丢失尚未提交的内容，仍要关闭吗？')) return;
   }
-  elements.createNewPhaseTitle.required = false;
-  elements.createNewPhaseOrder.required = false;
   state.creationDraftSnapshot = null;
   if (elements.creationDrawer.open) elements.creationDrawer.close();
 }
 
 function creationDraftSnapshot() {
-  return JSON.stringify([...elements.creationDrawer.querySelectorAll('input, textarea, select')].map((field) => [
+  return JSON.stringify([...elements.projectForm.querySelectorAll('input, textarea, select')].map((field) => [
     field.id,
     field.type === 'checkbox' || field.type === 'radio' ? field.checked : field.value
   ]));
@@ -348,7 +335,7 @@ function creationDraftChanged() {
   return state.creationDraftSnapshot !== null && creationDraftSnapshot() !== state.creationDraftSnapshot;
 }
 
-async function setCreationMode(mode) {
+function setCreationMode(mode) {
   state.creationMode = mode === 'project' ? 'project' : 'task';
   elements.creationDrawer.querySelectorAll('[data-create-mode]').forEach((button) => {
     const active = button.dataset.createMode === state.creationMode;
@@ -358,51 +345,22 @@ async function setCreationMode(mode) {
   elements.creationDrawer.querySelectorAll('[data-create-pane]').forEach((pane) => {
     pane.hidden = pane.dataset.createPane !== state.creationMode;
   });
-  if (state.creationMode === 'task') await loadCreationSchedule();
-  else syncCreateNewPhaseFields();
 }
 
-async function loadCreationSchedule() {
+async function openGlobalTaskCreator(event) {
+  event.preventDefault();
   const projectId = elements.projectId.value;
   if (!projectId) {
-    state.creationSchedule = null;
-    elements.createPhaseId.innerHTML = '<option value="">请先创建项目</option>';
-    elements.createPhaseId.disabled = true;
-    populateDependencyOptions(elements.createDependencies, null);
-    syncCreateNewPhaseFields();
+    notify('请先添加项目', true);
     return;
   }
   try {
     const schedule = hydrateSchedule(await api(`/api/projects/${encodeURIComponent(projectId)}/schedule`));
-    if (elements.projectId.value !== projectId) return;
-    state.creationSchedule = schedule;
-    elements.createPhaseId.disabled = false;
-    elements.createPhaseId.innerHTML = [
-      ...schedule.phases.map((phase) => `<option value="${escapeHtml(phase.id)}">S${escapeHtml(phase.phaseOrder)} · ${escapeHtml(phase.title)}</option>`),
-      '<option value="__new__">＋ 新建阶段</option>'
-    ].join('');
-    if (schedule.phases.length === 0) elements.createPhaseId.value = '__new__';
-    elements.createNewPhaseOrder.value = String(
-      Math.max(0, ...schedule.phases.map((phase) => Number(phase.phaseOrder) || 0)) + 1
-    );
-    populateCreationDependencyOptions();
-    syncCreateNewPhaseFields();
+    closeCreationDrawer(true);
+    openTaskCreatorFor(projectId, schedule);
   } catch (error) {
     notify(error.message, true);
   }
-}
-
-function syncCreateNewPhaseFields() {
-  const creatingPhase = state.creationMode === 'task' && elements.createPhaseId.value === '__new__';
-  elements.createNewPhaseFields.hidden = !creatingPhase;
-  elements.createNewPhaseTitle.required = creatingPhase;
-  elements.createNewPhaseOrder.required = creatingPhase;
-}
-
-function populateCreationDependencyOptions() {
-  populateDependencyOptions(elements.createDependencies, state.creationSchedule, {
-    selectedIds: selectedOptionValues(elements.createDependencies)
-  });
 }
 
 async function createProject(event) {
@@ -426,68 +384,6 @@ async function createProject(event) {
   }
 }
 
-async function createWorkItem(event) {
-  event.preventDefault();
-  if (!elements.projectId.value) {
-    notify('请先添加项目', true);
-    return;
-  }
-  try {
-    const kind = document.querySelector('#kind').value;
-    let phase = state.creationSchedule?.phases.find((entry) => entry.id === elements.createPhaseId.value);
-    if (elements.createPhaseId.value === '__new__') {
-      const phaseOrder = Number(elements.createNewPhaseOrder.value);
-      phase = await api('/api/phases', {
-        method: 'POST',
-        headers: { 'Idempotency-Key': mutationKey('phase-create') },
-        body: JSON.stringify({
-          projectId: elements.projectId.value,
-          title: elements.createNewPhaseTitle.value,
-          rank: phaseOrder * 1024
-        })
-      });
-    }
-    if (!phase) throw new Error('请选择有效阶段');
-    const taskOrder = Math.max(0, ...(phase.tasks ?? []).map((item) => Number(item.planning?.taskOrder) || 0)) + 1;
-    await api('/api/work-items', {
-      method: 'POST',
-      headers: { 'Idempotency-Key': mutationKey('task-create') },
-      body: JSON.stringify({
-        projectId: elements.projectId.value,
-        phaseId: phase.id,
-        title: document.querySelector('#title').value,
-        objective: document.querySelector('#objective').value,
-        issue: document.querySelector('#issue').value.trim() || null,
-        starred: document.querySelector('#starred').checked,
-        scheduledFor: document.querySelector('#scheduledFor').value || null,
-        dependsOnTaskIds: selectedOptionValues(elements.createDependencies),
-        parallelPolicy: elements.createParallelPolicy.value,
-        acceptanceCriteria: lines(document.querySelector('#criteria').value),
-        testCommands: lines(document.querySelector('#commands').value),
-        riskTier: kind === 'ops' ? 'medium' : 'low',
-        weight: 1,
-        resourceProfile: { cpu: 1, memoryGb: 1, apiBudgetUsd: 0, humanReviewMinutes: 2 },
-        planning: {
-          phaseId: phase.id,
-          phase: phase.title,
-          phaseOrder: phase.phaseOrder,
-          taskOrder,
-          kind,
-          priority: elements.createPriority.value,
-          commitment: 'TENTATIVE'
-        }
-      })
-    });
-    elements.workItemForm.reset();
-    elements.createParallelPolicy.value = 'AUTO';
-    populateDependencyOptions(elements.createDependencies, state.creationSchedule);
-    closeCreationDrawer(true);
-    notify('人工任务已加入排期，推荐执行配置已生成');
-    await refresh();
-  } catch (error) {
-    notify(error.message, true);
-  }
-}
 
 async function markReady(workItemId) {
   try {
@@ -735,6 +631,9 @@ function renderBoardToolbar() {
   elements.backToPortfolio.hidden = !inDetail;
   elements.boardFilters.hidden = inDetail;
   elements.detailControls.hidden = !inDetail;
+  elements.clientViewLink.href = inDetail
+    ? `/client.html?project=${encodeURIComponent(project.id)}`
+    : '/client.html';
   elements.detailControls.querySelectorAll('[data-detail-view]').forEach((button) => {
     const active = button.dataset.detailView === state.detailView;
     button.classList.toggle('active', active);
@@ -1716,6 +1615,8 @@ function openTaskEditor(taskId) {
   }
   state.taskEditorMode = 'edit';
   state.editingTaskId = taskId;
+  state.taskEditorProjectId = state.selectedProjectId;
+  state.taskEditorSchedule = state.detailSchedule;
   setTaskEditorCopy({
     context: '调整执行契约',
     title: '编辑排期任务',
@@ -1746,8 +1647,14 @@ function openTaskEditor(taskId) {
 
 function openTaskCreator() {
   if (!state.detailSchedule || !state.selectedProjectId) return;
+  openTaskCreatorFor(state.selectedProjectId, state.detailSchedule);
+}
+
+function openTaskCreatorFor(projectId, schedule) {
   state.taskEditorMode = 'create';
   state.editingTaskId = null;
+  state.taskEditorProjectId = projectId;
+  state.taskEditorSchedule = schedule;
   setTaskEditorCopy({
     context: '人工录入排期',
     title: '新增项目任务',
@@ -1764,10 +1671,10 @@ function openTaskCreator() {
   elements.editStarred.checked = false;
   elements.editScheduledFor.value = '';
   elements.editParallelPolicy.value = 'AUTO';
-  populateDependencyOptions(elements.editDependencies, state.detailSchedule);
+  populateDependencyOptions(elements.editDependencies, schedule);
   elements.editCriteria.value = '';
   elements.editCommands.value = '';
-  const nextPhaseOrder = Math.max(0, ...state.detailSchedule.phases.map((phase) => Number(phase.phaseOrder) || 0)) + 1;
+  const nextPhaseOrder = Math.max(0, ...schedule.phases.map((phase) => Number(phase.phaseOrder) || 0)) + 1;
   elements.editNewPhaseOrder.value = String(nextPhaseOrder);
   elements.editNewPhaseTitle.value = '';
   syncNewPhaseFields();
@@ -1776,11 +1683,11 @@ function openTaskCreator() {
 }
 
 function populatePhaseOptions(includeNewPhase) {
-  const phaseOptions = state.detailSchedule.phases
+  const phaseOptions = (state.taskEditorSchedule?.phases ?? [])
     .map((phase) => `<option value="${escapeHtml(phase.id)}">S${escapeHtml(phase.phaseOrder)} · ${escapeHtml(phase.title)}</option>`)
     .join('');
   elements.editPhaseId.innerHTML = `${phaseOptions}${includeNewPhase ? '<option value="__new__">＋ 新建阶段</option>' : ''}`;
-  if (includeNewPhase && state.detailSchedule.phases.length === 0) elements.editPhaseId.value = '__new__';
+  if (includeNewPhase && state.taskEditorSchedule?.phases.length === 0) elements.editPhaseId.value = '__new__';
 }
 
 function populateDependencyOptions(select, schedule, { excludeTaskId = null, selectedIds = [] } = {}) {
@@ -1824,10 +1731,10 @@ function syncNewPhaseFields() {
     elements.phaseMoveHint.textContent = '保存后会创建新阶段，并把新任务放到该阶段末尾。';
     return;
   }
-  const targetPhase = state.detailSchedule?.phases.find((phase) => phase.id === elements.editPhaseId.value);
-  const currentTask = detailTaskFor(state.editingTaskId);
+  const targetPhase = state.taskEditorSchedule?.phases.find((phase) => phase.id === elements.editPhaseId.value);
+  const currentTask = taskEditorTaskFor(state.editingTaskId);
   const dependencyIds = selectedOptionValues(elements.editDependencies);
-  const dependencies = dependencyIds.map(detailTaskFor).filter(Boolean);
+  const dependencies = dependencyIds.map(taskEditorTaskFor).filter(Boolean);
   const latestDependencyPhase = Math.max(0, ...dependencies.map((task) => Number(task.planning.phaseOrder) || 0));
   if (state.taskEditorMode === 'edit' && targetPhase && currentTask && targetPhase.id !== currentTask.phaseId) {
     elements.phaseMoveHint.textContent = Number(targetPhase.phaseOrder) < latestDependencyPhase
@@ -1842,8 +1749,18 @@ function syncNewPhaseFields() {
   }
 }
 
+function taskEditorTaskFor(taskId) {
+  if (!state.taskEditorSchedule || !taskId) return null;
+  return [
+    ...state.taskEditorSchedule.phases.flatMap((phase) => phase.tasks),
+    ...(state.taskEditorSchedule.unscheduledTasks ?? [])
+  ].find((task) => task.id === taskId) ?? null;
+}
+
 function closeTaskEditor() {
   state.editingTaskId = null;
+  state.taskEditorProjectId = null;
+  state.taskEditorSchedule = null;
   elements.editNewPhaseTitle.required = false;
   elements.editNewPhaseOrder.required = false;
   if (elements.taskEditor.open) elements.taskEditor.close();
@@ -1923,16 +1840,16 @@ async function restoreTaskPhase(taskId, phaseId) {
 }
 
 async function createDetailTask() {
-  if (!state.detailSchedule || !state.selectedProjectId) return;
+  if (!state.taskEditorSchedule || !state.taskEditorProjectId) return;
   try {
-    let phase = state.detailSchedule.phases.find((entry) => entry.id === elements.editPhaseId.value);
+    let phase = state.taskEditorSchedule.phases.find((entry) => entry.id === elements.editPhaseId.value);
     if (elements.editPhaseId.value === '__new__') {
       const phaseOrder = Number(elements.editNewPhaseOrder.value);
       phase = await api('/api/phases', {
         method: 'POST',
         headers: { 'Idempotency-Key': mutationKey('phase-create') },
         body: JSON.stringify({
-          projectId: state.selectedProjectId,
+          projectId: state.taskEditorProjectId,
           title: elements.editNewPhaseTitle.value,
           rank: phaseOrder * 1024
         })
@@ -1945,7 +1862,7 @@ async function createDetailTask() {
       method: 'POST',
       headers: { 'Idempotency-Key': mutationKey('task-create') },
       body: JSON.stringify({
-        projectId: state.selectedProjectId,
+        projectId: state.taskEditorProjectId,
         phaseId: phase.id,
         title: elements.editTitle.value,
         objective: elements.editObjective.value,
@@ -2081,63 +1998,11 @@ function syncScheduleIntoWorkItems() {
 }
 
 function hydrateWorkItem(item) {
-  const kind = item.planning?.kind ?? inferKind(item);
-  const defaults = recommendationDefaults(kind, item.riskTier);
-  const recommendation = item.recommendation?.policyVersion === 'risk-tier-v1'
-    ? item.recommendation
-    : { estimateMinutes: item.recommendation?.estimateMinutes };
   return {
     ...item,
     storedStatus: item.storedStatus ?? item.status,
-    status: item.effectiveStatus ?? item.status,
-    starred: item.starred === true,
-    scheduledFor: item.scheduledFor ?? null,
-    dependsOnTaskIds: Array.isArray(item.dependsOnTaskIds) ? item.dependsOnTaskIds : [],
-    parallelPolicy: ['AUTO', 'SEQUENTIAL', 'PARALLEL_ALLOWED'].includes(item.parallelPolicy)
-      ? item.parallelPolicy
-      : 'AUTO',
-    planning: {
-      phase: item.planning?.phase ?? '待排期',
-      phaseOrder: positiveNumber(item.planning?.phaseOrder, 99),
-      taskOrder: positiveNumber(item.planning?.taskOrder, 99),
-      kind,
-      priority: item.planning?.priority ?? (kind === 'bug' ? 'P0' : kind === 'scan' ? 'P2' : 'P1'),
-      commitment: item.planning?.commitment ?? 'TENTATIVE'
-    },
-    recommendation: {
-      ...defaults,
-      ...recommendation,
-      estimateMinutes: positiveNumber(recommendation.estimateMinutes, defaults.estimateMinutes)
-    }
+    status: item.effectiveStatus ?? item.status
   };
-}
-
-function recommendationDefaults(kind, riskTier = 'medium') {
-  const base = {
-    feature: { capability: 'agentic-coding', estimateMinutes: 90, approach: '先确认范围和依赖，再完成一个可独立验收的纵向切片。' },
-    bug: { capability: 'code-repair', estimateMinutes: 45, approach: '先复现并补回归测试，再做最小修复。' },
-    scan: { capability: 'repository-scan', estimateMinutes: 20, approach: '先跑确定性检查，只把异常和高价值区域交给模型分析。' },
-    research: { capability: 'research-synthesis', estimateMinutes: 40, approach: '先快速铺开证据，再用强推理收敛分歧和方案。' },
-    ops: { capability: 'safe-automation', estimateMinutes: 30, approach: '优先使用确定性脚本，高风险动作保留人工审批。' },
-    review: { capability: 'independent-review', estimateMinutes: 35, approach: '与实现上下文隔离审查，先报告可验证问题再决定修改。' }
-  }[kind] ?? recommendationDefaults('feature', riskTier);
-  const risk = ['critical', 'high', 'medium', 'low'].includes(riskTier) ? riskTier : 'medium';
-  const validationProfile = ['critical', 'high'].includes(risk) ? 'V3' : risk === 'medium' ? 'V2' : ['scan', 'ops'].includes(kind) ? 'V0' : 'V1';
-  if (kind === 'ops') return { ...base, executor: 'shell', reasoningEffort: 'medium', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (kind === 'review') return { ...base, executor: 'codex', reasoningEffort: 'high', compute: risk === 'low' ? 'medium' : 'high', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (['critical', 'high'].includes(risk)) return { ...base, executor: 'codex', reasoningEffort: 'high', compute: 'high', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (kind === 'scan') return { ...base, executor: 'luna_worker', reasoningEffort: 'low', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (risk === 'low') return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'low', validationProfile, policyVersion: 'risk-tier-v1' };
-  if (kind === 'bug') return { ...base, executor: 'luna_worker', reasoningEffort: 'medium', compute: 'medium', validationProfile, policyVersion: 'risk-tier-v1' };
-  return { ...base, executor: 'codex', reasoningEffort: 'medium', compute: 'medium', validationProfile, policyVersion: 'risk-tier-v1' };
-}
-
-function inferKind(item) {
-  const text = `${item.title ?? ''} ${item.objective ?? ''}`.toLowerCase();
-  if (text.includes('bug') || text.includes('修复')) return 'bug';
-  if (text.includes('scan') || text.includes('扫描')) return 'scan';
-  if (text.includes('review') || text.includes('审查')) return 'review';
-  return 'feature';
 }
 
 function positiveNumber(value, fallback) {

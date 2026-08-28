@@ -10,7 +10,9 @@ test('Manifest V3 collector has narrow permissions and never requests cookies or
   assert.ok(!manifest.permissions.includes('cookies'));
   assert.ok(!manifest.permissions.includes('webRequest'));
   assert.ok(manifest.host_permissions.includes('https://xyq.jianying.com/*'));
-  assert.ok(manifest.host_permissions.includes('http://192.168.124.2/*'));
+  assert.ok(manifest.host_permissions.includes('http://127.0.0.1/*'));
+  assert.ok(!manifest.host_permissions.some((pattern) => /^http:\/\/192\.168\./.test(pattern)));
+  assert.deepEqual(manifest.optional_host_permissions, ['http://*/*']);
   assert.ok(manifest.content_scripts[0].matches.every((pattern) => !pattern.endsWith('/*')));
 });
 
@@ -26,6 +28,8 @@ test('collector only runs on open pages and resamples every five minutes', async
   assert.doesNotMatch(content + background, /chrome\.tabs|chrome\.cookies|webRequest/);
   assert.match(background, /Authorization: `Bearer \$\{connection\.collectorToken\}`/);
   assert.match(popup, /isPrivateHost/);
+  assert.match(popup, /chrome\.permissions\.request\(\{ origins:/);
+  assert.match(popup, /未授权访问这个 Lifeline 地址；连接未保存/);
   assert.match(popup, /\/api\/health/);
   assert.match(popup, /服务不可达/);
   assert.match(background, /updateTelemetry/);
@@ -35,7 +39,7 @@ test('collector only runs on open pages and resamples every five minutes', async
   assert.match(content, /QUOTA_COMPONENT_NOT_FOUND/);
   assert.match(content, /XIAOYUNQUE: \['\[data-testid\*="credit"\]'/);
   assert.doesNotMatch(content, /GEMINI: \[[^\n]*'main'/);
-  assert.match(popupHtml, /value="http:\/\/192\.168\.124\.2:8019"/);
+  assert.match(popupHtml, /value="http:\/\/127\.0\.0\.1:8019"/);
   assert.match(popupHtml, /<script type="module" src="popup\.js"><\/script>/);
 });
 

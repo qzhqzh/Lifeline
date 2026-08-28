@@ -270,14 +270,25 @@ function createdViaForOrigin(origin, source) {
   return 'SERVICE';
 }
 
-export function validateReadyContract(workItem) {
+export function executionContractViolations(workItem) {
   const violations = [];
-  if (!workItem.objective?.trim()) violations.push('objective is required');
-  if (!Array.isArray(workItem.acceptanceCriteria) || workItem.acceptanceCriteria.length === 0) {
-    violations.push('at least one acceptance criterion is required');
+  if (typeof workItem?.objective !== 'string' || workItem.objective.trim().length < 8) {
+    violations.push('objective must contain at least 8 characters');
   }
-  if (!RISK_TIERS.includes(workItem.riskTier)) violations.push('risk tier is invalid');
-  if (!workItem.resourceProfile) violations.push('resource profile is required');
+  if (!Array.isArray(workItem?.acceptanceCriteria) || !workItem.acceptanceCriteria.some((criterion) => (
+    typeof criterion === 'string' && criterion.trim().length > 0
+  ))) {
+    violations.push('at least one non-empty acceptance criterion is required');
+  }
+  if (!RISK_TIERS.includes(workItem?.riskTier)) violations.push('risk tier is invalid');
+  if (!workItem?.resourceProfile || typeof workItem.resourceProfile !== 'object' || Array.isArray(workItem.resourceProfile)) {
+    violations.push('resource profile must be an object');
+  }
+  return violations;
+}
+
+export function validateReadyContract(workItem) {
+  const violations = executionContractViolations(workItem);
 
   if (violations.length > 0) {
     throw new DomainError('Work item is not ready for execution', 'INVALID_EXECUTION_CONTRACT', { violations });

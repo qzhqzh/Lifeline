@@ -7,7 +7,6 @@
   "host_permissions": [
     "http://localhost/*",
     "http://127.0.0.1/*",
-    "http://192.168.124.2/*",
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",
     "https://cursor.com/*",
@@ -17,6 +16,9 @@
     "https://x.com/*",
     "https://www.x.com/*",
     "https://xyq.jianying.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*"
   ],
   "background": {
     "service_worker": "background.js",

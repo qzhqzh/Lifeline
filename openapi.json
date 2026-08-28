@@ -22,6 +22,12 @@
         "responses": { "200": { "description": "Autonomous dispatch board" } }
       }
     },
+    "/api/portfolio/reporting": {
+      "get": {
+        "summary": "Get project-level Agent contact, planning continuity, staleness, and review-backlog health",
+        "responses": { "200": { "description": "Agent reporting health for every active project" } }
+      }
+    },
     "/api/portfolio/rebalance": {
       "post": {
         "summary": "Recalculate and audit dispatch decisions, release expired leases, and reconcile derived Phase status",
@@ -153,6 +159,30 @@
         }
       }
     },
+    "/api/projects/{projectId}/canvas-session": {
+      "get": {
+        "summary": "Create a short-lived, project-scoped collaborative canvas session",
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Project canvas session",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CanvasSession" } } }
+          },
+          "404": { "description": "Project not found" },
+          "503": { "description": "Collaborative canvas is not configured or unavailable" }
+        }
+      }
+    },
+    "/api/projects/{projectId}/test-map": {
+      "get": {
+        "summary": "Get the generated test catalog and scenario routes for one project",
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Configured test map, or an explicit configured=false response for projects without an adapter" },
+          "404": { "description": "Project not found" }
+        }
+      }
+    },
     "/api/work-items": {
       "get": { "summary": "List work items", "responses": { "200": { "description": "Work item collection" } } },
       "post": { "summary": "Create planned work item with persistent human or Agent provenance", "responses": { "201": { "description": "Created work item" }, "422": { "description": "Invalid execution contract" } } }
@@ -178,6 +208,36 @@
           { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
         ],
         "responses": { "200": { "description": "Cancelled work item" }, "409": { "description": "scheduleVersion conflict" }, "422": { "description": "Task cannot be cancelled" } }
+      }
+    },
+    "/api/work-items/{workItemId}/client-board": {
+      "patch": {
+        "summary": "Move an active task to any shared client-board status and feature swimlane",
+        "parameters": [
+          { "in": "path", "name": "workItemId", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedScheduleVersion", "phaseId", "statusId"],
+                "properties": {
+                  "expectedScheduleVersion": { "type": "integer", "minimum": 0 },
+                  "phaseId": { "type": "string" },
+                  "statusId": { "type": "string", "enum": ["pending", "scheduled", "running", "review"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Moved task" },
+          "409": { "description": "scheduleVersion conflict" },
+          "422": { "description": "Task, phase, dependency, or status is not movable" }
+        }
       }
     },
     "/api/work-items/{workItemId}/ready": {
@@ -321,6 +381,28 @@
         "properties": {
           "reason": { "type": "string", "minLength": 1, "maxLength": 1000 },
           "expectedScheduleVersion": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "CanvasSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "boardId", "iframeUrl", "expiresAt", "permissions", "accessModel"],
+        "properties": {
+          "provider": { "type": "string", "enum": ["wbo"] },
+          "boardId": { "type": "string" },
+          "iframeUrl": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "permissions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["canOpen", "canEdit", "canClear"],
+            "properties": {
+              "canOpen": { "type": "boolean" },
+              "canEdit": { "type": "boolean" },
+              "canClear": { "type": "boolean" }
+            }
+          },
+          "accessModel": { "type": "string", "enum": ["project-link"] }
         }
       }
     }

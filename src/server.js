@@ -1,15 +1,26 @@
 import { createReadStream } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import http from 'node:http';
+import https from 'node:https';
+import net from 'node:net';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { authenticateAgentRequest, validateAgentHttpBoundary } from './agent-auth.js';
+import {
+  CanvasConfigurationError,
+  DEFAULT_CANVAS_BASE_PATH,
+  DEFAULT_CANVAS_SESSION_TTL_SECONDS,
+  buildWboProxyUrl,
+  createWboCanvasSession,
+  normalizeCanvasBasePath
+} from './canvas.js';
 import { DomainError } from './domain.js';
 import { createLifelineMcpServer } from './mcp-server.js';
 import { LifelineService, isTerminalRunStatus } from './service.js';
 import { JsonStore } from './store.js';
 import { SubscriptionService } from './subscriptions.js';
+import { getProjectTestMap } from './test-map.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PUBLIC_ROOT = join(ROOT, 'public');
@@ -17,6 +28,14 @@ const dataFile = process.env.LIFELINE_DATA_FILE ?? join(ROOT, 'data', 'lifeline.
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';
 const devReloadEnabled = process.env.LIFELINE_DEV_RELOAD === '1';
+const canvasUpstreamUrl = String(process.env.LIFELINE_CANVAS_UPSTREAM_URL ?? '').trim();
+const canvasSigningSecret = String(process.env.WBO_AUTH_SECRET_KEY ?? '').trim();
+const canvasBasePath = normalizeCanvasBasePath(
+  process.env.LIFELINE_CANVAS_BASE_PATH ?? DEFAULT_CANVAS_BASE_PATH
+);
+const canvasSessionTtlSeconds = Number(
+  process.env.LIFELINE_CANVAS_SESSION_TTL_SECONDS ?? DEFAULT_CANVAS_SESSION_TTL_SECONDS
+);
 
 const store = new JsonStore(dataFile);
 const service = new LifelineService({
@@ -40,6 +59,10 @@ const mcpHandler = createMcpHandler((context) => createLifelineMcpServer({
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+    if (isCanvasProxyPath(url.pathname)) {
+      await proxyCanvasHttp(request, response, url);
+      return;
+    }
     const corsAllowed = setCommonHeaders(request, response, url);
 
     if (request.method === 'OPTIONS') {
@@ -64,6 +87,17 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
+server.on('upgrade', (request, socket, head) => {
+  let url;
+  try {
+    url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+  } catch {
+    return rejectUpgrade(socket, 400, 'Bad Request');
+  }
+  if (!isCanvasProxyPath(url.pathname)) return rejectUpgrade(socket, 404, 'Not Found');
+  proxyCanvasUpgrade(request, socket, head, url);
+});
+
 server.listen(port, host, () => {
   console.log(`Lifeline control plane listening on http://${host}:${port}`);
   console.log(`Persisting state to ${dataFile}`);
@@ -73,11 +107,17 @@ async function handleApi(request, response, url) {
   const method = request.method ?? 'GET';
 
   if (method === 'GET' && url.pathname === '/api/health') {
+    const canvasConfigured = isCanvasConfigured();
+    const canvasAvailable = canvasConfigured ? await probeCanvasUpstream() : false;
     return sendJson(response, 200, {
-      status: 'ok',
+      status: canvasConfigured && !canvasAvailable ? 'degraded' : 'ok',
       service: 'lifeline-control-plane',
       time: new Date().toISOString(),
-      devReload: devReloadEnabled
+      devReload: devReloadEnabled,
+      canvas: {
+        configured: canvasConfigured,
+        available: canvasAvailable
+      }
     });
   }
   if (method === 'GET' && url.pathname === '/api/dev-events' && devReloadEnabled) {
@@ -88,6 +128,9 @@ async function handleApi(request, response, url) {
   }
   if (method === 'GET' && url.pathname === '/api/portfolio/dispatch') {
     return sendJson(response, 200, await service.getDispatchBoard());
+  }
+  if (method === 'GET' && url.pathname === '/api/portfolio/reporting') {
+    return sendJson(response, 200, await service.getAgentReporting());
   }
   if (method === 'POST' && url.pathname === '/api/portfolio/rebalance') {
     const identity = requireAgentRestAccess(request, 'schedule:write');
@@ -223,10 +266,44 @@ async function handleApi(request, response, url) {
     ));
   }
 
+  const testMapMatch = /^\/api\/projects\/([^/]+)\/test-map$/.exec(url.pathname);
+  if (method === 'GET' && testMapMatch) {
+    const project = await service.getProject(decodeURIComponent(testMapMatch[1]));
+    response.setHeader('Cache-Control', 'no-store');
+    return sendJson(response, 200, await getProjectTestMap(project, ROOT));
+  }
+
+  const canvasSessionMatch = /^\/api\/projects\/([^/]+)\/canvas-session$/.exec(url.pathname);
+  if (method === 'GET' && canvasSessionMatch) {
+    const projectId = decodeURIComponent(canvasSessionMatch[1]);
+    await service.getProject(projectId);
+    if (!isCanvasConfigured()) {
+      throw new HttpError(503, 'Collaborative canvas is not configured', 'CANVAS_NOT_CONFIGURED');
+    }
+    if (!await probeCanvasUpstream()) {
+      throw new HttpError(503, 'Collaborative canvas is temporarily unavailable', 'CANVAS_UNAVAILABLE');
+    }
+    response.setHeader('Cache-Control', 'no-store');
+    return sendJson(response, 200, createWboCanvasSession({
+      projectId,
+      secret: canvasSigningSecret,
+      ttlSeconds: canvasSessionTtlSeconds,
+      publicBasePath: canvasBasePath
+    }));
+  }
+
   const workItemMatch = /^\/api\/work-items\/([^/]+)$/.exec(url.pathname);
   const workItemDetailsMatch = /^\/api\/work-items\/([^/]+)\/details$/.exec(url.pathname);
+  const workItemClientBoardMatch = /^\/api\/work-items\/([^/]+)\/client-board$/.exec(url.pathname);
   if (method === 'GET' && workItemDetailsMatch) {
     return sendJson(response, 200, await service.getTaskDetails(decodeURIComponent(workItemDetailsMatch[1])));
+  }
+  if (method === 'PATCH' && workItemClientBoardMatch) {
+    return sendJson(response, 200, await service.moveWorkItemOnClientBoard(
+      decodeURIComponent(workItemClientBoardMatch[1]),
+      await readJsonBody(request),
+      webMutationOptions(request, 'client_board.move')
+    ));
   }
   const workItemRestoreMatch = /^\/api\/work-items\/([^/]+)\/restore$/.exec(url.pathname);
   if (method === 'POST' && workItemRestoreMatch) {
@@ -408,11 +485,152 @@ async function serveStatic(response, pathname) {
   }
 }
 
+function isCanvasConfigured() {
+  return Boolean(canvasUpstreamUrl && canvasSigningSecret.length >= 32);
+}
+
+function isCanvasProxyPath(pathname) {
+  return pathname === canvasBasePath || pathname.startsWith(`${canvasBasePath}/`);
+}
+
+async function proxyCanvasHttp(request, response, url) {
+  if (!isCanvasConfigured()) {
+    throw new HttpError(503, 'Collaborative canvas is not configured', 'CANVAS_NOT_CONFIGURED');
+  }
+  const target = buildWboProxyUrl(url, canvasUpstreamUrl, canvasBasePath);
+  const client = target.protocol === 'https:' ? https : http;
+  await new Promise((resolveProxy, rejectProxy) => {
+    const proxyRequest = client.request(target, {
+      method: request.method,
+      headers: canvasProxyHeaders(request)
+    });
+    proxyRequest.once('response', (upstreamResponse) => {
+      const headers = { ...upstreamResponse.headers, 'referrer-policy': 'no-referrer' };
+      response.writeHead(upstreamResponse.statusCode ?? 502, headers);
+      upstreamResponse.pipe(response);
+      upstreamResponse.once('end', resolveProxy);
+      upstreamResponse.once('error', rejectProxy);
+    });
+    proxyRequest.once('error', rejectProxy);
+    request.once('aborted', () => proxyRequest.destroy());
+    request.pipe(proxyRequest);
+  }).catch((error) => {
+    if (response.headersSent) {
+      response.end();
+      return;
+    }
+    console.error('Canvas proxy request failed', error.message);
+    sendJson(response, 502, {
+      error: { code: 'CANVAS_UPSTREAM_ERROR', message: 'Collaborative canvas is temporarily unavailable' }
+    });
+  });
+}
+
+function proxyCanvasUpgrade(request, socket, head, url) {
+  if (!isCanvasConfigured()) return rejectUpgrade(socket, 503, 'Service Unavailable');
+  let target;
+  try {
+    target = buildWboProxyUrl(url, canvasUpstreamUrl, canvasBasePath);
+  } catch {
+    return rejectUpgrade(socket, 503, 'Service Unavailable');
+  }
+  const client = target.protocol === 'https:' ? https : http;
+  const proxyRequest = client.request(target, {
+    method: request.method ?? 'GET',
+    headers: canvasProxyHeaders(request, { upgrade: true })
+  });
+  proxyRequest.once('upgrade', (upstreamResponse, upstreamSocket, upstreamHead) => {
+    writeRawResponseHead(socket, upstreamResponse);
+    if (head?.length) upstreamSocket.write(head);
+    if (upstreamHead?.length) socket.write(upstreamHead);
+    upstreamSocket.on('error', () => socket.destroy());
+    socket.on('error', () => upstreamSocket.destroy());
+    upstreamSocket.pipe(socket);
+    socket.pipe(upstreamSocket);
+  });
+  proxyRequest.once('response', (upstreamResponse) => {
+    writeRawResponseHead(socket, upstreamResponse);
+    upstreamResponse.pipe(socket);
+  });
+  proxyRequest.once('error', (error) => {
+    console.error('Canvas WebSocket proxy failed', error.message);
+    rejectUpgrade(socket, 502, 'Bad Gateway');
+  });
+  proxyRequest.end();
+}
+
+function canvasProxyHeaders(request, { upgrade = false } = {}) {
+  const headers = { ...request.headers };
+  const remoteAddress = String(request.socket?.remoteAddress ?? '').replace(/^::ffff:/, '');
+  headers['x-forwarded-for'] = remoteAddress;
+  headers['x-forwarded-host'] = String(request.headers.host ?? '');
+  headers['x-forwarded-proto'] = request.socket?.encrypted ? 'https' : 'http';
+  if (!upgrade) {
+    delete headers.connection;
+    delete headers.upgrade;
+    delete headers['proxy-connection'];
+  }
+  return headers;
+}
+
+async function probeCanvasUpstream() {
+  if (!isCanvasConfigured()) return false;
+  let target;
+  try {
+    target = buildWboProxyUrl(
+      new URL(`${canvasBasePath}/`, 'http://lifeline.local'),
+      canvasUpstreamUrl,
+      canvasBasePath
+    );
+  } catch {
+    return false;
+  }
+  return new Promise((resolveProbe) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolveProbe(value);
+    };
+    const socket = net.connect({
+      host: target.hostname,
+      port: Number(target.port || (target.protocol === 'https:' ? 443 : 80))
+    });
+    socket.setTimeout(2_000, () => {
+      socket.destroy();
+      finish(false);
+    });
+    socket.once('connect', () => {
+      socket.destroy();
+      finish(true);
+    });
+    socket.once('error', () => finish(false));
+  });
+}
+
+function writeRawResponseHead(socket, upstreamResponse) {
+  if (socket.destroyed) return;
+  socket.write(`HTTP/1.1 ${upstreamResponse.statusCode ?? 502} ${upstreamResponse.statusMessage ?? ''}\r\n`);
+  for (let index = 0; index < upstreamResponse.rawHeaders.length; index += 2) {
+    socket.write(`${upstreamResponse.rawHeaders[index]}: ${upstreamResponse.rawHeaders[index + 1]}\r\n`);
+  }
+  socket.write('\r\n');
+}
+
+function rejectUpgrade(socket, status, message) {
+  if (socket.destroyed) return;
+  socket.end(`HTTP/1.1 ${status} ${message}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+}
+
 function handleError(response, error) {
   const domainStatus = error instanceof DomainError
     ? ({ NOT_FOUND: 404, SCHEDULE_VERSION_CONFLICT: 409 }[error.code] ?? 422)
     : null;
-  const status = error instanceof HttpError ? error.status : domainStatus ?? 500;
+  const status = error instanceof HttpError
+    ? error.status
+    : error instanceof CanvasConfigurationError
+      ? 503
+      : domainStatus ?? 500;
   const payload = {
     error: {
       code: error?.code ?? (status === 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR'),
@@ -546,6 +764,8 @@ function contentType(extension) {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
     '.svg': 'image/svg+xml'
   }[extension] ?? 'application/octet-stream';
 }

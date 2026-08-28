@@ -2,18 +2,18 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('task drafts allow empty acceptance criteria and test commands in both drawers', async () => {
+test('the shared task editor allows empty acceptance criteria and test commands', async () => {
   const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
-  for (const id of ['criteria', 'commands', 'editCriteria', 'editCommands']) {
+  for (const id of ['editCriteria', 'editCommands']) {
     const field = html.match(new RegExp(`<textarea[^>]*id="${id}"[^>]*>`))?.[0];
     assert.ok(field, `missing textarea #${id}`);
     assert.equal(/\brequired\b/.test(field), false, `#${id} must remain optional for PLANNED drafts`);
   }
 });
 
-test('task creation and editing expose an optional issue reference', async () => {
+test('the shared task editor exposes an optional issue reference', async () => {
   const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
-  for (const id of ['issue', 'editIssue']) {
+  for (const id of ['editIssue']) {
     const field = html.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`))?.[0];
     assert.ok(field, `missing input #${id}`);
     assert.equal(/\brequired\b/.test(field), false, `#${id} must remain optional`);
@@ -22,10 +22,10 @@ test('task creation and editing expose an optional issue reference', async () =>
 
 test('task forms expose star and scheduled date controls and the board exposes a star filter', async () => {
   const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
-  for (const id of ['starred', 'editStarred']) {
+  for (const id of ['editStarred']) {
     assert.match(html, new RegExp(`<input[^>]*id="${id}"[^>]*type="checkbox"[^>]*>`));
   }
-  for (const id of ['scheduledFor', 'editScheduledFor']) {
+  for (const id of ['editScheduledFor']) {
     assert.match(html, new RegExp(`<input[^>]*id="${id}"[^>]*type="date"[^>]*>`));
   }
   assert.match(html, /data-filter="starred"/);
@@ -48,16 +48,34 @@ test('task forms expose dependency and parallel scheduling without adding a thir
     readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../public/app.js', import.meta.url), 'utf8')
   ]);
-  for (const id of ['createDependencies', 'editDependencies']) {
+  for (const id of ['editDependencies']) {
     assert.match(html, new RegExp(`<select[^>]*id="${id}"[^>]*multiple[^>]*>`));
   }
-  for (const id of ['createParallelPolicy', 'editParallelPolicy']) {
+  for (const id of ['editParallelPolicy']) {
     assert.match(html, new RegExp(`<select[^>]*id="${id}"[^>]*>`));
   }
   assert.match(app, /dependsOnTaskIds: selectedOptionValues/);
-  assert.match(app, /parallelPolicy: elements\.(create|edit)ParallelPolicy\.value/);
+  assert.match(app, /parallelPolicy: elements\.editParallelPolicy\.value/);
   assert.match(app, /class="parallel-slot"/);
   assert.match(app, /taskDependenciesSatisfied/);
+});
+
+test('topbar and project detail task actions reuse one editor and one server-normalized project snapshot', async () => {
+  const [html, app] = await Promise.all([
+    readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../public/app.js', import.meta.url), 'utf8')
+  ]);
+  assert.equal((html.match(/id="taskEditorForm"/g) ?? []).length, 1);
+  assert.match(html, /id="taskLauncherForm"/);
+  assert.doesNotMatch(html, /id="workItemForm"/);
+  assert.match(app, /taskLauncherForm\.addEventListener\('submit', openGlobalTaskCreator\)/);
+  assert.match(app, /addDetailTask\.addEventListener\('click', openTaskCreator\)/);
+  assert.doesNotMatch(app, /function recommendationDefaults|function inferKind/);
+
+  const refresh = app.match(/async function refresh\(\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.match(refresh, /api\('\/api\/dashboard'\)/);
+  assert.doesNotMatch(refresh, /api\('\/api\/projects'\)/);
+  assert.match(refresh, /state\.projects = state\.dashboard\.projects/);
 });
 
 test('project detail supports inline Phase editing and unobtrusive lock and Issue hints', async () => {

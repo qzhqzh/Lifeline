@@ -33,10 +33,10 @@ docker compose up -d --build lifeline
 
 ### 局域网部署
 
-- 当前局域网实例使用 `http://192.168.124.2:8019`；Compose 的 8019 与兼容入口 41000 均映射到容器内 3000 端口和同一份数据。只填写 `192.168.124.2` 时，扩展会自动补全 HTTP 和 8019 端口。
-- 修改或更新 `manifest.json` 后，必须在 `chrome://extensions` 中点击一次“重新加载”，新的局域网权限才会生效。
+- 填写实际 Lifeline 私网地址；Compose 的 8019 与兼容入口 41000 均映射到容器内 3000 端口和同一份数据。只填写 IP 时，扩展会自动补全 HTTP 和 8019 端口。
+- 首次连接非本机地址时，Chrome 会要求按目标 host 授权；拒绝授权不会保存连接，可再次提交重试。
 - 扩展弹窗会实际请求 `/api/health` 和账号状态，分别显示“服务不可达”“配对已失效”“等待打开额度页”“最近同步”或“上报失败”；本地保存过配置不再等同于连接成功。
-- 如果 Lifeline 的局域网 IP 改变，需要在 `extension/manifest.json` 的 `host_permissions` 中替换对应地址，然后重新加载扩展。
+- Lifeline 的局域网 IP 改变时直接填写新地址并完成新的 host 授权，不再需要修改 Manifest；只有扩展代码更新后才需要在 `chrome://extensions` 中重新加载。
 
 ## 两个 Codex 账号
 

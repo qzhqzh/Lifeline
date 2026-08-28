@@ -5,15 +5,13 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
-
-const silentLogger = { error() {} };
 const windowEnd = '2026-08-03T20:00:00.000Z';
 
 test('trajectory aggregates only real Agent results and calculates coverage, gaps, and concurrency', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-trajectory-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const store = new JsonStore(join(directory, 'state.json'));
-  const service = new LifelineService({ store, logger: silentLogger });
+  const service = new LifelineService({ store });
   await service.start();
 
   const primary = await service.createProject({ name: 'Primary', strategicValue: 10 });
@@ -94,8 +92,7 @@ test('trajectory accepts supported windows and rejects unknown windows', async (
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-trajectory-window-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const service = new LifelineService({
-    store: new JsonStore(join(directory, 'state.json')),
-    logger: silentLogger
+    store: new JsonStore(join(directory, 'state.json'))
   });
   await service.start();
 

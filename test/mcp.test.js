@@ -5,12 +5,9 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
-import { MockExecutor } from '../src/executor.js';
 import { createLifelineMcpServer } from '../src/mcp-server.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
-
-const silentLogger = { error() {} };
 
 test('MCP syncs a plan idempotently and enforces completion verification', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-'));
@@ -665,9 +662,7 @@ test('scoped MCP cannot bypass execution or review claims through legacy tools',
 async function createService(file) {
   const service = new LifelineService({
     store: new JsonStore(file),
-    executor: new MockExecutor({ delayMs: 0 }),
-    localUserId: 'local-owner',
-    logger: silentLogger
+    localUserId: 'local-owner'
   });
   await service.start();
   return service;

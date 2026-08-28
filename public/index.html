@@ -86,6 +86,7 @@
             <button class="filter-button" type="button" data-filter="starred" aria-pressed="false">星标优先</button>
           </div>
           <div class="detail-controls" id="detailControls" hidden>
+            <a class="button secondary compact" id="clientViewLink" href="/client.html" target="_blank" rel="noreferrer">客户视图</a>
             <div class="view-switch" aria-label="任务展示方式">
               <button type="button" data-detail-view="row" aria-pressed="true">横条</button>
               <button type="button" data-detail-view="card" aria-pressed="false">卡片</button>
@@ -135,93 +136,13 @@
             <button type="button" data-create-mode="project" aria-pressed="false">新项目</button>
           </div>
 
-          <form id="workItemForm" class="form-stack drawer-form" data-create-pane="task">
-            <div class="form-row">
-              <label>
-                项目
-                <select id="projectId" required></select>
-              </label>
-              <label>
-                所属阶段
-                <select id="createPhaseId" required></select>
-              </label>
-            </div>
-            <div class="new-phase-fields" id="createNewPhaseFields" hidden>
-              <label>
-                新阶段名称
-                <input id="createNewPhaseTitle" minlength="1" maxlength="180" placeholder="例如：稳定性收口" />
-              </label>
-              <label>
-                阶段顺序
-                <input id="createNewPhaseOrder" type="number" min="1" max="999" />
-              </label>
-            </div>
-            <div class="form-row">
-              <label>
-                任务类型
-                <select id="kind">
-                  <option value="feature">功能实现</option>
-                  <option value="bug">Bug 修复</option>
-                  <option value="scan">持续扫描</option>
-                  <option value="research">调研</option>
-                  <option value="ops">运维</option>
-                  <option value="review">独立审查</option>
-                </select>
-              </label>
-              <label>
-                优先级
-                <select id="createPriority">
-                  <option value="P0">P0</option>
-                  <option value="P1" selected>P1</option>
-                  <option value="P2">P2</option>
-                  <option value="P3">P3</option>
-                </select>
-              </label>
-            </div>
+          <form id="taskLauncherForm" class="form-stack drawer-form" data-create-pane="task">
             <label>
-              Task 标题
-              <input id="title" required minlength="3" placeholder="这项任务交付什么结果" />
+              项目
+              <select id="projectId" required></select>
             </label>
-            <label>
-              目标
-              <textarea id="objective" required placeholder="写清完成后发生了什么变化"></textarea>
-            </label>
-            <label>
-              关联 Issue（可选）
-              <input id="issue" maxlength="1000" placeholder="GitHub Issue URL 或 #123" />
-            </label>
-            <div class="form-row">
-              <label class="checkbox-field">
-                <input id="starred" type="checkbox" />
-                <span>星标优先</span>
-              </label>
-              <label>
-                排期日期（可选）
-                <input id="scheduledFor" type="date" />
-              </label>
-            </div>
-            <label>
-              前置依赖（可选，可多选）
-              <select id="createDependencies" multiple size="4"></select>
-            </label>
-            <label>
-              并行策略
-              <select id="createParallelPolicy">
-                <option value="AUTO">自动判断</option>
-                <option value="PARALLEL_ALLOWED">允许并行</option>
-                <option value="SEQUENTIAL">必须串行</option>
-              </select>
-            </label>
-            <label>
-              验收标准（可选，每行一条）
-              <textarea id="criteria" placeholder="可以先留空；执行前再补齐可验证结果"></textarea>
-            </label>
-            <label>
-              测试命令（可选，每行一条）
-              <textarea id="commands" placeholder="可以先留空；进入执行前必须补齐"></textarea>
-            </label>
-            <p class="form-hint">页面创建记录为“人工新增”；推荐执行器、推理强度、算力和估时会自动生成。</p>
-            <button class="button primary" type="submit">加入排期</button>
+            <p class="form-hint">选择项目后进入统一任务编辑器，阶段、依赖和执行契约都在那里填写。</p>
+            <button class="button primary" type="submit">继续填写任务</button>
           </form>
 
           <form id="projectForm" class="form-stack drawer-form" data-create-pane="project" hidden>

@@ -1,4 +1,4 @@
-import { WORK_ITEM_STATUS } from './domain.js';
+import { WORK_ITEM_STATUS, executionContractViolations } from './domain.js';
 
 export const PROJECT_HEALTH = Object.freeze({
   ON_TRACK: 'ON_TRACK',
@@ -387,13 +387,7 @@ export function isTerminalTask(task) {
 }
 
 export function taskHasCompleteContract(task) {
-  return typeof task?.objective === 'string'
-    && task.objective.trim().length >= 8
-    && Array.isArray(task.acceptanceCriteria)
-    && task.acceptanceCriteria.some((criterion) => typeof criterion === 'string' && criterion.trim().length > 0)
-    && ['low', 'medium', 'high', 'critical'].includes(task.riskTier)
-    && task.resourceProfile !== null
-    && typeof task.resourceProfile === 'object';
+  return executionContractViolations(task).length === 0;
 }
 
 function taskDispatchFacts({ task, taskById, project, run, efficiency, now, nowMs }) {

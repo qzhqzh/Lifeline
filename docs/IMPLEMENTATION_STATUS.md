@@ -1,6 +1,6 @@
 # Lifeline implementation status
 
-> Updated: 2026-08-12
+> Updated: 2026-08-24
 
 ## Current executable product
 
@@ -32,11 +32,12 @@ Implemented runtime capabilities:
 - a stable dark portfolio UI with the 3D Lifeline emblem, first-screen execution decisions, fixed project columns, horizontally scrolling phases, keyed ten-second refresh, a task inspector, responsive 5/4/2/1 detail cards and direction-aware hover details;
 - a collapsed-by-default real progression trajectory that records results and gaps without recording Agent internal thought;
 - Codex, Google AI Pro, Cursor, Grok and 小云雀 subscription snapshots through the local browser extension, kept informational and separate from V3 dispatch capacity;
-- versioned, atomic JSON persistence with cross-process locking, migration repair and preservation of unknown/user-owned fields.
+- versioned, atomic JSON persistence with cross-process locking, version-gated migration repair and preservation of unknown/user-owned fields;
+- canonical persisted `task.phaseId` plus runtime compatibility projection of `planning.phase*`; current dispatch is derived, while decision history remains in audit events and immutable Run claim snapshots.
 
 ## Runtime and data boundary
 
-The current MVP deliberately uses Node.js and an atomic JSON store. PostgreSQL, Temporal, React, OAuth/multi-user isolation and a production code executor are not represented as completed. The browser and Agent APIs coordinate real work performed by external Agents; Lifeline stores contracts, claims, results, evidence, review state and scheduling decisions.
+The current MVP deliberately uses Node.js and an atomic JSON store. PostgreSQL, Temporal, React, OAuth/multi-user isolation and a production code executor are not represented as completed. The browser and Agent APIs coordinate real work performed by external Agents; Lifeline stores contracts, claims, results, evidence, review state, decision-change events and Run claim snapshots, while the current scheduling view is derived on read.
 
 LAN MCP is disabled until at least one token is configured. Tokens are stored only in the Git-ignored `.env` file and are never printed by the generator. This is a private-network single-owner boundary, not an Internet-facing authorization system.
 

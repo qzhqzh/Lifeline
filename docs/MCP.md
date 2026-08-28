@@ -21,8 +21,7 @@ Lifeline 同时提供本地 stdio 与局域网 Streamable HTTP MCP，让 Codex �
 
 ```toml
 [mcp_servers.lifeline]
-command = "docker"
-args = ["compose", "exec", "-T", "-e", "LIFELINE_LOCAL_USER_ID=local-owner", "-e", "LIFELINE_MCP_CLIENT_NAME=codex", "lifeline", "node", "src/mcp-server.js"]
+url = "http://127.0.0.1:31009/mcp"
 required = false
 startup_timeout_sec = 15
 tool_timeout_sec = 60
@@ -87,7 +86,7 @@ Task 可选传入 `dependsOnTaskIds` 和 `parallelPolicy`（`AUTO`、`SEQUENTIAL
 
 ## 数据与并发边界
 
-Web UI 和 MCP 都进入同一个 `LifelineService`，不复制状态机或证据规则。项目 MCP 在正式 Compose 容器内启动，因此与 Web UI 共同读写 `/app/data/lifeline.json` 对应的持久卷；`JsonStore` 使用跨进程锁、每次 mutation 前重新载入和原子替换，避免旧内存快照覆盖另一个进程刚写入的数据。修改此配置后需新开 Codex 对话，让 Host 重新载入 MCP 启动命令。
+Web UI 和 MCP 都进入同一个 `LifelineService`，不复制状态机或证据规则。项目 MCP 在正式 Compose 容器内启动，因此与 Web UI 共同读写 `/app/data/lifeline.json` 对应的持久卷；`JsonStore` 使用跨进程锁、每次 mutation 前重新载入和原子替换，避免旧内存快照覆盖另一个进程刚写入的数据。修改此配置后需新开 Codex 对话，让 Host 重新载入 MCP 连接配置。
 
 stdio 仍是本机单用户边界，身份来自 `LIFELINE_LOCAL_USER_ID`。V3 另提供 `http://<主机>:8019/mcp`，使用本地 Bearer Agent Token，并按 `portfolio:read`、`schedule:write`、`task:claim`、`completion:write`、`verification:write` 限权。没有配置令牌时端点返回 503，不允许匿名降级；错误 Host、外部 Origin 和缺少 scope 的操作都会拒绝。
 

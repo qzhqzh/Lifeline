@@ -3,11 +3,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
-
-const silentLogger = { error() {} };
 
 test('task contracts support versioned edit, in-phase reorder, and audited cancellation', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-schedule-edit-'));
@@ -429,9 +426,7 @@ function taskInput(projectId, phaseId, title, taskOrder) {
 async function createService(file, store = new JsonStore(file)) {
   const service = new LifelineService({
     store,
-    executor: new MockExecutor({ delayMs: 0 }),
-    localUserId: 'local-owner',
-    logger: silentLogger
+    localUserId: 'local-owner'
   });
   await service.start();
   return service;

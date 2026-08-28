@@ -5,6 +5,7 @@ import {
   WORK_ITEM_STATUS,
   calculateProjectProgress,
   createWorkItem,
+  executionContractViolations,
   hydrateWorkItemMetadata,
   transitionWorkItem,
   validateReadyContract
@@ -52,6 +53,19 @@ test('ready contract requires acceptance criteria but allows no test command', (
   assert.throws(
     () => validateReadyContract(item),
     (error) => error.code === 'INVALID_EXECUTION_CONTRACT' && error.details.violations.length === 1
+  );
+});
+
+test('ready contract and dispatch share one strict execution contract', () => {
+  const item = createWorkItem(validWorkItemInput());
+  assert.deepEqual(executionContractViolations(item), []);
+  assert.deepEqual(
+    executionContractViolations({ ...item, objective: 'short', acceptanceCriteria: [''], resourceProfile: [] }),
+    [
+      'objective must contain at least 8 characters',
+      'at least one non-empty acceptance criterion is required',
+      'resource profile must be an object'
+    ]
   );
 });
 

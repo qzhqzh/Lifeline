@@ -6,8 +6,6 @@ import test from 'node:test';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
 
-const silentLogger = { error() {} };
-
 test('dependency and parallel policy fields default for legacy task inputs', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-dependency-defaults-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -291,8 +289,7 @@ function taskInput(projectId, phaseId, title, taskOrder, overrides = {}) {
 async function createService(file) {
   const service = new LifelineService({
     store: new JsonStore(file),
-    localUserId: 'local-owner',
-    logger: silentLogger
+    localUserId: 'local-owner'
   });
   await service.start();
   return service;

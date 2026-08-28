@@ -6,8 +6,6 @@ import { join } from 'node:path';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
 
-const silentLogger = { error() {} };
-
 test('three concurrent Agents atomically claim different NEXT tasks', async (t) => {
   const { service } = await fixtureService(t, {
     projects: [project('project-a'), project('project-b'), project('project-c')],
@@ -154,7 +152,10 @@ test('history-calibrated estimate is persisted and determines the claim lease', 
     actor: 'scheduler', idempotencyKey: 'calibrated-rebalance'
   });
   const persisted = JSON.parse(await readFile(file, 'utf8'));
-  const persistedDecision = persisted.workItems.find((entry) => entry.id === 'future-feature').decision;
+  assert.equal('decision' in persisted.workItems.find((entry) => entry.id === 'future-feature'), false);
+  const persistedDecision = persisted.events.find((entry) => (
+    entry.type === 'dispatch.decision_changed' && entry.workItemId === 'future-feature'
+  )).metadata.after;
   assert.equal(persistedDecision.recommendedModelRef, 'gpt-history-winner');
   assert.equal(persistedDecision.compute, 'low');
   assert.equal(persistedDecision.estimateMinutes, 60);
@@ -369,7 +370,7 @@ test('cancelled tasks restore with both audit events preserved', async (t) => {
   assert.equal(state.events.some((entry) => entry.type === 'work_item.restored'), true);
 });
 
-test('rebalance persists explainable decision before and after values without thought traces', async (t) => {
+test('rebalance records explainable decision history without persisting a current task mirror', async (t) => {
   const { service, file } = await fixtureService(t, {
     projects: [project('project-a')],
     phases: [phase('phase-a', 'project-a')],
@@ -378,8 +379,14 @@ test('rebalance persists explainable decision before and after values without th
   const board = await service.rebalancePortfolio({ now: '2026-08-12T12:00:00.000Z' }, {
     actor: 'scheduler', idempotencyKey: 'audit-rebalance'
   });
+  await service.rebalancePortfolio({ now: '2026-08-12T12:00:00.000Z' }, {
+    actor: 'scheduler', idempotencyKey: 'audit-rebalance-repeat'
+  });
   const state = JSON.parse(await readFile(file, 'utf8'));
   const decisionEvent = state.events.find((entry) => entry.type === 'dispatch.decision_changed');
+  assert.equal(state.events.filter((entry) => entry.type === 'dispatch.decision_changed').length, 1);
+  assert.equal('decision' in state.workItems[0], false);
+  assert.equal('dispatch' in state.workItems[0], false);
   assert.equal(decisionEvent.workItemId, 'task-a');
   assert.equal(decisionEvent.metadata.before, null);
   assert.equal(decisionEvent.metadata.after.batch, 'NEXT');
@@ -421,10 +428,12 @@ test('rebalance clears stale terminal decisions and leaves archived phases untou
   assert.equal(visible.dispatch, null);
   assert.equal(visible.decision, null);
   const persisted = JSON.parse(await readFile(file, 'utf8'));
-  assert.equal(persisted.workItems.find((entry) => entry.id === 'task-terminal').decision, null);
+  assert.equal('decision' in persisted.workItems.find((entry) => entry.id === 'task-terminal'), false);
   assert.equal(persisted.phases.find((entry) => entry.id === 'phase-archived').status, 'COMPLETED');
   const clearEvent = persisted.events.find((event) => (
-    event.type === 'dispatch.decision_changed' && event.workItemId === 'task-terminal'
+    event.type === 'dispatch.decision_changed'
+      && event.workItemId === 'task-terminal'
+      && event.metadata?.after === null
   ));
   assert.equal(clearEvent.metadata.before.batch, 'NOW');
   assert.equal(clearEvent.metadata.after, null);
@@ -539,7 +548,7 @@ async function fixtureService(t, overrides) {
     subscriptionCollectors: [], events: [],
     ...overrides
   }));
-  const service = new LifelineService({ store: new JsonStore(file), logger: silentLogger });
+  const service = new LifelineService({ store: new JsonStore(file) });
   await service.start();
   return { service, file };
 }

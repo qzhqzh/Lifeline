@@ -9,6 +9,7 @@ form.addEventListener('submit', async (event) => {
   try {
     const baseUrl = normalizeLocalUrl(document.querySelector('#baseUrl').value);
     document.querySelector('#baseUrl').value = baseUrl;
+    await requireLocalHostPermission(baseUrl);
     await requireHealthyService(baseUrl);
     const response = await fetch(`${baseUrl}/api/subscriptions/collectors/pair`, {
       method: 'POST',
@@ -79,6 +80,13 @@ function normalizeLocalUrl(value) {
   if (url.protocol !== 'http:' || !isPrivateHost(url.hostname)) throw new Error('Lifeline 地址必须是 localhost 或局域网 IPv4 地址');
   if (!url.port) url.port = '8019';
   return url.origin;
+}
+
+async function requireLocalHostPermission(baseUrl) {
+  const url = new URL(baseUrl);
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
+  const granted = await chrome.permissions.request({ origins: [`${url.protocol}//${url.hostname}/*`] });
+  if (!granted) throw new Error('未授权访问这个 Lifeline 地址；连接未保存，可再次尝试。');
 }
 
 function renderConnections(connections) {

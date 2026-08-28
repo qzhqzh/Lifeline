@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import {
   COMPLETION_OUTCOMES,
   DomainError,
@@ -25,6 +26,10 @@ import {
   deriveAutonomousBoard
 } from './autonomous-board.js';
 import {
+  deriveAgentReporting,
+  upsertAgentContact
+} from './agent-reporting.js';
+import {
   getPortfolioV2Template,
   PORTFOLIO_TEMPLATE_KEY,
   PORTFOLIO_TEMPLATE_VERSION
@@ -47,15 +52,10 @@ const TRAJECTORY_WINDOW_MS = Object.freeze({
 
 export class LifelineService {
   #store;
-  #executor;
-  #logger;
   #localUserId;
-  #activeRuns = new Set();
 
-  constructor({ store, executor, logger = console, localUserId, userId }) {
+  constructor({ store, localUserId, userId }) {
     this.#store = store;
-    this.#executor = executor;
-    this.#logger = logger;
     this.#localUserId = resolveLocalUserId(localUserId ?? userId);
   }
 
@@ -65,14 +65,52 @@ export class LifelineService {
 
   async listProjects() {
     const state = await this.#store.read();
-    return deriveAutonomousBoard(state).projects;
+    const board = deriveAutonomousBoard(state);
+    const reporting = deriveAgentReporting(state, {
+      now: board.generatedAt,
+      boardProjects: board.projects,
+      decisions: board.decisions
+    });
+    const reportingByProjectId = new Map(reporting.projects.map((entry) => [entry.projectId, entry]));
+    return board.projects.map((project) => ({
+      ...project,
+      reporting: reportingByProjectId.get(project.id) ?? null
+    }));
   }
 
   async getProject(projectId) {
-    const state = await this.#store.read();
-    const project = deriveAutonomousBoard(state).projects.find((entry) => entry.id === projectId);
+    const project = (await this.listProjects()).find((entry) => entry.id === projectId);
     if (!project) throw new DomainError(`project not found: ${projectId}`, 'NOT_FOUND');
     return project;
+  }
+
+  async getAgentReporting(input = {}) {
+    const state = await this.#store.read();
+    const board = deriveAutonomousBoard(state, { now: input?.now });
+    return deriveAgentReporting(state, {
+      now: board.generatedAt,
+      boardProjects: board.projects,
+      decisions: board.decisions
+    });
+  }
+
+  async recordAgentContact(projectId, input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const project = requireEntity(state.projects, projectId, 'project');
+      const reportedSource = context.source?.reportedSource ?? context.source ?? input?.source ?? {};
+      return upsertAgentContact(state, {
+        projectId: project.id,
+        actor: context.actor,
+        client: context.client,
+        tool: context.tool,
+        at: input?.at ?? nowIso(),
+        repositoryPath: normalizeOptionalText(reportedSource?.repositoryPath, 'source.repositoryPath', 1000),
+        repositoryUrl: normalizeOptionalText(reportedSource?.repositoryUrl, 'source.repositoryUrl', 1000)
+          ?? project.repositoryUrl
+          ?? null
+      });
+    });
   }
 
   async createProject(input, options = {}) {
@@ -125,6 +163,11 @@ export class LifelineService {
       }, nextGlobalSequence(state)));
       return phase;
     });
+  }
+
+  async syncPlan(input, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => syncPlanInState(state, input, context));
   }
 
   async updatePhase(phaseId, input = {}, options = {}) {
@@ -220,9 +263,9 @@ export class LifelineService {
       for (const task of state.workItems) {
         if (!activeProjectIds.has(task.projectId)) continue;
         const decision = decisionByTaskId.get(task.id);
-        const previous = task.decision ?? null;
+        const previous = latestRecordedDispatchDecision(state, task);
         if (!decision) {
-          if (previous || task.dispatch) {
+          if (previous) {
             decisionChanges += 1;
             state.events.push(createAuditEvent({
               type: 'dispatch.decision_changed',
@@ -235,8 +278,6 @@ export class LifelineService {
                 after: null
               })
             }, nextGlobalSequence(state)));
-            task.dispatch = null;
-            task.decision = null;
           }
           continue;
         }
@@ -277,8 +318,6 @@ export class LifelineService {
             })
           }, nextGlobalSequence(state)));
         }
-        task.dispatch = { batch: next.batch, rank: next.rank };
-        task.decision = next;
       }
 
       let phaseChanges = 0;
@@ -346,7 +385,12 @@ export class LifelineService {
               && run.claimedAt
           ))
         : null;
-      if (existingRun) return claimResultFromState(state, existingRun);
+      if (existingRun) {
+        const task = state.workItems.find((entry) => entry.id === existingRun.workItemId);
+        const project = task ? state.projects.find((entry) => entry.id === task.projectId) : null;
+        if (project) touchAgentContactFromContext(state, project, context, input?.source);
+        return claimResultFromState(state, existingRun);
+      }
 
       const claimedAt = options.authoritativeAgentClock
         ? nowIso()
@@ -359,6 +403,14 @@ export class LifelineService {
       const allowedRisk = normalizeOptionalEnumList(input?.riskTiers, 'riskTiers', ['low', 'medium', 'high', 'critical']);
       const allowedCapabilities = normalizeOptionalTextList(input?.capabilities, 'capabilities');
       const allowedProjectIds = normalizeOptionalTextList(input?.projectIds, 'projectIds');
+      for (const projectId of allowedProjectIds) {
+        touchAgentContactFromContext(
+          state,
+          requireEntity(state.projects, projectId, 'project'),
+          context,
+          input?.source
+        );
+      }
       const board = deriveAutonomousBoard(state, { now: claimedAt });
       const taskById = new Map(state.workItems.map((task) => [task.id, task]));
       const candidateDecision = board.lanes.next.find((decision) => {
@@ -388,6 +440,14 @@ export class LifelineService {
 
       const taskIndex = findIndexOrThrow(state.workItems, candidateDecision.taskId, 'work item');
       let task = state.workItems[taskIndex];
+      if (allowedProjectIds.length === 0) {
+        touchAgentContactFromContext(
+          state,
+          requireEntity(state.projects, task.projectId, 'project'),
+          context,
+          input?.source
+        );
+      }
       const lease = createClaimLease(task, {
         agentId,
         modelRef,
@@ -992,10 +1052,12 @@ export class LifelineService {
       assertTaskDependencies(state, candidate);
       assertProjectDependencyTopology(state, project.id, candidate);
       const after = taskContractSnapshot(candidate);
-      if (JSON.stringify(before) === JSON.stringify(after)) return workItem;
+      if (isDeepStrictEqual(before, after)) return workItem;
 
-      const contentChanged = JSON.stringify(taskContentSnapshot(workItem))
-        !== JSON.stringify(taskContentSnapshot(candidate));
+      const contentChanged = !isDeepStrictEqual(
+        taskContentSnapshot(workItem),
+        taskContentSnapshot(candidate)
+      );
       const schedulingStatusChanged = workItem.status !== candidate.status;
       const statusChangeReason = schedulingStatusChanged
         ? normalizeRequiredText(input?.reason, 'reason', 1000)
@@ -1058,6 +1120,87 @@ export class LifelineService {
           statusChange: schedulingStatusChanged,
           before,
           after
+        })
+      }, nextGlobalSequence(state)));
+      return workItem;
+    });
+  }
+
+  async moveWorkItemOnClientBoard(workItemId, input = {}, options = {}) {
+    const context = mutationContext(this.#localUserId, options);
+    return this.#store.mutate((state) => {
+      const index = findIndexOrThrow(state.workItems, workItemId, 'work item');
+      const workItem = state.workItems[index];
+      const replay = findIdempotentAuditEvent(state, 'work_item.client_board_moved', context, workItemId);
+      if (replay) return workItem;
+
+      const project = requireEntity(state.projects, workItem.projectId, 'project');
+      const beforeVersion = assertExpectedScheduleVersion(project, input?.expectedScheduleVersion);
+      const targetStatusId = normalizeClientBoardStatus(input?.statusId);
+      const targetPhase = requireEntity(state.phases, input?.phaseId, 'phase');
+      if (targetPhase.projectId !== project.id || targetPhase.status === 'CANCELLED') {
+        throw new DomainError('phase does not belong to project or is cancelled', 'INVALID_INPUT');
+      }
+      if (CLIENT_BOARD_TERMINAL_STATUSES.has(workItem.status)) {
+        throw new DomainError('Completed or archived tasks cannot return to the active client board', 'TASK_NOT_MOVABLE');
+      }
+
+      const currentPhaseId = workItem.phaseId ?? workItem.planning?.phaseId;
+      const currentStatusId = clientBoardStatusForWorkItem(workItem);
+      if (currentPhaseId === targetPhase.id && currentStatusId === targetStatusId) return workItem;
+
+      const movedAt = nowIso();
+      const taskOrder = targetPhase.id === currentPhaseId
+        ? workItem.planning.taskOrder
+        : Math.max(0, ...state.workItems
+          .filter((task) => (
+            task.id !== workItem.id
+              && task.status !== WORK_ITEM_STATUS.CANCELLED
+              && (task.phaseId === targetPhase.id || task.planning?.phaseId === targetPhase.id)
+          ))
+          .map((task) => Number(task.planning?.taskOrder) || 0)) + 1;
+      const candidateBase = {
+        ...workItem,
+        phaseId: targetPhase.id,
+        planning: {
+          ...workItem.planning,
+          phaseId: targetPhase.id,
+          phase: targetPhase.title,
+          phaseOrder: targetPhase.phaseOrder,
+          taskOrder
+        }
+      };
+      const candidate = currentStatusId === targetStatusId
+        ? candidateBase
+        : transitionWorkItemToClientBoardStatus(candidateBase, targetStatusId, movedAt);
+      assertTaskDependencies(state, candidate);
+      assertProjectDependencyTopology(state, project.id, candidate);
+
+      const before = taskContractSnapshot(workItem);
+      const source = mutationSource(input, options);
+      Object.assign(workItem, candidate, {
+        editedBy: context.actor,
+        lastMutationSource: source,
+        updatedAt: movedAt
+      });
+      reconcileRunsAfterClientBoardMove(state, workItem, targetStatusId, movedAt, context);
+      const afterVersion = bumpScheduleVersion(project);
+      state.events.push(createAuditEvent({
+        type: 'work_item.client_board_moved',
+        message: `Task moved to ${targetPhase.title} / ${targetStatusId}`,
+        workItemId,
+        metadata: auditMetadata(context, {
+          projectId: project.id,
+          phaseId: targetPhase.id,
+          beforeVersion,
+          afterVersion,
+          source,
+          fromPhaseId: currentPhaseId,
+          toPhaseId: targetPhase.id,
+          fromStatusId: currentStatusId,
+          toStatusId: targetStatusId,
+          before,
+          after: taskContractSnapshot(workItem)
         })
       }, nextGlobalSequence(state)));
       return workItem;
@@ -1277,6 +1420,13 @@ export class LifelineService {
   async submitCompletion(workItemId, input = {}, options = {}) {
     const context = mutationContext(this.#localUserId, options);
     return this.#store.mutate((state) => {
+      const contactTask = requireEntity(state.workItems, workItemId, 'work item');
+      touchAgentContactFromContext(
+        state,
+        requireEntity(state.projects, contactTask.projectId, 'project'),
+        context,
+        input?.source
+      );
       const existingRecord = state.completionRecords.find((record) => (
         record.taskId === workItemId
           && record.idempotencyKey === context.idempotencyKey
@@ -1289,6 +1439,9 @@ export class LifelineService {
       const workItemIndex = findIndexOrThrow(state.workItems, workItemId, 'work item');
       let workItem = state.workItems[workItemIndex];
       const outcome = normalizeCompletionOutcome(input?.outcome);
+      if (input?.nextPlan && outcome !== 'COMPLETED') {
+        throw new DomainError('nextPlan is only allowed for a completed task result', 'INVALID_INPUT');
+      }
       const currentRun = workItem.currentRunId
         ? state.runs.find((entry) => entry.id === workItem.currentRunId)
         : null;
@@ -1437,6 +1590,18 @@ export class LifelineService {
         evidenceIds: evidence.map((entry) => entry.id),
         outcome
       })));
+      if (input?.nextPlan) {
+        const nextPlan = syncPlanInState(state, {
+          ...input.nextPlan,
+          projectId: workItem.projectId,
+          source: input.nextPlan.source ?? input.source
+        }, context);
+        completionRecord.nextPlan = {
+          planId: input.nextPlan.planId,
+          phaseId: nextPlan.phase.id,
+          taskIds: nextPlan.tasks.map((task) => task.id)
+        };
+      }
       return completionResultFromState(state, completionRecord);
     });
   }
@@ -1444,6 +1609,13 @@ export class LifelineService {
   async verifyTask(workItemId, input = {}, options = {}) {
     const context = mutationContext(this.#localUserId, options);
     return this.#store.mutate((state) => {
+      const contactTask = requireEntity(state.workItems, workItemId, 'work item');
+      touchAgentContactFromContext(
+        state,
+        requireEntity(state.projects, contactTask.projectId, 'project'),
+        context,
+        input?.source
+      );
       const existingEvidence = state.evidence.find((entry) => (
         entry.workItemId === workItemId
           && entry.type === 'VERIFICATION'
@@ -1693,6 +1865,12 @@ export class LifelineService {
   async dashboard() {
     const state = await this.#store.read();
     const dispatchBoard = deriveAutonomousBoard(state);
+    const reporting = deriveAgentReporting(state, {
+      now: dispatchBoard.generatedAt,
+      boardProjects: dispatchBoard.projects,
+      decisions: dispatchBoard.decisions
+    });
+    const reportingByProjectId = new Map(reporting.projects.map((entry) => [entry.projectId, entry]));
     const dashboardAtMs = Date.parse(dispatchBoard.generatedAt);
     const dispatchProjects = new Map(dispatchBoard.projects.map((project) => [project.id, project]));
     const dispatchDecisions = new Map(dispatchBoard.decisions.map((decision) => [decision.taskId, decision]));
@@ -1718,6 +1896,7 @@ export class LifelineService {
         latestVerifiedTaskId: derivedProject?.latestVerifiedTaskId ?? null,
         phases: derivedProject?.phases ?? [],
         dispatch: derivedProject?.dispatch ?? null,
+        reporting: reportingByProjectId.get(project.id) ?? null,
         verifiedProgress: calculateProjectProgress(workItems, evidence),
         workItemCount: workItems.length,
         phaseCount: new Set(workItems.map((item) => item.planning.phaseOrder)).size,
@@ -1739,6 +1918,7 @@ export class LifelineService {
       legacyMockRuns: state.runs.filter((run) => run.kind === RUN_KIND.INTERNAL_MOCK).length,
       evidenceCount: state.evidence.length,
       dispatch: dispatchBoard,
+      reporting,
       bootstrap: {
         portfolioV2: bootstrapStatusFromState(state, this.#localUserId)
       }
@@ -1873,152 +2053,110 @@ export class LifelineService {
     };
   }
 
-  #schedule(runId) {
-    if (this.#activeRuns.has(runId)) return;
-    queueMicrotask(() => this.#executeRun(runId));
-  }
-
-  async #executeRun(runId) {
-    if (this.#activeRuns.has(runId)) return;
-    this.#activeRuns.add(runId);
-    try {
-      await this.#markRunning(runId);
-      let run = await this.getRun(runId);
-      while (run.stage < this.#executor.stepCount) {
-        const workItem = await this.getWorkItem(run.workItemId);
-        await this.#appendRunEvent(runId, 'step.started', `Starting executor step ${run.stage + 1}`, {
-          stage: run.stage
-        });
-        const result = await this.#executor.executeStep(run.stage, workItem);
-        await this.#checkpointStep(runId, result);
-        run = await this.getRun(runId);
-      }
-      await this.#completeRun(runId);
-    } catch (error) {
-      await this.#failRun(runId, error);
-      this.#logger.error?.('Lifeline run failed', { runId, error: error?.message });
-    } finally {
-      this.#activeRuns.delete(runId);
-    }
-  }
-
-  async #markRunning(runId) {
-    await this.#store.mutate((state) => {
-      const runIndex = findIndexOrThrow(state.runs, runId, 'run');
-      const run = state.runs[runIndex];
-      if (run.status === RUN_STATUS.SUCCEEDED || run.status === RUN_STATUS.FAILED) return run;
-      run.status = RUN_STATUS.RUNNING;
-      run.startedAt ??= nowIso();
-      run.updatedAt = nowIso();
-
-      const itemIndex = findIndexOrThrow(state.workItems, run.workItemId, 'work item');
-      const workItem = state.workItems[itemIndex];
-      if (workItem.status === WORK_ITEM_STATUS.QUEUED) {
-        state.workItems[itemIndex] = transitionWorkItem(workItem, WORK_ITEM_STATUS.RUNNING);
-      }
-      state.events.push(createRunEvent(state, run, 'run.started', 'Run started'));
-      return run;
-    });
-  }
-
-  async #checkpointStep(runId, result) {
-    await this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      const evidenceKey = `${runId}:${result.evidence.type}`;
-      if (!state.evidence.some((entry) => entry.key === evidenceKey)) {
-        state.evidence.push({
-          id: createId('evidence'),
-          key: evidenceKey,
-          runId,
-          workItemId: run.workItemId,
-          type: result.evidence.type,
-          score: result.evidence.score,
-          summary: result.evidence.summary,
-          metadata: result.evidence.metadata ?? {},
-          createdAt: nowIso()
-        });
-      }
-      run.stage += 1;
-      run.updatedAt = nowIso();
-      state.events.push(createRunEvent(state, run, 'step.completed', result.message, {
-        step: result.step,
-        stage: run.stage,
-        evidenceType: result.evidence.type,
-        evidenceScore: result.evidence.score
-      }));
-      return run;
-    });
-  }
-
-  async #completeRun(runId) {
-    await this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      const itemIndex = findIndexOrThrow(state.workItems, run.workItemId, 'work item');
-      let workItem = state.workItems[itemIndex];
-      if (workItem.status === WORK_ITEM_STATUS.RUNNING) {
-        workItem = transitionWorkItem(workItem, WORK_ITEM_STATUS.REVIEW);
-      }
-      if (workItem.status === WORK_ITEM_STATUS.REVIEW) {
-        workItem = transitionWorkItem(
-          workItem,
-          run.onSuccessStatus === WORK_ITEM_STATUS.RECURRING
-            ? WORK_ITEM_STATUS.RECURRING
-            : WORK_ITEM_STATUS.VERIFIED
-        );
-      }
-      state.workItems[itemIndex] = workItem;
-      if (workItem.status === WORK_ITEM_STATUS.VERIFIED) {
-        const project = requireEntity(state.projects, workItem.projectId, 'project');
-        project.currentTaskId = workItem.id;
-        project.updatedAt = nowIso();
-      }
-      run.status = RUN_STATUS.SUCCEEDED;
-      run.finishedAt = nowIso();
-      run.updatedAt = run.finishedAt;
-      state.events.push(createRunEvent(
-        state,
-        run,
-        'run.succeeded',
-        workItem.status === WORK_ITEM_STATUS.RECURRING
-          ? 'Run completed and recurring task returned to its cycle'
-          : 'Run completed and work item verified'
-      ));
-      return run;
-    });
-  }
-
-  async #failRun(runId, error) {
-    await this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      run.status = RUN_STATUS.FAILED;
-      run.error = {
-        code: error?.code ?? 'EXECUTOR_FAILURE',
-        message: error?.message ?? String(error)
-      };
-      run.finishedAt = nowIso();
-      run.updatedAt = run.finishedAt;
-      const itemIndex = findIndexOrThrow(state.workItems, run.workItemId, 'work item');
-      const workItem = state.workItems[itemIndex];
-      if ([WORK_ITEM_STATUS.QUEUED, WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.REVIEW].includes(workItem.status)) {
-        state.workItems[itemIndex] = transitionWorkItem(workItem, WORK_ITEM_STATUS.BLOCKED);
-      }
-      state.events.push(createRunEvent(state, run, 'run.failed', run.error.message, { error: run.error }));
-      return run;
-    });
-  }
-
-  async #appendRunEvent(runId, type, message, metadata = {}) {
-    return this.#store.mutate((state) => {
-      const run = requireEntity(state.runs, runId, 'run');
-      const event = createRunEvent(state, run, type, message, metadata);
-      state.events.push(event);
-      return event;
-    });
-  }
 }
 
 export function isTerminalRunStatus(status) {
   return [RUN_STATUS.SUCCEEDED, RUN_STATUS.FAILED, RUN_STATUS.CANCELLED].includes(status);
+}
+
+const CLIENT_BOARD_STATUS_IDS = Object.freeze(['pending', 'scheduled', 'running', 'review']);
+const CLIENT_BOARD_TERMINAL_STATUSES = new Set([
+  WORK_ITEM_STATUS.CANCELLED,
+  WORK_ITEM_STATUS.VERIFIED,
+  WORK_ITEM_STATUS.RELEASED,
+  WORK_ITEM_STATUS.ARCHIVED
+]);
+
+function normalizeClientBoardStatus(value) {
+  const statusId = normalizeRequiredText(value, 'statusId', 40).toLowerCase();
+  if (!CLIENT_BOARD_STATUS_IDS.includes(statusId)) {
+    throw new DomainError(`statusId must be one of: ${CLIENT_BOARD_STATUS_IDS.join(', ')}`, 'INVALID_INPUT');
+  }
+  return statusId;
+}
+
+function clientBoardStatusForWorkItem(workItem) {
+  if (workItem.status === WORK_ITEM_STATUS.RUNNING) return 'running';
+  if (workItem.status === WORK_ITEM_STATUS.REVIEW) return 'review';
+  if (workItem.status === WORK_ITEM_STATUS.DEFERRED || workItem.planning?.commitment !== 'COMMITTED') return 'pending';
+  return 'scheduled';
+}
+
+function transitionWorkItemToClientBoardStatus(workItem, statusId, at) {
+  let task = transitionActiveWorkItemToPlanned(workItem, at);
+  if (statusId === 'running' || statusId === 'review') {
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.READY, at);
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.QUEUED, at);
+    task = transitionWorkItem(task, WORK_ITEM_STATUS.RUNNING, at);
+  }
+  if (statusId === 'review') task = transitionWorkItem(task, WORK_ITEM_STATUS.REVIEW, at);
+  return {
+    ...task,
+    planning: {
+      ...task.planning,
+      commitment: statusId === 'pending' ? 'TENTATIVE' : 'COMMITTED'
+    }
+  };
+}
+
+function transitionActiveWorkItemToPlanned(workItem, at) {
+  const paths = {
+    [WORK_ITEM_STATUS.DISCOVERED]: [WORK_ITEM_STATUS.TRIAGED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.TRIAGED]: [WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.PLANNED]: [],
+    [WORK_ITEM_STATUS.DEFERRED]: [WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.READY]: [WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.QUEUED]: [WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.RUNNING]: [WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.REVIEW]: [WORK_ITEM_STATUS.RUNNING, WORK_ITEM_STATUS.READY, WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.BLOCKED]: [WORK_ITEM_STATUS.PLANNED],
+    [WORK_ITEM_STATUS.RECURRING]: [WORK_ITEM_STATUS.DEFERRED, WORK_ITEM_STATUS.PLANNED]
+  };
+  const path = paths[workItem.status];
+  if (!path) throw new DomainError(`Task cannot move from ${workItem.status} on the active client board`, 'TASK_NOT_MOVABLE');
+  return path.reduce((task, nextStatus) => transitionWorkItem(task, nextStatus, at), workItem);
+}
+
+function reconcileRunsAfterClientBoardMove(state, workItem, targetStatusId, at, context) {
+  const executionRun = workItem.currentRunId
+    ? state.runs.find((run) => run.id === workItem.currentRunId) ?? null
+    : null;
+  const keepExecutionRun = targetStatusId === 'running' && executionRun?.status === RUN_STATUS.RUNNING;
+  if (executionRun?.status === RUN_STATUS.RUNNING && !keepExecutionRun) {
+    cancelRunForClientBoardMove(state, executionRun, at, context, targetStatusId);
+  }
+  if (targetStatusId === 'running') {
+    if (!keepExecutionRun) workItem.currentRunId = null;
+  } else if (targetStatusId !== 'review' || executionRun?.status === RUN_STATUS.RUNNING) {
+    workItem.currentRunId = null;
+  }
+
+  const reviewRun = workItem.reviewRunId
+    ? state.runs.find((run) => run.id === workItem.reviewRunId) ?? null
+    : null;
+  const keepReviewRun = targetStatusId === 'review' && reviewRun?.status === RUN_STATUS.RUNNING;
+  if (reviewRun?.status === RUN_STATUS.RUNNING && !keepReviewRun) {
+    cancelRunForClientBoardMove(state, reviewRun, at, context, targetStatusId);
+  }
+  if (!keepReviewRun) {
+    workItem.reviewRunId = null;
+    workItem.reviewLease = null;
+  }
+}
+
+function cancelRunForClientBoardMove(state, run, at, context, targetStatusId) {
+  run.status = RUN_STATUS.CANCELLED;
+  run.finishedAt = at;
+  run.updatedAt = at;
+  run.error = null;
+  run.releaseReason = 'CLIENT_BOARD_MOVE';
+  state.events.push(createRunEvent(
+    state,
+    run,
+    'run.client_board_released',
+    'Active Run ended after a manual client board move',
+    auditMetadata(context, { targetStatusId })
+  ));
 }
 
 const EDITABLE_WORK_ITEM_STATUSES = new Set([
@@ -2154,6 +2292,144 @@ function phaseOrderFromRank(rank) {
 
 function hashSnapshot(value) {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+function syncPlanInState(state, input, context) {
+  const project = requireEntity(state.projects, input?.projectId, 'project');
+  const planId = normalizeRequiredText(input?.planId, 'planId', 256);
+  const reportedSource = {
+    ...(normalizeSource(input?.source) ?? {}),
+    kind: 'codex-plan',
+    planId
+  };
+  const entitySource = normalizeSource({
+    reportedSource,
+    kind: 'codex-plan',
+    tool: 'lifeline_sync_plan'
+  });
+  touchAgentContactFromContext(state, project, context, reportedSource);
+
+  let phase;
+  if (input?.phase?.phaseId) {
+    phase = requireEntity(state.phases, input.phase.phaseId, 'phase');
+    if (phase.projectId !== project.id || phase.status === 'CANCELLED') {
+      throw new DomainError('phase does not belong to project or is cancelled', 'INVALID_INPUT');
+    }
+  } else {
+    const phaseKey = planScopedIdempotencyKey(planId, 'phase');
+    phase = state.phases.find((entry) => (
+      entry.idempotencyKey === phaseKey && entry.createdBy === context.actor
+    ));
+    if (!phase) {
+      phase = createPhase({
+        projectId: project.id,
+        title: input?.phase?.title,
+        goal: input?.phase?.goal ?? '',
+        rank: Number(input?.phase?.phaseOrder ?? nextPhaseOrder(state, project.id)) * 1024,
+        createdBy: context.actor
+      });
+      phase.idempotencyKey = phaseKey;
+      phase.source = entitySource;
+      state.phases.push(phase);
+      bumpScheduleVersion(project);
+      state.events.push(createAuditEvent({
+        type: 'phase.created',
+        message: `Phase created: ${phase.title}`,
+        metadata: auditMetadata(context, { projectId: project.id, phaseId: phase.id, planId })
+      }, nextGlobalSequence(state)));
+    }
+  }
+
+  const tasks = [];
+  for (const draft of input?.tasks ?? []) {
+    const taskKey = planScopedIdempotencyKey(planId, `task:${shortHash(`${draft.taskOrder}:${draft.title}`)}`);
+    let task = state.workItems.find((entry) => (
+      entry.idempotencyKey === taskKey && entry.createdBy === context.actor
+    ));
+    if (!task) {
+      task = createWorkItem({
+        projectId: project.id,
+        phaseId: phase.id,
+        title: draft.title,
+        objective: draft.objective,
+        nonGoals: draft.nonGoals ?? [],
+        acceptanceCriteria: draft.acceptanceCriteria ?? [],
+        testCommands: draft.testCommands ?? [],
+        issue: draft.issue,
+        starred: draft.starred ?? false,
+        scheduledFor: draft.scheduledFor,
+        dependsOnTaskIds: draft.dependsOnTaskIds ?? [],
+        parallelPolicy: draft.parallelPolicy ?? 'AUTO',
+        riskTier: draft.riskTier ?? 'medium',
+        weight: draft.weight ?? 1,
+        resourceProfile: draft.resourceProfile ?? {
+          cpu: 1,
+          memoryGb: 1,
+          apiBudgetUsd: 0,
+          humanReviewMinutes: 5
+        },
+        planning: {
+          phaseId: phase.id,
+          phase: phase.title,
+          phaseOrder: phase.phaseOrder,
+          taskOrder: draft.taskOrder,
+          kind: draft.kind ?? 'feature',
+          priority: draft.priority ?? 'P1',
+          commitment: draft.commitment ?? 'TENTATIVE'
+        },
+        recommendation: draft.recommendation
+      });
+      assertTaskDependencies(state, task);
+      task.createdBy = context.actor;
+      task.idempotencyKey = taskKey;
+      task.source = entitySource;
+      task.provenance = hydrateTaskProvenance(task);
+      state.workItems.push(task);
+      bumpScheduleVersion(project);
+      state.events.push(createAuditEvent({
+        type: 'work_item.created',
+        message: `Work item created in ${task.status}`,
+        workItemId: task.id,
+        metadata: auditMetadata(context, {
+          projectId: project.id,
+          phaseId: phase.id,
+          planId,
+          source: task.source,
+          policyVersion: DISPATCH_POLICY_VERSION,
+          before: null,
+          after: taskContractSnapshot(task)
+        })
+      }, nextGlobalSequence(state)));
+    }
+    tasks.push(task);
+  }
+
+  if (tasks.length === 0) {
+    throw new DomainError('next plan must contain at least one task', 'INVALID_INPUT');
+  }
+  return { projectId: project.id, phase, tasks, createdOrReused: tasks.length };
+}
+
+function touchAgentContactFromContext(state, project, context, reportedSource = {}) {
+  if (!context.client && !context.tool) return null;
+  return upsertAgentContact(state, {
+    projectId: project.id,
+    actor: context.actor,
+    client: context.client,
+    tool: context.tool,
+    at: nowIso(),
+    repositoryPath: reportedSource?.repositoryPath ?? null,
+    repositoryUrl: reportedSource?.repositoryUrl ?? project.repositoryUrl ?? null
+  });
+}
+
+function planScopedIdempotencyKey(planId, suffix) {
+  const legacyKey = `${planId}:${suffix}`;
+  return legacyKey.length <= 256 ? legacyKey : `plan:${shortHash(planId)}:${suffix}`;
+}
+
+function shortHash(value) {
+  return createHash('sha256').update(String(value)).digest('hex').slice(0, 16);
 }
 
 function mutationContext(defaultActor, options = {}) {
@@ -2364,6 +2640,15 @@ function taskContractSnapshot(workItem) {
     planning: workItem.planning,
     recommendation: workItem.recommendation
   };
+}
+
+function latestRecordedDispatchDecision(state, task) {
+  const event = state.events.findLast((entry) => (
+    entry.type === 'dispatch.decision_changed' && entry.workItemId === task.id
+  ));
+  if (event) return event.metadata?.after ?? null;
+  if (task.decision) return task.decision;
+  return task.dispatch ? { ...task.dispatch } : null;
 }
 
 function taskContentSnapshot(workItem) {

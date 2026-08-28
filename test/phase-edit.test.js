@@ -3,11 +3,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { MockExecutor } from '../src/executor.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
-
-const silentLogger = { error() {} };
 
 test('updating a phase bumps the schedule, syncs task labels, and records before/after audit data', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-phase-edit-'));
@@ -179,9 +176,7 @@ function taskInput(projectId, phaseId, title, taskOrder, phaseTitle) {
 async function createService(file, store = new JsonStore(file)) {
   const service = new LifelineService({
     store,
-    executor: new MockExecutor({ delayMs: 0 }),
-    localUserId: 'local-owner',
-    logger: silentLogger
+    localUserId: 'local-owner'
   });
   await service.start();
   return service;
