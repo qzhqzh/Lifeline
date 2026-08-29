@@ -20,6 +20,11 @@ test('old or incomplete state still runs the idempotent migration chain', () => 
   assert.equal(old.state.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.deepEqual(old.state.custom, { keep: true });
   assert.ok(Array.isArray(old.state.agentContacts));
+  assert.ok(Array.isArray(old.state.projectAccessGrants));
+  assert.ok(Array.isArray(old.state.canvasBindings));
+  assert.ok(Array.isArray(old.state.canvasChangeProposals));
+  assert.ok(Array.isArray(old.state.testScenarioProposals));
+  assert.ok(Array.isArray(old.state.testEvidenceHistory));
 
   const incompleteCurrent = normalizeLoadedState({
     ...old.state,

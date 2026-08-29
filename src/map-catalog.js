@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 
-import { javascriptCodeMask } from './test-catalog-analyzer.js';
+import { javascriptCodeMask } from './catalog-analyzer.js';
 
 export const TEST_STATUS = Object.freeze({
   UNOBSERVED: 'UNOBSERVED'
@@ -35,6 +35,7 @@ export const TEST_DOMAINS = Object.freeze([
     'codex-integration.test.js',
     'mcp-http.test.js',
     'mcp.test.js',
+    'test-governance.test.js',
     'test-map.test.js'
   ]),
   domain('subscriptions', '订阅余量', '#e879b5', [
@@ -45,6 +46,7 @@ export const TEST_DOMAINS = Object.freeze([
     'subscriptions.test.js'
   ]),
   domain('storage-projects', '存储与项目', '#39d39a', [
+    'compose-dev.test.js',
     'portfolio-v2.test.js',
     'project-merge.test.js',
     'schedule-reconciliation.test.js',
@@ -52,7 +54,9 @@ export const TEST_DOMAINS = Object.freeze([
     'trajectory.test.js'
   ]),
   domain('collaborative-canvas', '协作画布', '#f06c6c', [
-    'canvas-service.test.js'
+    'canvas-service.test.js',
+    'project-access-api.test.js',
+    'project-collaboration.test.js'
   ])
 ]);
 
@@ -86,8 +90,11 @@ const PRIMARY_SCENARIO_BY_FILE = Object.freeze({
   'autonomous-ui.test.js': 'client-interface',
   'brand-assets.test.js': 'client-interface',
   'canvas-service.test.js': 'canvas-sync',
+  'project-access-api.test.js': 'canvas-sync',
+  'project-collaboration.test.js': 'canvas-sync',
   'client-board.test.js': 'client-board',
   'codex-integration.test.js': 'mcp-contract',
+  'compose-dev.test.js': 'project-storage',
   'dependency-schedule.test.js': 'dependency-order',
   'domain.test.js': 'state-flow',
   'mcp-http.test.js': 'mcp-contract',
@@ -105,6 +112,7 @@ const PRIMARY_SCENARIO_BY_FILE = Object.freeze({
   'subscription-ui.test.js': 'subscription-data',
   'subscriptions.test.js': 'subscription-data',
   'test-map.test.js': 'mcp-contract',
+  'test-governance.test.js': 'mcp-contract',
   'trajectory.test.js': 'evidence-review',
   'ui-form.test.js': 'client-interface',
   'vertical-slice.test.js': 'run-lifecycle'

@@ -37,7 +37,12 @@
         <a class="active" id="canvasNavLink" href="/canvas.html" aria-current="page">协作画布</a>
       </nav>
 
-      <div class="client-topbar-actions" aria-hidden="true"></div>
+      <div class="client-topbar-actions">
+        <button class="canvas-context-toggle" id="canvasContextToggle" type="button" aria-controls="canvasContextPanel" aria-expanded="false">
+          项目对象
+          <span id="canvasContextCount" aria-hidden="true"></span>
+        </button>
+      </div>
     </header>
 
     <main class="canvas-stage" aria-live="polite">
@@ -55,7 +60,69 @@
           <button class="button primary" id="retryCanvas" type="button" hidden>重新连接</button>
         </div>
       </section>
+
+      <aside class="canvas-context-panel" id="canvasContextPanel" aria-label="画布项目对象" aria-hidden="true">
+        <header class="canvas-context-head">
+          <div>
+            <strong>项目对象</strong>
+            <span id="canvasAccessRole"></span>
+          </div>
+          <button class="canvas-panel-close" id="canvasContextClose" type="button" aria-label="关闭项目对象">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </header>
+        <div class="canvas-context-scroll">
+          <section class="canvas-context-section" aria-labelledby="canvasObjectsTitle">
+            <div class="canvas-section-head">
+              <h2 id="canvasObjectsTitle">可关联对象</h2>
+              <span id="canvasBindingCount"></span>
+            </div>
+            <div class="canvas-object-list" id="canvasObjectList"></div>
+          </section>
+
+          <section class="canvas-context-section" id="canvasChangeSection" aria-labelledby="canvasChangesTitle">
+            <div class="canvas-section-head">
+              <h2 id="canvasChangesTitle">排期提议</h2>
+              <span id="canvasProposalCount"></span>
+            </div>
+            <form class="canvas-change-form" id="canvasChangeForm">
+              <label>任务<select id="canvasChangeTask" required></select></label>
+              <div class="canvas-form-row">
+                <label>阶段<select id="canvasChangePhase" required></select></label>
+                <label>泳道<select id="canvasChangeStatus" required>
+                  <option value="pending">待确认</option>
+                  <option value="scheduled">已排期</option>
+                  <option value="running">进行中</option>
+                  <option value="review">待验收</option>
+                </select></label>
+              </div>
+              <label>原因<input id="canvasChangeReason" maxlength="1000" required placeholder="说明为什么调整" /></label>
+              <button type="submit">提交提议</button>
+            </form>
+            <div class="canvas-proposal-list" id="canvasProposalList"></div>
+          </section>
+
+          <section class="canvas-context-section" id="canvasShareSection" aria-labelledby="canvasShareTitle">
+            <div class="canvas-section-head"><h2 id="canvasShareTitle">共享访问</h2></div>
+            <form class="canvas-share-form" id="canvasShareForm">
+              <label>访问者<input id="canvasShareName" maxlength="120" required placeholder="客户或负责人名称" /></label>
+              <label>权限<select id="canvasShareRole">
+                <option value="EDITOR">协作编辑</option>
+                <option value="VIEWER">仅看项目</option>
+                <option value="MANAGER">负责人</option>
+              </select></label>
+              <button type="submit">生成链接</button>
+            </form>
+            <div class="canvas-share-result" id="canvasShareResult" hidden>
+              <input id="canvasShareUrl" readonly aria-label="项目共享链接" />
+              <button id="copyCanvasShareUrl" type="button">复制</button>
+            </div>
+          </section>
+        </div>
+      </aside>
     </main>
+
+    <div class="client-toast canvas-toast" id="canvasToast" role="status" aria-live="polite"></div>
 
     <script type="module" src="/canvas.js"></script>
   </body>

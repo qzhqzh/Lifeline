@@ -1,19 +1,33 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildTestCatalog } from '../src/test-map-catalog.js';
+import { buildTestCatalog } from '../src/map-catalog.js';
+import { enrichTestGovernance } from '../src/test-governance.js';
+import { buildScenarioCatalog } from '../src/test-scenario-catalog.js';
 import {
   buildOverviewLayoutExperiments,
   serializeOverviewLayoutExperiments
-} from '../src/test-map-overview-layouts.js';
+} from '../src/map-overview-layouts.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const outputPath = resolve(ROOT, 'public/data/lifeline-test-map.json');
-const catalog = await buildTestCatalog({ root: ROOT });
+const staticCatalog = await buildTestCatalog({ root: ROOT });
+const catalog = enrichTestGovernance(staticCatalog);
+const scenarioCatalog = buildScenarioCatalog({
+  project: catalog.project,
+  testCatalog: catalog,
+  openApi: JSON.parse(await readFile(resolve(ROOT, 'openapi.json'), 'utf8')),
+  sourceDocuments: [{
+    uri: 'src/domain.js',
+    content: await readFile(resolve(ROOT, 'src/domain.js'), 'utf8')
+  }],
+  generatedAt: catalog.generatedAt
+});
 const layoutExperiments = await buildOverviewLayoutExperiments(catalog);
 const output = {
   ...catalog,
+  scenarioCatalog,
   layoutExperiments: serializeOverviewLayoutExperiments(layoutExperiments)
 };
 

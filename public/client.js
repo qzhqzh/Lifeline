@@ -17,8 +17,11 @@ import {
   taskDueDate
 } from './client-data.js';
 
+import { clearProjectAccessToken, projectAccessHeaders } from './project-access.js';
+
 const state = {
   projects: [],
+  access: null,
   selectedProjectId: new URLSearchParams(window.location.search).get('project'),
   schedule: null,
   board: null,
@@ -321,6 +324,7 @@ async function loadProjects() {
   try {
     const response = await api('/api/projects');
     state.projects = response.items ?? [];
+    state.access = response.access ?? null;
     if (state.projects.length === 0) {
       state.selectedProjectId = null;
       renderEmptyPortfolio();
@@ -357,6 +361,7 @@ async function loadSelectedProject({ quiet = false, viewState = null } = {}) {
 }
 
 function render() {
+  elements.openRequestDialog.hidden = !canProjectWrite();
   if (!state.schedule || !state.board) return;
   document.title = `${state.schedule.project.name} · Lifeline 客户项目`;
   elements.main.innerHTML = state.view === 'archive' ? renderArchivePage() : renderBoardPage();
@@ -531,7 +536,7 @@ function renderTaskCard(task) {
   const due = taskDueDate(task);
   const overdue = isOverdue(task);
   const status = taskClientStatus(task);
-  const movable = clientMoveTargets(task).length > 0;
+  const movable = canProjectWrite() && clientMoveTargets(task).length > 0;
   return `
     <article class="client-task-card${movable ? ' is-draggable' : ''}" data-task-id="${escapeHtml(task.id)}">
       <button class="task-card-content" type="button" data-task-detail="${escapeHtml(task.id)}" data-task-id="${escapeHtml(task.id)}" data-client-draggable="${movable}" draggable="${movable}" aria-label="查看 ${escapeHtml(task.title)}">
@@ -1294,6 +1299,10 @@ function renderProjectOptions() {
   elements.canvasNavLink.href = `${canvasUrl.pathname}${canvasUrl.search}`;
 }
 
+function canProjectWrite() {
+  return state.access?.capabilities?.includes('project:write') !== false;
+}
+
 function renderRequestPhaseOptions() {
   if (!state.schedule) return;
   elements.requestPhase.innerHTML = state.schedule.phases
@@ -1505,13 +1514,16 @@ function prefersReducedMotion() {
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
-    headers: {
+    headers: projectAccessHeaders({
       'Content-Type': 'application/json',
       ...(options.headers ?? {})
-    }
+    })
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
+    if (response.status === 401 && ['PROJECT_ACCESS_INVALID', 'PROJECT_ACCESS_REQUIRED'].includes(body?.error?.code)) {
+      clearProjectAccessToken();
+    }
     const error = new Error(body?.error?.message ?? `请求失败（${response.status}）`);
     error.code = body?.error?.code;
     error.details = body?.error?.details;

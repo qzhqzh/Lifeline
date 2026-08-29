@@ -11,6 +11,20 @@ test('the shared task editor allows empty acceptance criteria and test commands'
   }
 });
 
+test('portfolio bootstrap conflicts require an explicit merge or keep decision', async () => {
+  const [html, app] = await Promise.all([
+    readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../public/app.js', import.meta.url), 'utf8')
+  ]);
+  for (const id of ['bootstrapConflictDialog', 'keepBootstrapExisting', 'mergeBootstrapExisting']) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(app, /if \(result\.requiresResolution\)/);
+  assert.match(app, /resolveBootstrapConflict\('KEEP_EXISTING'\)/);
+  assert.match(app, /resolveBootstrapConflict\('MERGE_EXISTING'\)/);
+  assert.match(app, /body: JSON\.stringify\(\{ conflictResolution \}\)/);
+});
+
 test('the shared task editor exposes an optional issue reference', async () => {
   const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
   for (const id of ['editIssue']) {

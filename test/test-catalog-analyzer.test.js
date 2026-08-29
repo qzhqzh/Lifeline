@@ -10,8 +10,8 @@ import {
   analyzeTestRepository,
   extractNodeTestDeclarations,
   extractPythonTestDeclarations
-} from '../src/test-catalog-analyzer.js';
-import { catalogFileName, getProjectTestMap } from '../src/test-map.js';
+} from '../src/catalog-analyzer.js';
+import { catalogFileName, getProjectTestMap } from '../src/project-test-map.js';
 
 const execFileAsync = promisify(execFile);
 const ROOT = resolve(new URL('..', import.meta.url).pathname);

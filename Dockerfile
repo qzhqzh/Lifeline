@@ -6,6 +6,7 @@ COPY src ./src
 COPY scripts ./scripts
 COPY public ./public
 COPY test ./test
+COPY openapi.json ./
 RUN npm run build:test-map
 
 FROM node:22-alpine

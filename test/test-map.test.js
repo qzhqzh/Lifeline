@@ -7,7 +7,7 @@ import {
   buildTestCatalog,
   classifyScenarios,
   extractTestDeclarations
-} from '../src/test-map-catalog.js';
+} from '../src/map-catalog.js';
 import {
   buildFocusLayout,
   hydrateOverviewLayoutExperiments,
@@ -21,8 +21,8 @@ import {
   buildElkOverviewLayout,
   buildIslandOverviewLayout,
   serializeOverviewLayoutExperiments
-} from '../src/test-map-overview-layouts.js';
-import { getProjectTestMap, isLifelineProject } from '../src/test-map.js';
+} from '../src/map-overview-layouts.js';
+import { getProjectTestMap, isLifelineProject } from '../src/project-test-map.js';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 
@@ -249,10 +249,10 @@ test('baseline Lifeline domains preserve the audited real-test grouping', async 
 
   assert.equal(counts.scheduling, 60);
   assert.equal(counts['agent-execution'], 32);
-  assert.equal(counts['client-experience'], 29);
+  assert.equal(counts['client-experience'], 30);
   assert.equal(counts.subscriptions, 21);
-  assert.equal(counts['storage-projects'], 13);
-  assert.equal(counts['collaborative-canvas'], 6);
+  assert.equal(counts['storage-projects'], 15);
+  assert.equal(counts['collaborative-canvas'], 11);
   assert.ok(counts['mcp-integration'] >= 17);
 });
 
@@ -268,6 +268,20 @@ test('project test map serves the packaged Lifeline catalog and leaves unsubmitt
   assert.equal(configured.configured, true);
   assert.equal(configured.project.id, project.id);
   assert.ok(configured.tests.length >= 173);
+  assert.equal(configured.qualityCategories.length, 8);
+  assert.ok(configured.qualityCategories.every((entry) => entry.testCount > 0));
+  if (process.env.LIFELINE_EVIDENCE_CAPTURE !== '1') {
+    assert.equal(configured.summary.observedCount, configured.summary.testCount);
+    assert.equal(configured.runtimeEvidence.testReport.failed, 0);
+    assert.equal(
+      configured.runtimeEvidence.declarationCount,
+      configured.runtimeEvidence.runnerEntryCount
+    );
+  }
+  assert.ok(configured.scenarioCatalog.summary.missing > 0);
+  assert.ok(configured.scenarioCatalog.scenarios.every((entry) => entry.sourceEvidence.length > 0));
+  assert.equal('model' in configured, false);
+  assert.equal('confidence' in configured, false);
 
   const unsupported = await getProjectTestMap({
     id: 'project-other',
@@ -296,6 +310,9 @@ test('test map ships as a local Sigma surface with project-preserving navigation
   assert.match(html, /id="layoutSwitcher"/);
   assert.match(html, /id="nodeSpread"/);
   assert.match(html, /id="nodeStyleSwitcher"/);
+  assert.match(html, /id="qualityCategoryFilters"/);
+  assert.match(html, /id="showAllQualityCategories"/);
+  assert.match(html, /id="scenarioGapSummary"/);
   assert.match(html, /data-node-style="rings"/);
   assert.match(html, /data-layout-mode="islands"/);
   assert.match(html, /data-layout-mode="elk"/);
@@ -305,6 +322,9 @@ test('test map ships as a local Sigma surface with project-preserving navigation
   assert.match(css, /\.map-layout-switch/);
   assert.match(css, /\.map-display-settings/);
   assert.match(css, /data-node-style="rings"/);
+  assert.match(css, /\.quality-category-filter/);
+  assert.match(css, /\.scenario-gap-summary/);
+  assert.match(css, /\.gap-key/);
   assert.match(source, /import Sigma from 'sigma'/);
   assert.match(source, /import Graph from 'graphology'/);
   assert.match(source, /buildFocusLayout/);
@@ -315,6 +335,15 @@ test('test map ships as a local Sigma surface with project-preserving navigation
   assert.match(source, /switchOverviewLayout/);
   assert.match(source, /orbitalRoutePoints/);
   assert.match(source, /nodeFillColor/);
+  assert.match(source, /selectedQualityCategoryId/);
+  assert.match(source, /qualityCategoryIds/);
+  assert.match(source, /runtimeEvidence/);
+  assert.match(source, /scenarioGaps/);
+  assert.match(source, /gapWorkflowActions/);
+  assert.match(source, /test-governance:review/);
+  assert.match(source, /CREATE_DRAFT/);
+  assert.match(source, /projectAccessHeaders/);
+  assert.match(source, /function renderQualityCategoryFilters/);
   assert.match(source, /zoomToSizeRatioFunction: \(\) => 1/);
   assert.match(source, /drawSemanticLabels/);
   assert.match(source, /semanticLabelPaintMs/);
@@ -325,7 +354,12 @@ test('test map ships as a local Sigma surface with project-preserving navigation
   assert.match(clientHtml, /id="testMapNavLink"/);
   assert.match(canvasHtml, /id="testMapNavLink"/);
   assert.match(server, /\/test-map\$/);
+  assert.match(server, /\/test-scenario-proposals/);
+  assert.match(server, /\/draft\$/);
+  assert.match(server, /\/runs/);
+  assert.match(server, /\/verify/);
   assert.match(openapi, /\/api\/projects\/\{projectId\}\/test-map/);
+  assert.match(openapi, /\/api\/projects\/\{projectId\}\/test-scenario-proposals/);
 });
 
 function labelFixture(id, domainId, scenarioIds, overrides = {}) {

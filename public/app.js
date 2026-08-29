@@ -8,6 +8,7 @@ const state = {
   trajectoryWindow: readTrajectoryWindow(),
   filter: 'all',
   bootstrap: null,
+  bootstrapConflictKey: null,
   selectedProjectId: new URLSearchParams(window.location.search).get('project'),
   detailFocusPending: true,
   detailSchedule: null,
@@ -48,6 +49,10 @@ const elements = {
   closeTrajectoryDrawer: document.querySelector('#closeTrajectoryDrawer'),
   bootstrapAction: document.querySelector('#bootstrapAction'),
   seedDemo: document.querySelector('#seedDemo'),
+  bootstrapConflictDialog: document.querySelector('#bootstrapConflictDialog'),
+  bootstrapConflictSummary: document.querySelector('#bootstrapConflictSummary'),
+  keepBootstrapExisting: document.querySelector('#keepBootstrapExisting'),
+  mergeBootstrapExisting: document.querySelector('#mergeBootstrapExisting'),
   refresh: document.querySelector('#refresh'),
   openCreationDrawer: document.querySelector('#openCreationDrawer'),
   creationDrawer: document.querySelector('#creationDrawer'),
@@ -104,6 +109,9 @@ elements.refresh.addEventListener('click', async () => {
   await Promise.all([checkHealth(), refresh()]);
 });
 elements.seedDemo?.addEventListener('click', bootstrapPortfolio);
+elements.keepBootstrapExisting?.addEventListener('click', () => resolveBootstrapConflict('KEEP_EXISTING'));
+elements.mergeBootstrapExisting?.addEventListener('click', () => resolveBootstrapConflict('MERGE_EXISTING'));
+elements.bootstrapConflictDialog?.addEventListener('close', resetBootstrapConflictControls);
 elements.openCreationDrawer.addEventListener('click', openCreationDrawer);
 elements.closeCreationDrawer.addEventListener('click', () => closeCreationDrawer());
 elements.creationDrawer.addEventListener('cancel', (event) => {
@@ -288,24 +296,84 @@ function updateRefreshButton() {
 }
 
 async function bootstrapPortfolio() {
+  const idempotencyKey = globalThis.crypto?.randomUUID?.() ?? `portfolio-v2-${Date.now()}`;
   try {
     elements.seedDemo.disabled = true;
     elements.seedDemo.textContent = '正在载入项目排期…';
-    await api('/api/bootstrap/portfolio-v2', {
+    const result = await api('/api/bootstrap/portfolio-v2', {
       method: 'POST',
-      headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `portfolio-v2-${Date.now()}` }
+      headers: { 'Idempotency-Key': idempotencyKey }
     });
-    elements.bootstrapAction?.remove();
-    state.bootstrap = { ...state.bootstrap, available: false };
-    notify('Lifeline、EchoMe 与 Totemora 的项目排期已载入');
-    await refresh();
+    if (result.requiresResolution) {
+      showBootstrapConflict(result, idempotencyKey);
+      return;
+    }
+    await finishBootstrap(result);
   } catch (error) {
     notify(error.message, true);
-    if (elements.seedDemo?.isConnected) {
-      elements.seedDemo.disabled = false;
-      elements.seedDemo.textContent = '载入本次项目排期';
-    }
+    resetBootstrapAction();
   }
+}
+
+function showBootstrapConflict(result, idempotencyKey) {
+  state.bootstrap = result;
+  state.bootstrapConflictKey = idempotencyKey;
+  const names = [...new Set((result.conflicts ?? []).map((entry) => entry.sourceName).filter(Boolean))];
+  const projectText = names.length > 0 ? names.slice(0, 3).join('、') : '现有项目';
+  elements.bootstrapConflictSummary.textContent = `检测到 ${projectText} 已被修改。合并会沿用现有项目和任务，再补齐正式排期；保留现状不会写入 receipt。`;
+  elements.bootstrapConflictDialog.showModal();
+  elements.keepBootstrapExisting.focus();
+}
+
+async function resolveBootstrapConflict(conflictResolution) {
+  const idempotencyKey = state.bootstrapConflictKey;
+  if (!idempotencyKey) return;
+  setBootstrapConflictBusy(true);
+  try {
+    const result = await api('/api/bootstrap/portfolio-v2', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify({ conflictResolution })
+    });
+    if (conflictResolution === 'KEEP_EXISTING') {
+      state.bootstrap = result;
+      elements.bootstrapConflictDialog.close();
+      resetBootstrapAction();
+      notify('已保留现有项目，本次没有载入新排期');
+      return;
+    }
+    elements.bootstrapConflictDialog.close();
+    await finishBootstrap(result);
+  } catch (error) {
+    notify(error.message, true);
+    setBootstrapConflictBusy(false);
+  }
+}
+
+async function finishBootstrap(result) {
+  elements.bootstrapAction?.remove();
+  state.bootstrap = { ...result, available: false };
+  state.bootstrapConflictKey = null;
+  notify('Lifeline、EchoMe 与 Totemora 的项目排期已载入');
+  await refresh();
+}
+
+function setBootstrapConflictBusy(busy) {
+  elements.keepBootstrapExisting.disabled = busy;
+  elements.mergeBootstrapExisting.disabled = busy;
+  elements.mergeBootstrapExisting.textContent = busy ? '正在处理…' : '合并并载入';
+}
+
+function resetBootstrapConflictControls() {
+  state.bootstrapConflictKey = null;
+  setBootstrapConflictBusy(false);
+  resetBootstrapAction();
+}
+
+function resetBootstrapAction() {
+  if (!elements.seedDemo?.isConnected) return;
+  elements.seedDemo.disabled = false;
+  elements.seedDemo.innerHTML = '<span class="button-label-wide">载入本次项目排期</span><span class="button-label-compact">载入排期</span>';
 }
 
 async function openCreationDrawer() {
