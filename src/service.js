@@ -43,6 +43,10 @@ export const RUN_KIND = Object.freeze({
 
 const MIN_CLAIM_LEASE_MINUTES = 30;
 const MAX_CLAIM_LEASE_MINUTES = 8 * 60;
+const BOOTSTRAP_CONFLICT_RESOLUTIONS = Object.freeze({
+  MERGE_EXISTING: 'MERGE_EXISTING',
+  KEEP_EXISTING: 'KEEP_EXISTING'
+});
 
 const TRAJECTORY_WINDOW_MS = Object.freeze({
   '24h': 24 * 60 * 60 * 1000,
@@ -1937,9 +1941,14 @@ export class LifelineService {
    * JsonStore.mutate callback, so concurrent calls on a service share one
    * receipt and cannot duplicate imported records.
    */
-  async bootstrapPortfolioV2({ userId = this.#localUserId, idempotencyKey = null } = {}) {
+  async bootstrapPortfolioV2({
+    userId = this.#localUserId,
+    idempotencyKey = null,
+    conflictResolution = null
+  } = {}) {
     const normalizedUserId = resolveLocalUserId(userId);
     const normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+    const normalizedConflictResolution = normalizeBootstrapConflictResolution(conflictResolution);
     const template = getPortfolioV2Template();
     return this.#store.mutate((state) => {
       const existing = state.bootstrapReceipts.find((receipt) => (
@@ -1951,9 +1960,58 @@ export class LifelineService {
         });
       }
 
+      const detectedConflicts = detectPortfolioProjectConflicts(state, template);
+      const conflicts = detectedConflicts.map((input) => ensureMigrationConflict(state, {
+        userId: normalizedUserId,
+        ...input
+      }));
+      if (conflicts.length > 0 && normalizedConflictResolution !== BOOTSTRAP_CONFLICT_RESOLUTIONS.MERGE_EXISTING) {
+        if (normalizedConflictResolution === BOOTSTRAP_CONFLICT_RESOLUTIONS.KEEP_EXISTING) {
+          const decidedAt = nowIso();
+          for (const conflict of conflicts) {
+            conflict.lastDecision = BOOTSTRAP_CONFLICT_RESOLUTIONS.KEEP_EXISTING;
+            conflict.lastDecisionAt = decidedAt;
+            conflict.lastDecidedBy = normalizedUserId;
+          }
+          state.events.push(createAuditEvent({
+            type: 'portfolio.bootstrap_conflict_kept',
+            message: 'Portfolio bootstrap was left unapplied so existing projects remain unchanged',
+            metadata: {
+              userId: normalizedUserId,
+              templateKey: PORTFOLIO_TEMPLATE_KEY,
+              conflictIds: conflicts.map((entry) => entry.id)
+            }
+          }, nextGlobalSequence(state)));
+        }
+        return blockedBootstrapResult(state, normalizedUserId, conflicts, {
+          keptExisting: normalizedConflictResolution === BOOTSTRAP_CONFLICT_RESOLUTIONS.KEEP_EXISTING
+        });
+      }
+
+      if (conflicts.length > 0) {
+        const resolvedAt = nowIso();
+        for (const conflict of conflicts) {
+          conflict.resolution = BOOTSTRAP_CONFLICT_RESOLUTIONS.MERGE_EXISTING;
+          conflict.resolvedAt = resolvedAt;
+          conflict.resolvedBy = normalizedUserId;
+        }
+        state.events.push(createAuditEvent({
+          type: 'portfolio.bootstrap_conflict_resolved',
+          message: 'Modified legacy projects were explicitly merged into the Portfolio template',
+          metadata: {
+            userId: normalizedUserId,
+            templateKey: PORTFOLIO_TEMPLATE_KEY,
+            resolution: BOOTSTRAP_CONFLICT_RESOLUTIONS.MERGE_EXISTING,
+            conflictIds: conflicts.map((entry) => entry.id)
+          }
+        }, nextGlobalSequence(state)));
+      }
+
       const sourceSnapshot = structuredClone(state);
       const sourceSnapshotHash = hashSnapshot(sourceSnapshot);
-      const migration = applyPortfolioTemplate(state, template, normalizedUserId);
+      const migration = applyPortfolioTemplate(state, template, normalizedUserId, {
+        mergeModifiedLegacy: conflicts.length > 0
+      });
       const receipt = createBootstrapReceipt({
         userId: normalizedUserId,
         templateKey: PORTFOLIO_TEMPLATE_KEY,
@@ -1975,7 +2033,7 @@ export class LifelineService {
         state: sourceSnapshot
       });
       return bootstrapResult(state, normalizedUserId, receipt, true, {
-        conflicts: migration.conflicts,
+        conflicts: conflicts.length > 0 ? conflicts : migration.conflicts,
         migratedProjectIds: migration.projectIds,
         archivedProjectIds: migration.archivedProjectIds
       });
@@ -2255,6 +2313,7 @@ function bootstrapStatusFromState(state, userId) {
   const conflicts = state.migrationConflicts.filter((entry) => (
     entry.userId === userId && entry.templateKey === PORTFOLIO_TEMPLATE_KEY
   ));
+  const pendingConflicts = conflicts.filter((entry) => !entry.resolvedAt);
   return {
     available: !receipt,
     templateKey: PORTFOLIO_TEMPLATE_KEY,
@@ -2262,7 +2321,9 @@ function bootstrapStatusFromState(state, userId) {
     appliedAt: receipt?.appliedAt ?? null,
     resultProjectIds: receipt?.resultProjectIds ?? [],
     sourceSnapshotHash: receipt?.sourceSnapshotHash ?? null,
-    conflicts
+    conflicts,
+    pendingConflicts,
+    requiresResolution: !receipt && pendingConflicts.length > 0
   };
 }
 
@@ -2274,6 +2335,31 @@ function bootstrapResult(state, userId, receipt, created, extra = {}) {
     created,
     ...extra
   };
+}
+
+function blockedBootstrapResult(state, userId, conflicts, { keptExisting = false } = {}) {
+  return {
+    ...bootstrapStatusFromState(state, userId),
+    receipt: null,
+    created: false,
+    blocked: true,
+    keptExisting,
+    requiresResolution: true,
+    resolutionOptions: Object.values(BOOTSTRAP_CONFLICT_RESOLUTIONS),
+    conflicts
+  };
+}
+
+function normalizeBootstrapConflictResolution(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const resolution = normalizeRequiredText(value, 'conflictResolution', 40).toUpperCase();
+  if (!Object.values(BOOTSTRAP_CONFLICT_RESOLUTIONS).includes(resolution)) {
+    throw new DomainError(
+      `conflictResolution must be one of: ${Object.values(BOOTSTRAP_CONFLICT_RESOLUTIONS).join(', ')}`,
+      'INVALID_INPUT'
+    );
+  }
+  return resolution;
 }
 
 function normalizeIdempotencyKey(value) {
@@ -3113,7 +3199,7 @@ function scanRiskTier(severity) {
   return { critical: 'critical', high: 'high', medium: 'medium', low: 'low' }[normalizeScanSeverity(severity)];
 }
 
-function applyPortfolioTemplate(state, template, userId) {
+function applyPortfolioTemplate(state, template, userId, { mergeModifiedLegacy = false } = {}) {
   const projectIds = [];
   const archivedProjectIds = [];
   const conflicts = [];
@@ -3130,15 +3216,23 @@ function applyPortfolioTemplate(state, template, userId) {
       if (legacy) {
         const changedFields = legacyProjectChanges(state, legacy, projectSpec);
         if (changedFields.length > 0) {
-          const conflict = recordMigrationConflict(state, {
-            userId,
-            sourceProjectId: legacy.id,
-            sourceName: legacy.name,
-            targetName: projectSpec.name,
-            changedFields,
-            reason: 'USER_MODIFIED_LEGACY_TEMPLATE'
-          });
-          conflicts.push(conflict);
+          if (mergeModifiedLegacy) {
+            project = legacy;
+            untouchedLegacy = true;
+            project.name = projectSpec.name;
+            project.description = projectSpec.description;
+            project.headline = projectSpec.headline;
+          } else {
+            const conflict = recordMigrationConflict(state, {
+              userId,
+              sourceProjectId: legacy.id,
+              sourceName: legacy.name,
+              targetName: projectSpec.name,
+              changedFields,
+              reason: 'USER_MODIFIED_LEGACY_TEMPLATE'
+            });
+            conflicts.push(conflict);
+          }
         } else if (projectSpec.name === 'Lifeline') {
           // The first vertical slice is real user data: keep its project ID
           // and any existing Run while applying only product metadata.
@@ -3450,6 +3544,42 @@ function recordMigrationConflict(state, input) {
   };
   state.migrationConflicts.push(conflict);
   return conflict;
+}
+
+function detectPortfolioProjectConflicts(state, template) {
+  const conflicts = [];
+  for (const projectSpec of template) {
+    const templateProject = state.projects.find((entry) => (
+      entry.templateKey === PORTFOLIO_TEMPLATE_KEY
+        && entry.templateVersion === PORTFOLIO_TEMPLATE_VERSION
+        && entry.name === projectSpec.name
+    ));
+    if (templateProject) continue;
+    const legacy = findLegacyProject(state, projectSpec);
+    if (!legacy) continue;
+    const changedFields = legacyProjectChanges(state, legacy, projectSpec);
+    if (changedFields.length === 0) continue;
+    conflicts.push({
+      sourceProjectId: legacy.id,
+      sourceName: legacy.name,
+      targetName: projectSpec.name,
+      changedFields,
+      reason: 'USER_MODIFIED_LEGACY_TEMPLATE'
+    });
+  }
+  return conflicts;
+}
+
+function ensureMigrationConflict(state, input) {
+  const existing = state.migrationConflicts.find((entry) => (
+    entry.userId === input.userId
+      && entry.templateKey === PORTFOLIO_TEMPLATE_KEY
+      && entry.sourceProjectId === input.sourceProjectId
+      && entry.targetName === input.targetName
+      && entry.reason === input.reason
+      && !entry.resolvedAt
+  ));
+  return existing ?? recordMigrationConflict(state, input);
 }
 
 function archiveLegacyProject(state, project) {

@@ -138,6 +138,22 @@ h1 { margin: 0; font-size: 34px; line-height: 1.12; letter-spacing: -0.035em; te
 .bootstrap-action { display: grid; gap: var(--space-1); }
 .bootstrap-action small { max-width: 240px; color: var(--quiet); font-size: 10px; line-height: 1.4; }
 
+.decision-dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-width: none;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.48);
+}
+.decision-dialog::backdrop { background: rgba(3, 5, 8, 0.76); }
+.decision-dialog-shell { padding: var(--space-5); }
+.decision-dialog h2 { margin: 0; font-size: 18px; }
+.decision-dialog p { margin: var(--space-3) 0 var(--space-5); color: var(--muted); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.decision-dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
+
 .button {
   min-height: 44px;
   border: 1px solid transparent;
@@ -163,7 +179,7 @@ h1 { margin: 0; font-size: 34px; line-height: 1.12; letter-spacing: -0.035em; te
 .button:focus-visible, .filter-button:focus-visible, .project-summary:focus-visible, .detail-back:focus-visible, .star-toggle:focus-visible,
 .view-switch button:focus-visible, .creation-mode button:focus-visible, .detail-task:focus-visible, .text-action:focus-visible, input:focus-visible, textarea:focus-visible,
 select:focus-visible, summary:focus-visible, .board-scroll:focus-visible, .trajectory-window-switch button:focus-visible, .trajectory-interval:focus-visible,
-.dispatch-choice:focus-visible, .task-item:focus-visible {
+.dispatch-choice:focus-visible, .task-item:focus-visible, .decision-dialog button:focus-visible {
   outline: 3px solid rgba(115, 229, 193, 0.28);
   outline-offset: 2px;
 }

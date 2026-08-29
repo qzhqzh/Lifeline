@@ -6,6 +6,7 @@ import {
   spreadOverviewLayout
 } from '../src/quality-map-layout.js';
 import { selectSemanticLabelCandidates } from '../src/quality-map-labels.js';
+import { clearProjectAccessToken, projectAccessHeaders } from './project-access.js';
 
 const DEFAULT_NODE_SPREAD = 1.2;
 const initialParams = new URLSearchParams(window.location.search);
@@ -26,9 +27,12 @@ const state = {
   focusVisibleTestIds: new Set(),
   viewMode: 'overview',
   selectedDomainIds: new Set(),
+  selectedQualityCategoryId: null,
   focusedScenarioId: null,
   selectedTestId: null,
+  selectedGapId: null,
   hoveredTestId: null,
+  hoveredGapId: null,
   requestController: null,
   resizeObserver: null,
   redrawFrame: null,
@@ -53,6 +57,9 @@ const elements = {
   searchResults: document.querySelector('#testSearchResults'),
   catalogStamp: document.querySelector('#catalogStamp'),
   catalogSummary: document.querySelector('#catalogSummary'),
+  qualityCategoryFilters: document.querySelector('#qualityCategoryFilters'),
+  showAllQualityCategories: document.querySelector('#showAllQualityCategories'),
+  scenarioGapSummary: document.querySelector('#scenarioGapSummary'),
   domainFilters: document.querySelector('#domainFilters'),
   toggleDomains: document.querySelector('#toggleDomains'),
   routeFilters: document.querySelector('#routeFilters'),
@@ -106,6 +113,21 @@ elements.search.addEventListener('keydown', (event) => {
 elements.searchResults.addEventListener('click', (event) => {
   const result = event.target.closest('[data-search-test]');
   if (result) focusTest(result.dataset.searchTest);
+});
+
+elements.qualityCategoryFilters.addEventListener('click', (event) => {
+  const filter = event.target.closest('[data-quality-category-id]');
+  if (!filter) return;
+  state.selectedQualityCategoryId = state.selectedQualityCategoryId === filter.dataset.qualityCategoryId
+    ? null
+    : filter.dataset.qualityCategoryId;
+  keepSelectionVisible();
+  applyFilters();
+});
+
+elements.showAllQualityCategories.addEventListener('click', () => {
+  state.selectedQualityCategoryId = null;
+  applyFilters();
 });
 
 elements.domainFilters.addEventListener('click', (event) => {
@@ -175,6 +197,8 @@ elements.nodeStyleSwitcher.addEventListener('click', (event) => {
 });
 
 elements.inspector.addEventListener('click', async (event) => {
+  const gapAction = event.target.closest('[data-gap-action]');
+  if (gapAction) return handleGapAction(gapAction.dataset.gapAction);
   const related = event.target.closest('[data-related-test]');
   if (related) return focusTest(related.dataset.relatedTest);
   if (event.target.closest('[data-close-inspector]')) return clearSelection();
@@ -273,6 +297,9 @@ async function loadTestMap() {
     }
 
     state.selectedDomainIds = new Set(catalog.domains.filter((entry) => entry.testCount > 0).map((entry) => entry.id));
+    if (!catalog.qualityCategories?.some((entry) => entry.id === state.selectedQualityCategoryId)) {
+      state.selectedQualityCategoryId = null;
+    }
     state.layoutExperiments = hydrateOverviewLayoutExperiments(catalog.layoutExperiments);
     if (state.layoutExperiments.size === 0) {
       const fallback = { id: 'islands', label: '轨道星域', engine: 'Deterministic orbit fallback', domainShape: 'circle', ...layoutCatalog(catalog) };
@@ -321,6 +348,19 @@ function createSigmaMap() {
       zIndex: test.transfer ? 2 : 1
     });
   }
+  for (const gap of state.catalog.scenarioGaps ?? []) {
+    const position = gapGraphPosition(gap, state.layout);
+    graph.addNode(gapNodeId(gap.id), {
+      x: position.x,
+      y: position.y,
+      size: 6.2,
+      color: '#314450',
+      label: '',
+      kind: 'scenario-gap',
+      gapId: gap.id,
+      zIndex: 3
+    });
+  }
 
   const renderer = new Sigma(graph, elements.graph, {
     allowInvalidContainer: false,
@@ -347,16 +387,24 @@ function createSigmaMap() {
 
   state.graph = graph;
   state.renderer = renderer;
-  renderer.on('clickNode', ({ node }) => focusTest(node));
+  renderer.on('clickNode', ({ node }) => {
+    const gap = gapByNodeId(node);
+    if (gap) selectScenarioGap(gap.id);
+    else focusTest(node);
+  });
   renderer.on('enterNode', ({ node }) => {
-    state.hoveredTestId = node;
+    const gap = gapByNodeId(node);
+    state.hoveredTestId = gap ? null : node;
+    state.hoveredGapId = gap?.id ?? null;
     renderer.refresh();
     scheduleMapRedraw();
     const test = testById(node);
-    if (test) elements.mapStatus.textContent = `${test.title} · ${test.file}:${test.line}`;
+    if (gap) elements.mapStatus.textContent = `${gap.title} · ${coverageStateLabel(gap.coverageState)}`;
+    else if (test) elements.mapStatus.textContent = `${test.title} · ${test.file}:${test.line}`;
   });
   renderer.on('leaveNode', () => {
     state.hoveredTestId = null;
+    state.hoveredGapId = null;
     renderer.refresh();
     scheduleMapRedraw();
     renderMapStatus();
@@ -379,16 +427,32 @@ function createSigmaMap() {
 }
 
 function nodeReducer(node, data) {
+  if (data.kind === 'scenario-gap') {
+    const gap = scenarioGapById(data.gapId);
+    const categoryVisible = !state.selectedQualityCategoryId || gap?.categoryIds?.includes(state.selectedQualityCategoryId);
+    const selected = gap?.id === state.selectedGapId;
+    const hovered = gap?.id === state.hoveredGapId;
+    return {
+      ...data,
+      hidden: !gap || !categoryVisible || state.viewMode === 'focus',
+      color: selected ? '#e9bd65' : hovered ? '#cf9c58' : '#314450',
+      label: '',
+      size: selected ? 9 : hovered ? 7.8 : 6.2,
+      zIndex: selected ? 7 : hovered ? 6 : 3
+    };
+  }
   const test = testById(node);
   if (!test) return data;
   const domainVisible = state.selectedDomainIds.has(test.domainId);
+  const categoryVisible = !state.selectedQualityCategoryId
+    || test.qualityCategoryIds?.includes(state.selectedQualityCategoryId);
   const visibleInMode = state.viewMode !== 'focus' || state.focusVisibleTestIds.has(node);
   const onFocusedRoute = !state.focusedScenarioId || test.scenarioIds.includes(state.focusedScenarioId);
   const selected = node === state.selectedTestId;
   const hovered = node === state.hoveredTestId;
   return {
     ...data,
-    hidden: !domainVisible || !visibleInMode,
+    hidden: !domainVisible || !categoryVisible || !visibleInMode,
     color: nodeFillColor(test, { selected, hovered, onFocusedRoute }),
     label: '',
     size: selected ? 9.4 : hovered ? 8.2 : state.viewMode === 'focus' ? 6.6 : test.transfer ? 7.2 : 5.4,
@@ -505,15 +569,167 @@ function drawRouteLayer() {
     if (point.x < -20 || point.x > width + 20 || point.y < -20 || point.y > height + 20) continue;
     drawStation(context, point, test);
   }
+  drawScenarioGapNodes(context, width, height);
   drawSemanticLabels(context, width, height);
+}
+
+function drawScenarioGapNodes(context, width, height) {
+  if (state.viewMode === 'focus') return;
+  const cameraRatio = state.renderer.getCamera().ratio;
+  const showLabels = cameraRatio <= .7;
+  const occupancy = createSemanticLabelOccupancy(semanticLabelReservedAreas(width, height), 28);
+  const candidates = [];
+  for (const gap of state.catalog.scenarioGaps ?? []) {
+    if (state.selectedQualityCategoryId && !gap.categoryIds?.includes(state.selectedQualityCategoryId)) continue;
+    const display = state.renderer.getNodeDisplayData(gapNodeId(gap.id));
+    if (!display || display.hidden || display.x < -30 || display.x > width + 30 || display.y < -30 || display.y > height + 30) continue;
+    const selected = gap.id === state.selectedGapId;
+    const hovered = gap.id === state.hoveredGapId;
+    context.save();
+    context.setLineDash(gap.coverageState === 'partial' ? [3, 3] : [5, 4]);
+    context.lineWidth = selected ? 2.2 : hovered ? 1.8 : 1.35;
+    context.strokeStyle = gapColor(gap, selected || hovered ? .95 : .68);
+    context.fillStyle = selected ? 'rgba(241, 183, 59, .16)' : 'rgba(11, 24, 32, .75)';
+    context.beginPath();
+    context.arc(display.x, display.y, selected ? 10 : 8, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.restore();
+    if (showLabels || selected || hovered) candidates.push({ gap, point: display, selected, hovered });
+  }
+  candidates
+    .sort((left, right) => Number(right.selected) - Number(left.selected)
+      || Number(right.hovered) - Number(left.hovered)
+      || gapPriority(left.gap) - gapPriority(right.gap)
+      || left.gap.id.localeCompare(right.gap.id))
+    .slice(0, cameraRatio <= .18 ? 30 : cameraRatio <= .4 ? 18 : 8)
+    .forEach(({ gap, point, selected, hovered }) => {
+      const bubble = measureGapBubble(context, gap, { selected, hovered, compact: width < 620 });
+      const placement = placeSemanticBubble(point, bubble, occupancy, width, height, {
+        required: selected || hovered,
+        seed: semanticLabelHash(gap)
+      });
+      if (!placement) return;
+      occupancy.add(placement);
+      drawGapBubble(context, placement, bubble, gap, { selected, hovered });
+    });
+}
+
+function gapGraphPosition(gap, layout) {
+  const matched = (gap.matchedTestIds ?? []).map((id) => layout.positions.get(id)).filter(Boolean);
+  if (matched.length > 0) {
+    const center = averagePoint(matched);
+    const angle = stableAngle(gap.id);
+    return { x: center.x + Math.cos(angle) * 34, y: center.y + Math.sin(angle) * 34 };
+  }
+  const category = (gap.categoryIds ?? []).map(qualityCategoryById).find(Boolean);
+  const categoryTests = (category?.testIds ?? []).map(testById).filter(Boolean);
+  const domainCounts = new Map();
+  for (const test of categoryTests) domainCounts.set(test.domainId, (domainCounts.get(test.domainId) ?? 0) + 1);
+  const domainId = [...domainCounts].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0]?.[0];
+  const bounds = domainId ? layout.domainBounds.get(domainId) : null;
+  const center = bounds ? domainCenter(bounds) : {
+    x: (layout.extent.minX + layout.extent.maxX) / 2,
+    y: (layout.extent.minY + layout.extent.maxY) / 2
+  };
+  const siblings = (state.catalog.scenarioGaps ?? []).filter((entry) => (
+    (entry.categoryIds?.[0] ?? '') === (gap.categoryIds?.[0] ?? '')
+  ));
+  const index = Math.max(0, siblings.findIndex((entry) => entry.id === gap.id));
+  const angle = stableAngle(gap.id) + index * .41;
+  const baseRadius = bounds
+    ? Math.max(54, Math.min(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * .38)
+    : 90;
+  const radius = baseRadius + (index % 3) * 24;
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+}
+
+function measureGapBubble(context, gap, { selected, hovered, compact }) {
+  const emphasized = selected || hovered;
+  const maxWidth = emphasized ? compact ? 180 : 250 : compact ? 150 : 205;
+  const fontSize = emphasized ? 11.5 : 10.25;
+  const horizontalPadding = emphasized ? 10 : 8;
+  const verticalPadding = emphasized ? 8 : 6;
+  context.save();
+  context.font = `${emphasized ? 650 : 590} ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+  const lines = wrapCanvasText(context, gap.title, maxWidth - horizontalPadding * 2);
+  const width = Math.min(maxWidth, Math.ceil(Math.max(...lines.map((line) => context.measureText(line).width), 30)) + horizontalPadding * 2);
+  context.restore();
+  return {
+    width,
+    height: verticalPadding * 2 + lines.length * Math.ceil(fontSize * 1.35) + 13,
+    lines,
+    lineHeight: Math.ceil(fontSize * 1.35),
+    fontSize,
+    horizontalPadding,
+    verticalPadding,
+    emphasized
+  };
+}
+
+function drawGapBubble(context, placement, bubble, gap, { selected, hovered }) {
+  const accent = gapColor(gap, 1);
+  const anchor = closestRectPoint(placement.point, placement);
+  context.save();
+  context.setLineDash([4, 3]);
+  context.beginPath();
+  context.moveTo(placement.point.x, placement.point.y);
+  context.lineTo(anchor.x, anchor.y);
+  context.strokeStyle = gapColor(gap, selected || hovered ? .82 : .48);
+  context.lineWidth = selected || hovered ? 1.3 : 1;
+  context.stroke();
+  context.setLineDash([]);
+  context.shadowColor = 'rgba(0, 0, 0, .4)';
+  context.shadowBlur = 12;
+  context.shadowOffsetY = 3;
+  context.fillStyle = selected ? 'rgba(35, 28, 16, .97)' : 'rgba(8, 18, 25, .94)';
+  context.strokeStyle = gapColor(gap, selected || hovered ? .86 : .5);
+  roundedRect(context, placement.x, placement.y, placement.width, placement.height, 6);
+  context.fill();
+  context.shadowColor = 'transparent';
+  context.stroke();
+  context.fillStyle = '#e8eef1';
+  context.font = `${bubble.emphasized ? 650 : 590} ${bubble.fontSize}px ui-sans-serif, system-ui, sans-serif`;
+  context.textBaseline = 'top';
+  let top = placement.y + bubble.verticalPadding;
+  for (const line of bubble.lines) {
+    context.fillText(line, placement.x + bubble.horizontalPadding, top);
+    top += bubble.lineHeight;
+  }
+  context.fillStyle = accent;
+  context.font = '650 9px ui-sans-serif, system-ui, sans-serif';
+  context.fillText(coverageStateLabel(gap.coverageState), placement.x + bubble.horizontalPadding, top + 1);
+  context.restore();
+}
+
+function gapColor(gap, alpha = 1) {
+  const color = ({ missing: '#f07878', partial: '#e9b94d', unobserved: '#7f96a3' })[gap.coverageState] ?? '#7f96a3';
+  return alpha === 1 ? color : hexAlpha(color, alpha);
+}
+
+function gapPriority(gap) {
+  return ({ missing: 0, partial: 1, unobserved: 2 })[gap.coverageState] ?? 3;
+}
+
+function averagePoint(points) {
+  return {
+    x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+    y: points.reduce((sum, point) => sum + point.y, 0) / points.length
+  };
+}
+
+function stableAngle(value) {
+  let hash = 0;
+  for (const character of String(value)) hash = (hash * 33 + character.charCodeAt(0)) >>> 0;
+  return (hash % 360) / 180 * Math.PI;
 }
 
 function routeGraphPoints(layout, scenarioId) {
   const routed = layout.routePoints?.get(scenarioId);
-  if (routed) return routed;
+  if (routed && !state.selectedQualityCategoryId) return routed;
   const entries = (layout.routes.get(scenarioId) ?? [])
     .map((id) => ({ test: testById(id), point: layout.positions.get(id) }))
-    .filter(({ test, point }) => test && point && state.selectedDomainIds.has(test.domainId));
+    .filter(({ test, point }) => test && point && isTestVisible(test));
   if (layout.domainShape !== 'circle') return entries.map(({ point }) => point);
   return orbitalRoutePoints(layout, entries);
 }
@@ -557,6 +773,7 @@ function domainCenter(bounds) {
 
 function isTestVisible(test) {
   return state.selectedDomainIds.has(test.domainId)
+    && (!state.selectedQualityCategoryId || test.qualityCategoryIds?.includes(state.selectedQualityCategoryId))
     && (state.viewMode !== 'focus' || state.focusVisibleTestIds.has(test.id));
 }
 
@@ -1145,6 +1362,7 @@ function drawMinimap() {
 
 function renderCatalogChrome() {
   const { summary } = state.catalog;
+  const resultSummary = state.catalog.runtimeEvidence?.testReport;
   const generated = new Date(state.catalog.generatedAt);
   elements.catalogStamp.textContent = Number.isNaN(generated.getTime())
     ? ''
@@ -1153,10 +1371,31 @@ function renderCatalogChrome() {
     <div><dt>测试</dt><dd>${formatNumber(summary.testCount)}</dd></div>
     <div><dt>文件</dt><dd>${formatNumber(summary.fileCount)}</dd></div>
     <div><dt>换乘</dt><dd>${formatNumber(summary.transferCount)}</dd></div>
-    <div><dt>结果</dt><dd><small>未采集</small></dd></div>
+    <div><dt>结果</dt><dd>${summary.observedCount > 0
+      ? `${formatNumber(summary.observedCount)}<small>${resultSummary?.failed > 0 ? ` · ${formatNumber(resultSummary.failed)} 失败` : ' · 已采集'}</small>`
+      : '<small>未采集</small>'}</dd></div>
   `;
+  renderQualityCategoryFilters();
   renderDomainFilters();
   renderRouteFilters();
+}
+
+function renderQualityCategoryFilters() {
+  const categories = state.catalog.qualityCategories ?? [];
+  elements.qualityCategoryFilters.innerHTML = categories.map((category) => `
+    <button class="quality-category-filter${state.selectedQualityCategoryId === category.id ? ' active' : ''}" type="button" data-quality-category-id="${escapeHtml(category.id)}" aria-pressed="${state.selectedQualityCategoryId === category.id}">
+      <span class="quality-name" title="${escapeHtml(category.label)}">${escapeHtml(category.label)}</span>
+      <span class="quality-state state-${escapeHtml(category.coverageState)}" title="${escapeHtml(categoryEvidenceTitle(category))}">${escapeHtml(coverageStateLabel(category.coverageState))} · ${escapeHtml(gateStatusLabel(category.qualityGate?.status))}</span>
+      <span class="filter-count">${formatNumber(category.testCount)}</span>
+    </button>
+  `).join('');
+  elements.showAllQualityCategories.classList.toggle('active', !state.selectedQualityCategoryId);
+  const gaps = state.catalog.scenarioGaps ?? [];
+  const missing = gaps.filter((entry) => entry.coverageState === 'missing').length;
+  const partial = gaps.filter((entry) => entry.coverageState === 'partial').length;
+  elements.scenarioGapSummary.textContent = gaps.length
+    ? `${formatNumber(missing)} 个缺测场景 · ${formatNumber(partial)} 个部分覆盖`
+    : '';
 }
 
 function renderDomainFilters() {
@@ -1216,6 +1455,7 @@ function focusTest(testId, { animate = true, revealInspector = true, moveCamera 
     state.focusedScenarioId = null;
   }
   state.selectedTestId = testId;
+  state.selectedGapId = null;
   applyFilters();
   renderInspector(test);
   hideSearchResults();
@@ -1318,7 +1558,8 @@ function activateLayout(layout) {
   state.layout = layout;
   if (!state.graph) return;
   state.graph.updateEachNodeAttributes((node, attributes) => {
-    const point = layout.positions.get(node);
+    const gap = gapByNodeId(node);
+    const point = gap ? gapGraphPosition(gap, layout) : layout.positions.get(node);
     return point ? { ...attributes, x: point.x, y: point.y } : attributes;
   }, { attributes: ['x', 'y'] });
   state.renderer?.refresh();
@@ -1328,6 +1569,8 @@ function activateLayout(layout) {
 function renderInspector(test) {
   const domain = domainById(test.domainId);
   const scenarios = test.scenarioIds.map(scenarioById).filter(Boolean);
+  const qualityCategories = (test.qualityCategoryIds ?? []).map(qualityCategoryById).filter(Boolean);
+  const runtimeEvidence = test.runtimeEvidence;
   const related = relatedTests(test).slice(0, 5);
   const location = `${test.file}:${test.line}`;
   elements.inspectorEmpty.hidden = true;
@@ -1355,6 +1598,24 @@ function renderInspector(test) {
         ${scenarios.map((scenario) => `<span class="inspector-tag"><i style="--tag-color:${escapeHtml(scenario.color)}"></i>${escapeHtml(scenario.label)}</span>`).join('')}
       </div>
     </section>
+    ${qualityCategories.length > 0 ? `
+      <section class="inspector-section">
+        <h3>覆盖分类</h3>
+        <div class="inspector-tags">
+          <span class="inspector-tag">${escapeHtml(testLevelLabel(test.testLevel))}</span>
+          ${qualityCategories.map((category) => `<span class="inspector-tag">${escapeHtml(category.label)}</span>`).join('')}
+        </div>
+      </section>
+    ` : ''}
+    ${runtimeEvidence ? `
+      <section class="inspector-section">
+        <h3>运行证据</h3>
+        <div class="inspector-evidence">
+          <strong>${escapeHtml(test.statusLabel)}${Number.isFinite(runtimeEvidence.durationMs) ? ` · ${escapeHtml(formatDurationMs(runtimeEvidence.durationMs))}` : ''}</strong>
+          <span>${escapeHtml(formatDateTime(new Date(runtimeEvidence.observedAt)))}</span>
+        </div>
+      </section>
+    ` : ''}
     <section class="inspector-section">
       <h3>风险关注</h3>
       <div class="inspector-tags">${test.riskTags.map((tag) => `<span class="inspector-tag">${escapeHtml(tag)}</span>`).join('')}</div>
@@ -1374,8 +1635,108 @@ function renderInspector(test) {
   `;
 }
 
+function selectScenarioGap(gapId) {
+  const gap = scenarioGapById(gapId);
+  if (!gap || !state.renderer) return;
+  state.selectedTestId = null;
+  state.selectedGapId = gapId;
+  state.renderer.refresh();
+  scheduleMapRedraw();
+  renderGapInspector(gap);
+  setInspectorOpen(true);
+  setFiltersOpen(false);
+}
+
+function renderGapInspector(gap) {
+  const sourceEvidence = gap.sourceEvidence ?? [];
+  const canWrite = !['DISMISSED', 'SUPPRESSED', 'VERIFIED', 'COVERED_EXISTING'].includes(gap.workflowState);
+  const actions = gapWorkflowActions(gap);
+  elements.inspectorEmpty.hidden = true;
+  elements.inspectorContent.hidden = false;
+  elements.inspectorContent.innerHTML = `
+    <header class="inspector-head gap-inspector-head">
+      <div class="inspector-head-row">
+        <span class="test-status gap-status">${escapeHtml(coverageStateLabel(gap.coverageState))}</span>
+        <button class="map-icon-button" type="button" data-close-inspector aria-label="关闭场景详情">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <h2>${escapeHtml(gap.title)}</h2>
+      <p class="gap-workflow-state">${escapeHtml(workflowStateLabel(gap.workflowState))}</p>
+    </header>
+    <section class="inspector-section">
+      <h3>来源证据</h3>
+      <div class="gap-source-list">
+        ${sourceEvidence.map((source) => `<div><strong>${escapeHtml(source.symbol ?? source.pointer ?? source.type)}</strong><span>${escapeHtml(source.uri)}${source.line ? `:${escapeHtml(source.line)}` : ''}</span></div>`).join('')}
+      </div>
+    </section>
+    ${gap.matchedTestIds?.length ? `
+      <section class="inspector-section">
+        <h3>已有匹配</h3>
+        <div class="related-test-list">${gap.matchedTestIds.map((id) => {
+          const test = testById(id);
+          return test ? `<button class="related-test" type="button" data-related-test="${escapeHtml(id)}">${escapeHtml(test.title)}</button>` : '';
+        }).join('')}</div>
+      </section>` : ''}
+    ${canWrite && actions.length ? `
+      <section class="inspector-section gap-actions-section">
+        <h3>下一步</h3>
+        <div class="gap-action-list">${actions.map((action) => `<button type="button" data-gap-action="${escapeHtml(action.id)}" class="${action.kind === 'danger' ? 'danger' : ''}">${escapeHtml(action.label)}</button>`).join('')}</div>
+      </section>` : ''}
+  `;
+}
+
+async function handleGapAction(action) {
+  const gap = scenarioGapById(state.selectedGapId);
+  if (!gap) return;
+  try {
+    let proposal;
+    if (action === 'CREATE_DRAFT') {
+      const fileName = gap.id.replace(/[^a-zA-Z0-9_-]/g, '-').slice(-28);
+      proposal = await api(`/api/projects/${encodeURIComponent(state.selectedProjectId)}/test-scenario-proposals/${encodeURIComponent(gap.id)}/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          framework: 'NODE_TEST',
+          suggestedPath: `test/scenario-${fileName}.test.js`,
+          command: ['node', '--test', `test/scenario-${fileName}.test.js`],
+          expectedFailure: expectedFailureText(gap)
+        })
+      });
+    } else {
+      proposal = await api(`/api/projects/${encodeURIComponent(state.selectedProjectId)}/test-scenario-proposals/${encodeURIComponent(gap.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason: gapActionReason(action) })
+      });
+    }
+    updateScenarioGapFromProposal(proposal);
+    showToast(gapActionSuccess(action));
+    renderGapInspector(scenarioGapById(proposal.id));
+    state.renderer?.refresh();
+    scheduleMapRedraw();
+  } catch (error) {
+    showToast(error.message || '场景处理失败', true);
+  }
+}
+
+function updateScenarioGapFromProposal(proposal) {
+  const index = (state.catalog.scenarioGaps ?? []).findIndex((entry) => entry.id === proposal.id);
+  if (index < 0) return;
+  state.catalog.scenarioGaps[index] = {
+    ...state.catalog.scenarioGaps[index],
+    coverageState: proposal.coverageState,
+    workflowState: proposal.status,
+    sourceEvidence: proposal.sourceEvidence,
+    matchedTestIds: proposal.matchedTestIds,
+    testDraft: proposal.testDraft ?? null,
+    implementationTaskId: proposal.implementationTaskId ?? null
+  };
+}
+
 function clearSelection({ restoreOverview = true } = {}) {
   state.selectedTestId = null;
+  state.selectedGapId = null;
   if (restoreOverview && state.viewMode === 'focus') showOverview();
   else {
     state.renderer?.refresh();
@@ -1401,8 +1762,14 @@ function relatedTests(test) {
     .sort((left, right) => right.relatedScore - left.relatedScore || left.file.localeCompare(right.file) || left.line - right.line);
 }
 
+function keepSelectionVisible() {
+  const selected = testById(state.selectedTestId);
+  if (selected && !isTestVisible(selected)) clearSelection();
+}
+
 function applyFilters() {
   if (!state.catalog) return;
+  renderQualityCategoryFilters();
   renderDomainFilters();
   renderRouteFilters();
   state.renderer?.refresh();
@@ -1412,7 +1779,8 @@ function applyFilters() {
     ? visible.filter((test) => test.scenarioIds.includes(state.focusedScenarioId))
     : visible;
   const route = scenarioById(state.focusedScenarioId);
-  elements.toolbarTitle.textContent = route?.label ?? (state.viewMode === 'focus' ? '测试焦点' : '全部测试');
+  const category = qualityCategoryById(state.selectedQualityCategoryId);
+  elements.toolbarTitle.textContent = route?.label ?? category?.label ?? (state.viewMode === 'focus' ? '测试焦点' : '全部测试');
   elements.visibleTestCount.textContent = `${formatNumber(focused.length)} / ${formatNumber(state.catalog.summary.testCount)} 可见`;
   renderMapStatus();
 }
@@ -1421,6 +1789,7 @@ function renderMapStatus() {
   if (!state.catalog) return;
   const domainCount = state.selectedDomainIds.size;
   const route = scenarioById(state.focusedScenarioId);
+  const category = qualityCategoryById(state.selectedQualityCategoryId);
   if (state.viewMode === 'focus') {
     const routeCount = state.focusLayout?.scenarioIds.length ?? 0;
     const visibleCount = [...state.focusVisibleTestIds]
@@ -1434,7 +1803,9 @@ function renderMapStatus() {
   const layoutLabel = state.overviewLayout?.label ?? '测试地图';
   elements.mapStatus.textContent = route
     ? `${route.label} · ${formatNumber(route.testCount)} 个测试站点`
-    : `${layoutLabel} · ${domainCount} 个领域 · 拖拽浏览`;
+    : category
+      ? `${category.label} · ${formatNumber(category.testCount)} 个测试`
+      : `${layoutLabel} · ${domainCount} 个领域 · 拖拽浏览`;
 }
 
 function renderLayoutSwitcher() {
@@ -1544,6 +1915,8 @@ function showLoadError(error) {
 function resetCatalogUi() {
   elements.catalogStamp.textContent = '';
   elements.catalogSummary.innerHTML = '';
+  elements.qualityCategoryFilters.innerHTML = '';
+  elements.scenarioGapSummary.textContent = '';
   elements.domainFilters.innerHTML = '';
   elements.routeFilters.innerHTML = '';
   elements.mapKey.hidden = true;
@@ -1595,7 +1968,7 @@ function setFiltersOpen(open) {
 
 function setInspectorOpen(open) {
   state.inspectorOpen = open;
-  elements.inspector.classList.toggle('has-selection', open && Boolean(state.selectedTestId));
+  elements.inspector.classList.toggle('has-selection', open && Boolean(state.selectedTestId || state.selectedGapId));
   syncBackdrop();
 }
 
@@ -1651,12 +2024,85 @@ function testById(id) {
   return state.catalog?.tests.find((test) => test.id === id) ?? null;
 }
 
+function scenarioGapById(id) {
+  return state.catalog?.scenarioGaps?.find((gap) => gap.id === id) ?? null;
+}
+
+function gapWorkflowActions(gap) {
+  const capabilities = new Set(state.catalog?.access?.capabilities ?? []);
+  const actions = ({
+    PROPOSED: [{ id: 'START_REVIEW', label: '进入评审' }],
+    REVIEW: [
+      { id: 'ACCEPT', label: '接受场景' },
+      { id: 'DISMISS', label: '不需要', kind: 'danger' },
+      { id: 'SUPPRESS', label: '长期忽略', kind: 'danger' }
+    ],
+    ACCEPTED: [{ id: 'CREATE_DRAFT', label: '生成测试草案' }],
+    DISMISSED: [{ id: 'REOPEN', label: '重新评审' }],
+    SUPPRESSED: [{ id: 'REOPEN', label: '重新评审' }]
+  })[gap.workflowState] ?? [];
+  return actions.filter((action) => (
+    action.id === 'CREATE_DRAFT'
+      ? capabilities.has('project:write')
+      : capabilities.has('test-governance:review')
+  ));
+}
+
+function gapActionReason(action) {
+  return ({
+    START_REVIEW: '负责人开始复核来源与覆盖证据',
+    ACCEPT: '来源与风险已经人工确认',
+    DISMISS: '负责人确认当前场景不需要覆盖',
+    SUPPRESS: '负责人确认长期忽略这一稳定场景',
+    REOPEN: '新证据出现，重新进入评审'
+  })[action] ?? '负责人更新场景状态';
+}
+
+function gapActionSuccess(action) {
+  return ({
+    START_REVIEW: '场景已进入评审',
+    ACCEPT: '场景已接受',
+    DISMISS: '场景已标记为不需要',
+    SUPPRESS: '场景已长期忽略',
+    REOPEN: '场景已重新进入评审',
+    CREATE_DRAFT: '测试草案已生成'
+  })[action] ?? '场景已更新';
+}
+
+function workflowStateLabel(value) {
+  return ({
+    PROPOSED: '待评审', REVIEW: '评审中', ACCEPTED: '已接受', TEST_DRAFT: '测试草案',
+    RED_PROVEN: '已证明 RED', IMPLEMENTING: '开发中', GREEN: '已变绿', VERIFIED: '已验证',
+    COVERED_EXISTING: '现有行为已覆盖', NEEDS_CORRECTION: '测试需要修正', DISMISSED: '不需要',
+    SUPPRESSED: '长期忽略', OBSOLETE: '已过时'
+  })[value] ?? value ?? '待评审';
+}
+
+function expectedFailureText(gap) {
+  const expected = JSON.stringify(gap.expected ?? {});
+  return expected && expected !== '{}' ? `expected ${expected}` : `expected scenario behavior: ${gap.title}`;
+}
+
+function gapNodeId(id) {
+  return `scenario-gap:${id}`;
+}
+
+function gapByNodeId(nodeId) {
+  return String(nodeId).startsWith('scenario-gap:')
+    ? scenarioGapById(String(nodeId).slice('scenario-gap:'.length))
+    : null;
+}
+
 function domainById(id) {
   return state.catalog?.domains.find((domain) => domain.id === id) ?? null;
 }
 
 function scenarioById(id) {
   return state.catalog?.scenarios.find((scenario) => scenario.id === id) ?? null;
+}
+
+function qualityCategoryById(id) {
+  return state.catalog?.qualityCategories?.find((category) => category.id === id) ?? null;
 }
 
 function fileOffset(file) {
@@ -1670,11 +2116,13 @@ function searchScore(test, query) {
   const file = normalizeSearch(test.file);
   const domain = normalizeSearch(domainById(test.domainId)?.label);
   const scenarios = normalizeSearch(test.scenarioIds.map((id) => scenarioById(id)?.label).join(' '));
+  const qualityCategories = normalizeSearch((test.qualityCategoryIds ?? []).map((id) => qualityCategoryById(id)?.label).join(' '));
   if (title === query) return 100;
   if (title.startsWith(query)) return 80;
   if (title.includes(query)) return 60;
   if (file.includes(query)) return 40;
   if (scenarios.includes(query)) return 25;
+  if (qualityCategories.includes(query)) return 20;
   if (domain.includes(query)) return 15;
   return 0;
 }
@@ -1702,6 +2150,44 @@ function formatDateTime(value) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat('zh-CN').format(Number(value) || 0);
+}
+
+function coverageStateLabel(value) {
+  return {
+    covered: '已覆盖',
+    partial: '部分',
+    missing: '缺测',
+    unobserved: '未运行',
+    obsolete: '已失效'
+  }[value] ?? value;
+}
+
+function gateStatusLabel(value) {
+  return ({ PASS: '通过', WARN: '关注', FAIL: '阻断' })[value] ?? '未设门';
+}
+
+function categoryEvidenceTitle(category) {
+  const evidenceAt = category.evidenceAt ? formatDateTime(new Date(category.evidenceAt)) : '无近期证据';
+  const reasons = category.qualityGate?.reasons?.length
+    ? category.qualityGate.reasons.join('，')
+    : '门禁通过';
+  return `${evidenceAt} · ${reasons}`;
+}
+
+function testLevelLabel(value) {
+  return {
+    unit: '单元测试',
+    integration: '集成测试',
+    contract: '契约测试',
+    e2e: '端到端测试',
+    performance: '性能测试'
+  }[value] ?? '自动化测试';
+}
+
+function formatDurationMs(value) {
+  const duration = Number(value);
+  if (!Number.isFinite(duration)) return '';
+  return duration < 1000 ? `${duration.toFixed(duration < 10 ? 1 : 0)} ms` : `${(duration / 1000).toFixed(2)} s`;
 }
 
 function hexAlpha(hex, alpha) {
@@ -1755,11 +2241,14 @@ function showToast(message, error = false) {
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
-    headers: { Accept: 'application/json', ...(options.headers ?? {}) },
+    headers: projectAccessHeaders({ Accept: 'application/json', ...(options.headers ?? {}) }),
     cache: 'no-store'
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
+    if (response.status === 401 && ['PROJECT_ACCESS_INVALID', 'PROJECT_ACCESS_REQUIRED'].includes(body?.error?.code)) {
+      clearProjectAccessToken();
+    }
     const error = new Error(body?.error?.message ?? `请求失败（${response.status}）`);
     error.code = body?.error?.code;
     throw error;

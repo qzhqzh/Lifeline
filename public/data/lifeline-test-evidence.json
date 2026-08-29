@@ -1,0 +1,2034 @@
+{
+  "version": "test-evidence/v1",
+  "generatedAt": "2026-08-29T07:02:38.535Z",
+  "command": "node --test --experimental-test-coverage --test-coverage-include=src/**/*.js --test-coverage-include=public/**/*.js --test-coverage-include=extension/**/*.js --test-coverage-include=scripts/**/*.mjs --test-reporter=tap test/agent-auth.test.js test/agent-dispatch.test.js test/agent-reporting.test.js test/agent-run-repair.test.js test/autonomous-api.test.js test/autonomous-board.test.js test/autonomous-ui.test.js test/brand-assets.test.js test/canvas-service.test.js test/client-board.test.js test/codex-integration.test.js test/compose-dev.test.js test/dependency-schedule.test.js test/domain.test.js test/mcp-http.test.js test/mcp.test.js test/phase-edit.test.js test/portfolio-v2.test.js test/project-access-api.test.js test/project-collaboration.test.js test/project-merge.test.js test/scan-proposal.test.js test/schedule-edit.test.js test/schedule-reconciliation.test.js test/store.test.js test/subscription-adapters.test.js test/subscription-api.test.js test/subscription-extension.test.js test/subscription-ui.test.js test/subscriptions.test.js test/test-catalog-analyzer.test.js test/test-governance.test.js test/test-map.test.js test/trajectory.test.js test/ui-form.test.js test/vertical-slice.test.js",
+  "declarationCount": 206,
+  "runnerEntryCount": 206,
+  "testReport": {
+    "format": "tap",
+    "observedAt": "2026-08-29T07:02:38.535Z",
+    "summary": {
+      "total": 206,
+      "passed": 206,
+      "failed": 0,
+      "skipped": 0,
+      "todo": 0,
+      "durationMs": 6995.086719000001
+    },
+    "results": [
+      {
+        "id": "evidence_34abec0f1c564f",
+        "title": "Agent bearer token authenticates with an explicit scope set",
+        "status": "PASSED",
+        "durationMs": 2.804926,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-auth.test.js"
+      },
+      {
+        "id": "evidence_ff3af68f66562b",
+        "title": "missing configuration, wrong tokens, and unknown scopes fail closed",
+        "status": "PASSED",
+        "durationMs": 0.880194,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-auth.test.js"
+      },
+      {
+        "id": "evidence_71e884ed6c39f2",
+        "title": "multiple Agent tokens keep execution and review identities separate",
+        "status": "PASSED",
+        "durationMs": 0.578632,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-auth.test.js"
+      },
+      {
+        "id": "evidence_59bf3b74f172e9",
+        "title": "multiple Agent token configuration rejects duplicate identities and secrets",
+        "status": "PASSED",
+        "durationMs": 0.457093,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-auth.test.js"
+      },
+      {
+        "id": "evidence_e801a5f335c7f2",
+        "title": "Streamable HTTP boundary accepts loopback and private LAN hosts only",
+        "status": "PASSED",
+        "durationMs": 7.592299,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-auth.test.js"
+      },
+      {
+        "id": "evidence_b3111646ae84bd",
+        "title": "three concurrent Agents atomically claim different NEXT tasks",
+        "status": "PASSED",
+        "durationMs": 51.297169,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_5ee23adb1502b8",
+        "title": "claim lease is max(30 minutes, estimate × 2), can extend, and safely expires",
+        "status": "PASSED",
+        "durationMs": 20.515828,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_9bb8045f30b138",
+        "title": "read APIs hide an expired execution lease while preserving stored audit references",
+        "status": "PASSED",
+        "durationMs": 7.37734,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_bef6c6d5a26cbe",
+        "title": "history-calibrated estimate is persisted and determines the claim lease",
+        "status": "PASSED",
+        "durationMs": 13.526288,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_f0d79388d6ad1f",
+        "title": "claim filters capability, compute, risk and project in one atomic selection",
+        "status": "PASSED",
+        "durationMs": 5.207933,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_3a13ce1ce066de",
+        "title": "lease extensions never exceed eight hours from the original claim",
+        "status": "PASSED",
+        "durationMs": 8.454743,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_b095fa19d3e261",
+        "title": "lease extension retries do not create duplicate audit events",
+        "status": "PASSED",
+        "durationMs": 7.549281,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_e31514c4c5c441",
+        "title": "remote Agent mutations use the server clock instead of reported claim and completion times",
+        "status": "PASSED",
+        "durationMs": 7.136339,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_d9974beac3e80b",
+        "title": "defer and resume preserve before/after audit, reason, policy and reversal metadata",
+        "status": "PASSED",
+        "durationMs": 11.648853,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_beeb40560f190f",
+        "title": "dashboard, project list and schedule expose the same derived project and phase truth",
+        "status": "PASSED",
+        "durationMs": 7.972044,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_0f5813a86ba091",
+        "title": "cancelled tasks restore with both audit events preserved",
+        "status": "PASSED",
+        "durationMs": 6.983522,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_c3201d25389b1a",
+        "title": "rebalance records explainable decision history without persisting a current task mirror",
+        "status": "PASSED",
+        "durationMs": 7.340694,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_474407adda2fcd",
+        "title": "rebalance clears stale terminal decisions and leaves archived phases untouched",
+        "status": "PASSED",
+        "durationMs": 6.61038,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_68bb0ea9e98422",
+        "title": "review claim rejects the execution Agent and accepts an independent reviewer",
+        "status": "PASSED",
+        "durationMs": 6.469376,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_e760c50cb6ce2e",
+        "title": "three execution Agents report concurrently and an independent Agent verifies every result",
+        "status": "PASSED",
+        "durationMs": 37.770367,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-dispatch.test.js"
+      },
+      {
+        "id": "evidence_6689ba3278c532",
+        "title": "reporting health distinguishes missing plans, stale work, overdue review, and completed projects",
+        "status": "PASSED",
+        "durationMs": 3.662973,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-reporting.test.js"
+      },
+      {
+        "id": "evidence_63190cf1379feb",
+        "title": "agent contacts coalesce by project and client without creating event noise",
+        "status": "PASSED",
+        "durationMs": 1.011043,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-reporting.test.js"
+      },
+      {
+        "id": "evidence_c14fd821a842f8",
+        "title": "one completion atomically creates an idempotent next iteration plan",
+        "status": "PASSED",
+        "durationMs": 40.383099,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-reporting.test.js"
+      },
+      {
+        "id": "evidence_541e42cf628ed9",
+        "title": "invalid or non-completed nextPlan leaves completion and schedule untouched",
+        "status": "PASSED",
+        "durationMs": 10.363303,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-reporting.test.js"
+      },
+      {
+        "id": "evidence_2ed6bc587b63ca",
+        "title": "repair removes only synthesized mock output and restores the Agent run",
+        "status": "PASSED",
+        "durationMs": 2.61411,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/agent-run-repair.test.js"
+      },
+      {
+        "id": "evidence_0ca98bd1fccc06",
+        "title": "autonomous REST vertical slice dispatches, claims, extends, restores, and rebalances",
+        "status": "PASSED",
+        "durationMs": 516.336493,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-api.test.js"
+      },
+      {
+        "id": "evidence_02c8e0a9d4568c",
+        "title": "dispatch excludes incomplete contracts and unmet dependencies before applying capacity",
+        "status": "PASSED",
+        "durationMs": 19.23209,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_fcd53cced01d06",
+        "title": "deferred and blocked work stay in BACKLOG while an already claimed task stays only in NOW",
+        "status": "PASSED",
+        "durationMs": 1.218656,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_41476d38ed45f8",
+        "title": "an expired claim is immediately presented as READY without waiting for a write mutation",
+        "status": "PASSED",
+        "durationMs": 0.806833,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_dea9ae01aa85d2",
+        "title": "hard deadlines and stars are explicit ranking signals",
+        "status": "PASSED",
+        "durationMs": 1.007442,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_241e73674a481a",
+        "title": "dispatch enforces one change task per project unless parallel work is explicitly allowed",
+        "status": "PASSED",
+        "durationMs": 0.862614,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_896eaa8de43d4b",
+        "title": "phase and project states are derived from task truth and progress age",
+        "status": "PASSED",
+        "durationMs": 0.9108,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_07200a73a8348c",
+        "title": "a portfolio with only deferred work is dormant instead of falsely stalled",
+        "status": "PASSED",
+        "durationMs": 0.603333,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_4c089612314afc",
+        "title": "an empty project is dormant instead of falsely complete",
+        "status": "PASSED",
+        "durationMs": 0.508295,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_b9ddbfa6748d5a",
+        "title": "risk participates in explainable ordering when other scheduling signals tie",
+        "status": "PASSED",
+        "durationMs": 4.122677,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_6562569a408c4e",
+        "title": "review age follows completion time even when later metadata edits changed updatedAt",
+        "status": "PASSED",
+        "durationMs": 0.802711,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_88e37337c05392",
+        "title": "recent Mock completion cannot hide an overdue real review",
+        "status": "PASSED",
+        "durationMs": 0.577443,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_9a75ae0930df39",
+        "title": "derivePhaseStatus reports blocked and active phases consistently",
+        "status": "PASSED",
+        "durationMs": 0.230042,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_eca4d5c2e085dd",
+        "title": "efficiency metrics ignore Mock history and withhold calibration below the sample threshold",
+        "status": "PASSED",
+        "durationMs": 2.182862,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_4af4d68a388a1f",
+        "title": "portfolio saturation includes active real runs but not active Mock or time after lease expiry",
+        "status": "PASSED",
+        "durationMs": 0.36595,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_0fde4325836964",
+        "title": "latest verified progress follows verification time, not the next dispatch candidate",
+        "status": "PASSED",
+        "durationMs": 0.621022,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_2c19565acd0384",
+        "title": "latest verified fallback follows schedule order and ignores later metadata edits",
+        "status": "PASSED",
+        "durationMs": 0.503588,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_4703d579e9c1b2",
+        "title": "Mock completion history cannot become latest verified progress or hide a stalled project",
+        "status": "PASSED",
+        "durationMs": 0.661626,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_53c3cab546a6f2",
+        "title": "five real samples calibrate model, compute and estimate for the same task kind",
+        "status": "PASSED",
+        "durationMs": 1.90205,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_93e0dd5c7a32c0",
+        "title": "five failed samples are enough to measure but never enough to recommend that route",
+        "status": "PASSED",
+        "durationMs": 1.244639,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-board.test.js"
+      },
+      {
+        "id": "evidence_5b385f192d67b3",
+        "title": "first screen exposes autonomous capacity, recommendations, and a collapsed trajectory",
+        "status": "PASSED",
+        "durationMs": 9.076183,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-ui.test.js"
+      },
+      {
+        "id": "evidence_2b3a3860435f49",
+        "title": "keyed refresh preserves fixed lanes, scroll, focus, drag state, and current-phase centering",
+        "status": "PASSED",
+        "durationMs": 6.364782,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-ui.test.js"
+      },
+      {
+        "id": "evidence_4971b893dd5b30",
+        "title": "detail cards and rich tooltip follow the required responsive and motion contracts",
+        "status": "PASSED",
+        "durationMs": 4.317391,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/autonomous-ui.test.js"
+      },
+      {
+        "id": "evidence_baa6009e04a7d8",
+        "title": "topbar uses the lightweight Lifeline logo and a real favicon",
+        "status": "PASSED",
+        "durationMs": 7.962643,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/brand-assets.test.js"
+      },
+      {
+        "id": "evidence_042744a139e250",
+        "title": "homepage embeds the interactive 3D emblem beside the headline",
+        "status": "PASSED",
+        "durationMs": 4.569477,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/brand-assets.test.js"
+      },
+      {
+        "id": "evidence_71a19ca6f61c08",
+        "title": "global creation actions sit before control-plane health in the compact topbar",
+        "status": "PASSED",
+        "durationMs": 2.259763,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/brand-assets.test.js"
+      },
+      {
+        "id": "evidence_f519fe13811d78",
+        "title": "canvas sessions are scoped to one project board and never grant clear capability",
+        "status": "PASSED",
+        "durationMs": 4.124219,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_6172674e49b00b",
+        "title": "canvas board ids are stable, opaque project identifiers and isolated by project",
+        "status": "PASSED",
+        "durationMs": 0.293807,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_50a8730ae4a6b5",
+        "title": "canvas session creation fails closed when the signing secret is missing or weak",
+        "status": "PASSED",
+        "durationMs": 0.64897,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_bf7e83837239e8",
+        "title": "canvas session verification rejects tampering and preserves the revocable grant claim",
+        "status": "PASSED",
+        "durationMs": 1.064016,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_69a628cb8ac8b2",
+        "title": "canvas proxy authorization binds a session role to the exact board path",
+        "status": "PASSED",
+        "durationMs": 0.721029,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_b4ca4baad1410d",
+        "title": "WBO proxy routing strips the public prefix and preserves socket query parameters",
+        "status": "PASSED",
+        "durationMs": 0.383495,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_0901987d0de087",
+        "title": "WBO proxy routing rejects non-http upstream schemes",
+        "status": "PASSED",
+        "durationMs": 0.32598,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_e3980ad078edc8",
+        "title": "canvas deployment pins WBO, persists board history, and publishes its session contract",
+        "status": "PASSED",
+        "durationMs": 10.44921,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/canvas-service.test.js"
+      },
+      {
+        "id": "evidence_26766951ed56aa",
+        "title": "customer status mapping hides control-plane detail behind four active states and archive",
+        "status": "PASSED",
+        "durationMs": 1.449315,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_231776e9acc69d",
+        "title": "busy swimlane cells keep a stable three-card preview while preserving the full count",
+        "status": "PASSED",
+        "durationMs": 1.407847,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_f207009a9f0554",
+        "title": "shared board drag policy allows every active card to move in all directions and across phases",
+        "status": "PASSED",
+        "durationMs": 0.421069,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_6e48e7ac2bd28b",
+        "title": "shared board placement persists status and phase while reconciling active Runs",
+        "status": "PASSED",
+        "durationMs": 56.915921,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_d9c10ff78baeec",
+        "title": "drawer and archive filters retain searchable, due-date, phase and completion semantics",
+        "status": "PASSED",
+        "durationMs": 1.232853,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_f2d00ec20a93ad",
+        "title": "customer progress uses the project current task to identify the real active phase",
+        "status": "PASSED",
+        "durationMs": 0.414631,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_c7bab06cca0e58",
+        "title": "customer progress selects the most recently completed task as the latest delivery",
+        "status": "PASSED",
+        "durationMs": 0.28292,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_b759a192e75e9b",
+        "title": "customer board ships as an isolated, capacity-safe surface with an owner entry point",
+        "status": "PASSED",
+        "durationMs": 6.744479,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/client-board.test.js"
+      },
+      {
+        "id": "evidence_30261313504788",
+        "title": "installer preserves stable HTTP MCP config and writes one managed global workflow block",
+        "status": "PASSED",
+        "durationMs": 157.565265,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/codex-integration.test.js"
+      },
+      {
+        "id": "evidence_beef25468fbf87",
+        "title": "installer makes a stdio MCP independent from the caller repository",
+        "status": "PASSED",
+        "durationMs": 0.885157,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/codex-integration.test.js"
+      },
+      {
+        "id": "evidence_87e07e623cd518",
+        "title": "compact dispatch view bounds large portfolio payloads while retaining decisions",
+        "status": "PASSED",
+        "durationMs": 3.597309,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/codex-integration.test.js"
+      },
+      {
+        "id": "evidence_3394148f65113a",
+        "title": "development startup uses isolated data and does not seed demo projects by default",
+        "status": "PASSED",
+        "durationMs": 7.010426,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/compose-dev.test.js"
+      },
+      {
+        "id": "evidence_af7cdbe82efd78",
+        "title": "dependency and parallel policy fields default for legacy task inputs",
+        "status": "PASSED",
+        "durationMs": 29.715231,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_1f77045ed78a25",
+        "title": "same-project dependencies and explicit parallel policies persist in the schedule",
+        "status": "PASSED",
+        "durationMs": 15.300154,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_f3e37967bac4c1",
+        "title": "an incomplete dependency blocks markReady and startTask",
+        "status": "PASSED",
+        "durationMs": 13.405948,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_8bc701aa886e95",
+        "title": "a completed dependency allows markReady and startTask",
+        "status": "PASSED",
+        "durationMs": 24.067831,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_db8a236a75e1a1",
+        "title": "dependencies cannot cross projects",
+        "status": "PASSED",
+        "durationMs": 10.250359,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_0cf6a68af0ac71",
+        "title": "a task cannot depend on itself",
+        "status": "PASSED",
+        "durationMs": 8.92471,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_4d042da4372281",
+        "title": "dependency updates reject a DAG cycle",
+        "status": "PASSED",
+        "durationMs": 10.541941,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_c82b89c66444b2",
+        "title": "a dependency must appear before its dependent task",
+        "status": "PASSED",
+        "durationMs": 7.024945,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_59faa722492b13",
+        "title": "moving a prerequisite across phases cannot invalidate an existing dependent",
+        "status": "PASSED",
+        "durationMs": 14.215977,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_a9b4c534e56077",
+        "title": "in-phase reorder cannot place a dependent before its dependency",
+        "status": "PASSED",
+        "durationMs": 10.352205,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_d8485802800414",
+        "title": "cancelling a task with active dependents is rejected",
+        "status": "PASSED",
+        "durationMs": 10.745641,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/dependency-schedule.test.js"
+      },
+      {
+        "id": "evidence_d4bfca3d8e77f1",
+        "title": "state machine accepts the execution happy path",
+        "status": "PASSED",
+        "durationMs": 3.300186,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_e0ccb49f77af63",
+        "title": "state machine rejects an unverifiable shortcut",
+        "status": "PASSED",
+        "durationMs": 2.301935,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_9bddd5f63731fb",
+        "title": "deferred work stays adjustable and recurring work returns after review",
+        "status": "PASSED",
+        "durationMs": 0.46965,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_4adffe68890343",
+        "title": "ready contract requires acceptance criteria but allows no test command",
+        "status": "PASSED",
+        "durationMs": 0.433996,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_e6adf910b39c82",
+        "title": "ready contract and dispatch share one strict execution contract",
+        "status": "PASSED",
+        "durationMs": 1.140173,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_5e6f787bb69680",
+        "title": "project progress uses weighted maximum evidence score",
+        "status": "PASSED",
+        "durationMs": 0.533023,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_dbfdfdaceb24ef",
+        "title": "recurring work counts as complete while deferred work remains future scope",
+        "status": "PASSED",
+        "durationMs": 0.190937,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_db6ec020f3285c",
+        "title": "work items receive a two-level schedule and routing recommendation",
+        "status": "PASSED",
+        "durationMs": 0.344606,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_f026c2cbcc7d24",
+        "title": "high-risk work routes to the main model and a release-grade validation profile",
+        "status": "PASSED",
+        "durationMs": 0.336134,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_2b0bbfbb0541ef",
+        "title": "legacy automatic routing is recalibrated without losing its estimate",
+        "status": "PASSED",
+        "durationMs": 0.839313,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_29fc6f42940df7",
+        "title": "legacy work items hydrate with backward-compatible planning defaults",
+        "status": "PASSED",
+        "durationMs": 0.395422,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_38a1aaca2b8b0b",
+        "title": "work item dependency metadata is normalized without adding another schedule level",
+        "status": "PASSED",
+        "durationMs": 0.547092,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_1eb531388185c8",
+        "title": "work item issue reference is optional and normalized independently",
+        "status": "PASSED",
+        "durationMs": 0.287715,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_1d7057d0749adb",
+        "title": "work item star and scheduled date are optional scheduling signals",
+        "status": "PASSED",
+        "durationMs": 0.583281,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/domain.test.js"
+      },
+      {
+        "id": "evidence_66707918a7c84d",
+        "title": "LAN Streamable HTTP MCP requires a bearer token and propagates scopes",
+        "status": "PASSED",
+        "durationMs": 715.393955,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp-http.test.js"
+      },
+      {
+        "id": "evidence_ee3553c970bd1c",
+        "title": "MCP syncs a plan idempotently and enforces completion verification",
+        "status": "PASSED",
+        "durationMs": 478.358821,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_46152f6d256a7d",
+        "title": "MCP accepts a maximum-length Unicode planId without overflowing derived keys",
+        "status": "PASSED",
+        "durationMs": 57.138997,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_f82ef7f6d17647",
+        "title": "JsonStore preserves writes from separate Web and MCP service instances",
+        "status": "PASSED",
+        "durationMs": 30.882419,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_920c9f1f0991be",
+        "title": "STDIO serving entry exposes the Lifeline tools",
+        "status": "PASSED",
+        "durationMs": 120.122226,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_a0ecbc76b43240",
+        "title": "MCP exposes source-backed test scenario review and draft tools only when the workflow is configured",
+        "status": "PASSED",
+        "durationMs": 97.385595,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_2278be0fee5c22",
+        "title": "MCP Agent scopes allow portfolio reads and reject unauthorized schedule writes",
+        "status": "PASSED",
+        "durationMs": 34.235782,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_7d6ca835019af7",
+        "title": "scoped MCP token identity cannot claim work as another Agent",
+        "status": "PASSED",
+        "durationMs": 31.02618,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_16779e2c06a1ba",
+        "title": "scoped MCP completion binds an omitted agentId to the token identity",
+        "status": "PASSED",
+        "durationMs": 75.607304,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_dcb6a516546047",
+        "title": "scoped MCP cannot bypass execution or review claims through legacy tools",
+        "status": "PASSED",
+        "durationMs": 46.019182,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/mcp.test.js"
+      },
+      {
+        "id": "evidence_9e13007922f89f",
+        "title": "updating a phase bumps the schedule, syncs task labels, and records before/after audit data",
+        "status": "PASSED",
+        "durationMs": 35.577728,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/phase-edit.test.js"
+      },
+      {
+        "id": "evidence_b2f8aab21801d5",
+        "title": "phase edits reject stale schedule versions",
+        "status": "PASSED",
+        "durationMs": 11.219639,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/phase-edit.test.js"
+      },
+      {
+        "id": "evidence_25fc4e8337e40c",
+        "title": "replaying a phase update with the same idempotency key does not bump the schedule again",
+        "status": "PASSED",
+        "durationMs": 10.782208,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/phase-edit.test.js"
+      },
+      {
+        "id": "evidence_d9e87b3143fe3a",
+        "title": "cancelled phases cannot be edited",
+        "status": "PASSED",
+        "durationMs": 10.162482,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/phase-edit.test.js"
+      },
+      {
+        "id": "evidence_5679bae82ff369",
+        "title": "portfolio bootstrap is atomic, idempotent, and restart-safe",
+        "status": "PASSED",
+        "durationMs": 75.475788,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/portfolio-v2.test.js"
+      },
+      {
+        "id": "evidence_f20f2cbdcef649",
+        "title": "legacy data migrates without fake runs and records modified-template conflicts",
+        "status": "PASSED",
+        "durationMs": 19.770549,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/portfolio-v2.test.js"
+      },
+      {
+        "id": "evidence_5ed62cff9b2ba9",
+        "title": "modified legacy portfolio reports conflicts without losing MCP tasks",
+        "status": "PASSED",
+        "durationMs": 28.615208,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/portfolio-v2.test.js"
+      },
+      {
+        "id": "evidence_293813f01864a7",
+        "title": "keeping a modified legacy portfolio records the decision without consuming the receipt",
+        "status": "PASSED",
+        "durationMs": 5.694104,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/portfolio-v2.test.js"
+      },
+      {
+        "id": "evidence_9a9c0f85883670",
+        "title": "schema migration is idempotent and unfinished history does not raise progress",
+        "status": "PASSED",
+        "durationMs": 1.115677,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/portfolio-v2.test.js"
+      },
+      {
+        "id": "evidence_96eda0a996286e",
+        "title": "schema migration repairs active tasks that have no durable active run",
+        "status": "PASSED",
+        "durationMs": 1.109323,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/portfolio-v2.test.js"
+      },
+      {
+        "id": "evidence_17a18c461523c9",
+        "title": "project access API scopes list/read/write and invalidates a revoked share link",
+        "status": "PASSED",
+        "durationMs": 432.331004,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/project-access-api.test.js"
+      },
+      {
+        "id": "evidence_5afb105824d36d",
+        "title": "project access grants are scoped, hashed at rest, expirable, and revocable",
+        "status": "PASSED",
+        "durationMs": 42.368103,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/project-collaboration.test.js"
+      },
+      {
+        "id": "evidence_0c6b77799e5d8e",
+        "title": "canvas bindings remain project-scoped and formal task changes require a reviewed proposal",
+        "status": "PASSED",
+        "durationMs": 28.639762,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/project-collaboration.test.js"
+      },
+      {
+        "id": "evidence_dbb6f4fe107f8a",
+        "title": "merges unique legacy Lifeline tasks and archives the duplicate project",
+        "status": "PASSED",
+        "durationMs": 4.118698,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/project-merge.test.js"
+      },
+      {
+        "id": "evidence_349dd503a08e9d",
+        "title": "schema migration adds the durable scan proposal collection without discarding unknown data",
+        "status": "PASSED",
+        "durationMs": 2.913128,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/scan-proposal.test.js"
+      },
+      {
+        "id": "evidence_5547e0c82f7320",
+        "title": "scan findings deduplicate before review and only accepted proposals become planned tasks",
+        "status": "PASSED",
+        "durationMs": 44.820392,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/scan-proposal.test.js"
+      },
+      {
+        "id": "evidence_7a0901ffc9a89a",
+        "title": "task contracts support versioned edit, in-phase reorder, and audited cancellation",
+        "status": "PASSED",
+        "durationMs": 54.883218,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_d24191e119f5b4",
+        "title": "new tasks cannot target a cancelled phase",
+        "status": "PASSED",
+        "durationMs": 7.43605,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_b39f513411e600",
+        "title": "the latest task reorder exposes a version-safe reversal until the order changes again",
+        "status": "PASSED",
+        "durationMs": 16.378971,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_6e5fecdfba3d80",
+        "title": "deferred tasks remain editable and cancellable",
+        "status": "PASSED",
+        "durationMs": 11.975554,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_da2ddc077a20bb",
+        "title": "issue reference can be added and cleared without changing the rest of the task contract",
+        "status": "PASSED",
+        "durationMs": 18.637314,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_df1f455352b3ed",
+        "title": "locked issue no-op records an idempotent receipt without overwriting a later update",
+        "status": "PASSED",
+        "durationMs": 17.06227,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_5a5d22263a22d6",
+        "title": "dashboard recommendation prioritizes stars, scheduled dates, and human tasks without reordering the phase",
+        "status": "PASSED",
+        "durationMs": 19.916761,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_ddc1682b141d82",
+        "title": "running and historical tasks stay protected from contract edits and removal",
+        "status": "PASSED",
+        "durationMs": 12.040407,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_835b52a9e72769",
+        "title": "every active or terminal locked status rejects content edits, cancellation, and reordering",
+        "status": "PASSED",
+        "durationMs": 39.907522,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_ba70dacecb735a",
+        "title": "task provenance distinguishes human and AI creation without treating reorder as content editing",
+        "status": "PASSED",
+        "durationMs": 23.006761,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-edit.test.js"
+      },
+      {
+        "id": "evidence_3d16aefdd5ba51",
+        "title": "reconciles historical completion times, run records, verified work, and the production phase idempotently",
+        "status": "PASSED",
+        "durationMs": 8.034871,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-reconciliation.test.js"
+      },
+      {
+        "id": "evidence_faf5de7281e074",
+        "title": "reconciliation does not overwrite a human-adjusted template task",
+        "status": "PASSED",
+        "durationMs": 1.199957,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/schedule-reconciliation.test.js"
+      },
+      {
+        "id": "evidence_25b514b7c80468",
+        "title": "current complete state bypasses historical migration on steady reload",
+        "status": "PASSED",
+        "durationMs": 3.111865,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/store.test.js"
+      },
+      {
+        "id": "evidence_e7d36186177581",
+        "title": "old or incomplete state still runs the idempotent migration chain",
+        "status": "PASSED",
+        "durationMs": 2.140526,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/store.test.js"
+      },
+      {
+        "id": "evidence_76432d75a4dd7c",
+        "title": "persistence keeps canonical phase and audit history while runtime restores compatibility projections",
+        "status": "PASSED",
+        "durationMs": 15.145845,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/store.test.js"
+      },
+      {
+        "id": "evidence_b0d5d9bd27d27c",
+        "title": "Codex parser only records explicit remaining values",
+        "status": "PASSED",
+        "durationMs": 4.273607,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_0d9040c07470b1",
+        "title": "Codex parser converts explicit used percentages to remaining percentages",
+        "status": "PASSED",
+        "durationMs": 0.504636,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_5b8c79991cf27f",
+        "title": "Cursor parser keeps two usage pools separate",
+        "status": "PASSED",
+        "durationMs": 0.758804,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_4c907ef09def7e",
+        "title": "Gemini, Grok, and Xiaoyunque safely fall back to availability",
+        "status": "PASSED",
+        "durationMs": 1.182403,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_355c96b1c39545",
+        "title": "limit banners become LIMITED without inventing a numeric balance",
+        "status": "PASSED",
+        "durationMs": 0.340698,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_d85b31ab168369",
+        "title": "Xiaoyunque ignores unrelated page numbers until an exact quota component is calibrated",
+        "status": "PASSED",
+        "durationMs": 0.286633,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_f00c5a865ce42e",
+        "title": "collector only accepts quota routes and strips query or fragment data from reported URLs",
+        "status": "PASSED",
+        "durationMs": 0.506228,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-adapters.test.js"
+      },
+      {
+        "id": "evidence_d6b38a6cdf31dc",
+        "title": "subscription API contract is exposed by server and OpenAPI",
+        "status": "PASSED",
+        "durationMs": 7.501765,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-api.test.js"
+      },
+      {
+        "id": "evidence_9e5e34b7c4aa41",
+        "title": "collector revocation requires either the paired collector token or an owner-approved call",
+        "status": "PASSED",
+        "durationMs": 18.444203,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-api.test.js"
+      },
+      {
+        "id": "evidence_4d363277ed3311",
+        "title": "collector rejects wrong origins, account mismatch, unknown fields, and stale capture time",
+        "status": "PASSED",
+        "durationMs": 11.262218,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-api.test.js"
+      },
+      {
+        "id": "evidence_c7ab15a5b6d410",
+        "title": "adapter errors preserve the previous successful balance",
+        "status": "PASSED",
+        "durationMs": 10.050588,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-api.test.js"
+      },
+      {
+        "id": "evidence_3ca92675050aad",
+        "title": "Manifest V3 collector has narrow permissions and never requests cookies or request interception",
+        "status": "PASSED",
+        "durationMs": 7.881877,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-extension.test.js"
+      },
+      {
+        "id": "evidence_6123e9dc7d08a3",
+        "title": "collector only runs on open pages and resamples every five minutes",
+        "status": "PASSED",
+        "durationMs": 3.999514,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-extension.test.js"
+      },
+      {
+        "id": "evidence_99099a1eb15c19",
+        "title": "collector revocation keeps the local connection when the server request fails",
+        "status": "PASSED",
+        "durationMs": 3.238023,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-extension.test.js"
+      },
+      {
+        "id": "evidence_4fdf1b1c034f71",
+        "title": "home links to a compact subscription summary without changing the project board",
+        "status": "PASSED",
+        "durationMs": 7.806095,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-ui.test.js"
+      },
+      {
+        "id": "evidence_38635e22350c88",
+        "title": "subscription page exposes six-account controls, freshness, filters, and 90-day history",
+        "status": "PASSED",
+        "durationMs": 3.101393,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscription-ui.test.js"
+      },
+      {
+        "id": "evidence_e1a89abfb62f82",
+        "title": "subscription store seeds six personal accounts without disturbing existing state",
+        "status": "PASSED",
+        "durationMs": 21.232608,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscriptions.test.js"
+      },
+      {
+        "id": "evidence_b1b0870b0f98ba",
+        "title": "latest snapshots are deduplicated and rolled into one hourly point",
+        "status": "PASSED",
+        "durationMs": 18.267533,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscriptions.test.js"
+      },
+      {
+        "id": "evidence_bccb8704d6780b",
+        "title": "history keeps only the last successful point in an hour and prunes older than 90 days",
+        "status": "PASSED",
+        "durationMs": 8.172466,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscriptions.test.js"
+      },
+      {
+        "id": "evidence_a0ffa4a12607b8",
+        "title": "a stale snapshot preserves its value while deriving STALE",
+        "status": "PASSED",
+        "durationMs": 8.589329,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscriptions.test.js"
+      },
+      {
+        "id": "evidence_39fcb4c8e80ed8",
+        "title": "legacy numeric snapshots remain auditable but are not treated as trusted balance",
+        "status": "PASSED",
+        "durationMs": 8.070068,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/subscriptions.test.js"
+      },
+      {
+        "id": "evidence_513b05aac3a8df",
+        "title": "generic adapters extract Node.js and Python tests with traceable evidence",
+        "status": "PASSED",
+        "durationMs": 4.835489,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-catalog-analyzer.test.js"
+      },
+      {
+        "id": "evidence_03c75ab1ef8675",
+        "title": "zero-config repository analysis clusters domains, adds scenarios, and reuses file fingerprints",
+        "status": "PASSED",
+        "durationMs": 47.446961,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-catalog-analyzer.test.js"
+      },
+      {
+        "id": "evidence_6983ea65ee4da2",
+        "title": "CLI emits a versioned catalog and project maps accept submitted catalogs without repository allowlists",
+        "status": "PASSED",
+        "durationMs": 225.699318,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-catalog-analyzer.test.js"
+      },
+      {
+        "id": "evidence_847d92eab909da",
+        "title": "TAP and JUnit results normalize status, duration, and evidence time",
+        "status": "PASSED",
+        "durationMs": 4.663752,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_4ee0bf8748b116",
+        "title": "LCOV, Cobertura, and JaCoCo coverage adapters preserve source-level facts",
+        "status": "PASSED",
+        "durationMs": 2.810607,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_8e227f140403a0",
+        "title": "mutation, browser, accessibility, visual, load, deployment, and security evidence normalize into facts",
+        "status": "PASSED",
+        "durationMs": 1.776293,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_6946f52dbd3cdf",
+        "title": "flake, quarantine, staleness, and category gates stay separate from a total score",
+        "status": "PASSED",
+        "durationMs": 17.573752,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_58ab32165230fb",
+        "title": "runtime evidence and the eight-category taxonomy remain traceable without a total score",
+        "status": "PASSED",
+        "durationMs": 2.174963,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_d7b246bfc7ca00",
+        "title": "deterministic scenarios have stable fingerprints and expose a seeded missing case",
+        "status": "PASSED",
+        "durationMs": 6.63785,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_6cb6d14951bcbf",
+        "title": "scenario proposals deduplicate, hide analyzer metadata, and never create a task before RED is proven",
+        "status": "PASSED",
+        "durationMs": 43.526066,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_cfac65037c9735",
+        "title": "a matching RED proof creates one implementation task, then GREEN evidence can be verified",
+        "status": "PASSED",
+        "durationMs": 31.22675,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_670da280d3704c",
+        "title": "a baseline that already passes stops without manufacturing an implementation task",
+        "status": "PASSED",
+        "durationMs": 13.27378,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-governance.test.js"
+      },
+      {
+        "id": "evidence_2c66280d66e707",
+        "title": "test catalog parser extracts node:test declarations without executing the source",
+        "status": "PASSED",
+        "durationMs": 3.058959,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_129165bc6f168b",
+        "title": "Lifeline test catalog contains every real test declaration with file and line evidence",
+        "status": "PASSED",
+        "durationMs": 63.975763,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_d47a0742a7e7fe",
+        "title": "shared board persistence test becomes a cross-scenario interchange station",
+        "status": "PASSED",
+        "durationMs": 30.714231,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_0f3062ca5bd169",
+        "title": "scenario classification does not infer interchange lines from the file name alone",
+        "status": "PASSED",
+        "durationMs": 0.338972,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_a48cf9ea059b06",
+        "title": "semantic label quota increases continuously from overview to context and detail",
+        "status": "PASSED",
+        "durationMs": 0.477679,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_e3189f9467d50e",
+        "title": "semantic labels keep selected tests first and represent every major scenario",
+        "status": "PASSED",
+        "durationMs": 1.934086,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_72e3dbf2257498",
+        "title": "focus layout expands one selected test into deterministic semantic branches",
+        "status": "PASSED",
+        "durationMs": 42.550638,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_fbe27337c72136",
+        "title": "expanded layout experiments place every test in stable non-overlapping domain regions",
+        "status": "PASSED",
+        "durationMs": 772.168598,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_525e8eede72d46",
+        "title": "display spread expands stations inside each domain without mutating the base layout",
+        "status": "PASSED",
+        "durationMs": 216.305516,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_f04af26d2c680c",
+        "title": "baseline Lifeline domains preserve the audited real-test grouping",
+        "status": "PASSED",
+        "durationMs": 25.712824,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_0cf266dd4fadb9",
+        "title": "project test map serves the packaged Lifeline catalog and leaves unsubmitted projects empty",
+        "status": "PASSED",
+        "durationMs": 956.767873,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_8c8c9d2d0f7c09",
+        "title": "test map ships as a local Sigma surface with project-preserving navigation",
+        "status": "PASSED",
+        "durationMs": 3.15099,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/test-map.test.js"
+      },
+      {
+        "id": "evidence_6427624cf56389",
+        "title": "trajectory aggregates only real Agent results and calculates coverage, gaps, and concurrency",
+        "status": "PASSED",
+        "durationMs": 85.84085,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/trajectory.test.js"
+      },
+      {
+        "id": "evidence_b22b43881920c3",
+        "title": "trajectory accepts supported windows and rejects unknown windows",
+        "status": "PASSED",
+        "durationMs": 6.105584,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/trajectory.test.js"
+      },
+      {
+        "id": "evidence_42d83bd7d24978",
+        "title": "the shared task editor allows empty acceptance criteria and test commands",
+        "status": "PASSED",
+        "durationMs": 7.15223,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_2051c6df7889c2",
+        "title": "portfolio bootstrap conflicts require an explicit merge or keep decision",
+        "status": "PASSED",
+        "durationMs": 4.401893,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_2f9d3f25cf6967",
+        "title": "the shared task editor exposes an optional issue reference",
+        "status": "PASSED",
+        "durationMs": 1.589081,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_4c9972626cdf3f",
+        "title": "task forms expose star and scheduled date controls and the board exposes a star filter",
+        "status": "PASSED",
+        "durationMs": 1.516929,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_a64c4efddc426b",
+        "title": "project detail exposes keyboard reorder, phase move preview, and undo feedback",
+        "status": "PASSED",
+        "durationMs": 1.921581,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_4f38a76379c457",
+        "title": "task forms expose dependency and parallel scheduling without adding a third hierarchy level",
+        "status": "PASSED",
+        "durationMs": 1.970785,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_4b2ec77a94bb95",
+        "title": "topbar and project detail task actions reuse one editor and one server-normalized project snapshot",
+        "status": "PASSED",
+        "durationMs": 1.8883,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_69426e68cab928",
+        "title": "project detail supports inline Phase editing and unobtrusive lock and Issue hints",
+        "status": "PASSED",
+        "durationMs": 1.509806,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_9410d3dbd43966",
+        "title": "board filters keep lane DOM and horizontal scroll stable",
+        "status": "PASSED",
+        "durationMs": 1.793716,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_f2f712e451f26a",
+        "title": "detail card view uses a wider five-column grid without vertical overflow",
+        "status": "PASSED",
+        "durationMs": 2.711667,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_fd65896f1796e3",
+        "title": "task star actions use a compact top-right icon and titles clamp to two lines",
+        "status": "PASSED",
+        "durationMs": 1.953746,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_b0a49c416fa447",
+        "title": "routing labels expose Luna Worker and validation profiles",
+        "status": "PASSED",
+        "durationMs": 1.790287,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_c4de84e42bc69f",
+        "title": "historical routing calibration reaches recommendations, cards, filters and task details",
+        "status": "PASSED",
+        "durationMs": 2.723033,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_eb7ac65edb3404",
+        "title": "overview and detail consume the API-derived phase and project health state",
+        "status": "PASSED",
+        "durationMs": 1.239562,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_70ff24e9113318",
+        "title": "dispatch explanation can undo cancellation and resume deferred work",
+        "status": "PASSED",
+        "durationMs": 1.133977,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_34bcd849c08f66",
+        "title": "home replaces Mock Run replay with a stable real-result trajectory",
+        "status": "PASSED",
+        "durationMs": 1.814009,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/ui-form.test.js"
+      },
+      {
+        "id": "evidence_f24c0acb70be07",
+        "title": "first vertical slice persists events, evidence, and verified progress",
+        "status": "PASSED",
+        "durationMs": 48.425102,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/vertical-slice.test.js"
+      },
+      {
+        "id": "evidence_4d6ea1e568d29b",
+        "title": "a real Agent failure blocks the work item without synthetic evidence",
+        "status": "PASSED",
+        "durationMs": 15.714515,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/vertical-slice.test.js"
+      },
+      {
+        "id": "evidence_89c2da375541fb",
+        "title": "recurring work creates a new run for every verified cycle",
+        "status": "PASSED",
+        "durationMs": 21.754568,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/vertical-slice.test.js"
+      },
+      {
+        "id": "evidence_65273142df0503",
+        "title": "restart never routes a durable Agent run through the mock executor",
+        "status": "PASSED",
+        "durationMs": 45.439899,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/vertical-slice.test.js"
+      },
+      {
+        "id": "evidence_f701fd44751494",
+        "title": "startup isolates legacy Mock Runs without rewriting history",
+        "status": "PASSED",
+        "durationMs": 26.631296,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/vertical-slice.test.js"
+      },
+      {
+        "id": "evidence_190111bda6827a",
+        "title": "portfolio demo is idempotent and ordered by strategic value",
+        "status": "PASSED",
+        "durationMs": 64.384201,
+        "observedAt": "2026-08-29T07:02:38.535Z",
+        "source": "tap",
+        "file": "test/vertical-slice.test.js"
+      }
+    ]
+  },
+  "coverageReport": {
+    "format": "node-test-coverage",
+    "observedAt": "2026-08-29T07:02:38.535Z",
+    "summary": {
+      "fileCount": 24,
+      "linePercent": 93.12,
+      "branchPercent": 79.01,
+      "functionPercent": 91.57
+    },
+    "files": [
+      {
+        "path": "extension/adapters.js",
+        "linePercent": 98.51,
+        "branchPercent": 80.25,
+        "functionPercent": 100
+      },
+      {
+        "path": "public/client-data.js",
+        "linePercent": 85.65,
+        "branchPercent": 65.38,
+        "functionPercent": 84.62
+      },
+      {
+        "path": "scripts/analyze-test-catalog.mjs",
+        "linePercent": 93.15,
+        "branchPercent": 43.75,
+        "functionPercent": 100
+      },
+      {
+        "path": "scripts/install-codex-lifeline-workflow.mjs",
+        "linePercent": 76.61,
+        "branchPercent": 60.98,
+        "functionPercent": 78.57
+      },
+      {
+        "path": "scripts/merge-lifeline-projects.mjs",
+        "linePercent": 87.59,
+        "branchPercent": 78.26,
+        "functionPercent": 83.78
+      },
+      {
+        "path": "scripts/reconcile-lifeline-schedule.mjs",
+        "linePercent": 90.02,
+        "branchPercent": 75.19,
+        "functionPercent": 89.36
+      },
+      {
+        "path": "scripts/repair-agent-run-autocomplete.mjs",
+        "linePercent": 71.72,
+        "branchPercent": 78.57,
+        "functionPercent": 85.71
+      },
+      {
+        "path": "src/agent-auth.js",
+        "linePercent": 92.62,
+        "branchPercent": 76.19,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/agent-reporting.js",
+        "linePercent": 98.65,
+        "branchPercent": 78.57,
+        "functionPercent": 93.75
+      },
+      {
+        "path": "src/autonomous-board.js",
+        "linePercent": 97.29,
+        "branchPercent": 84.03,
+        "functionPercent": 98.18
+      },
+      {
+        "path": "src/canvas.js",
+        "linePercent": 91.72,
+        "branchPercent": 62.26,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/catalog-analyzer.js",
+        "linePercent": 92.71,
+        "branchPercent": 85.51,
+        "functionPercent": 95
+      },
+      {
+        "path": "src/domain.js",
+        "linePercent": 92.79,
+        "branchPercent": 80.1,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/map-catalog.js",
+        "linePercent": 100,
+        "branchPercent": 89.66,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/map-overview-layouts.js",
+        "linePercent": 96.24,
+        "branchPercent": 90.32,
+        "functionPercent": 97.06
+      },
+      {
+        "path": "src/mcp-server.js",
+        "linePercent": 91.5,
+        "branchPercent": 79.09,
+        "functionPercent": 75.34
+      },
+      {
+        "path": "src/portfolio-v2-template.js",
+        "linePercent": 100,
+        "branchPercent": 66.67,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/project-collaboration.js",
+        "linePercent": 88.27,
+        "branchPercent": 57.52,
+        "functionPercent": 83.61
+      },
+      {
+        "path": "src/project-test-map.js",
+        "linePercent": 91.21,
+        "branchPercent": 72,
+        "functionPercent": 83.33
+      },
+      {
+        "path": "src/quality-map-labels.js",
+        "linePercent": 100,
+        "branchPercent": 65.52,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/quality-map-layout.js",
+        "linePercent": 98.38,
+        "branchPercent": 72.63,
+        "functionPercent": 100
+      },
+      {
+        "path": "src/service.js",
+        "linePercent": 92.02,
+        "branchPercent": 79.75,
+        "functionPercent": 92.03
+      },
+      {
+        "path": "src/store.js",
+        "linePercent": 100,
+        "branchPercent": 84.95,
+        "functionPercent": 84.13
+      },
+      {
+        "path": "src/subscriptions.js",
+        "linePercent": 95.22,
+        "branchPercent": 80.45,
+        "functionPercent": 85.53
+      }
+    ]
+  },
+  "mutationReport": null,
+  "qualityEvidence": [],
+  "history": []
+}

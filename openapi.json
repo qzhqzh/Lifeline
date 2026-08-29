@@ -108,8 +108,22 @@
       "post": {
         "summary": "Apply the Portfolio V2 template once for the current user",
         "parameters": [{ "in": "header", "name": "Idempotency-Key", "required": false, "schema": { "type": "string", "maxLength": 256 } }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "conflictResolution": { "type": "string", "enum": ["MERGE_EXISTING", "KEEP_EXISTING"] }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Previously applied receipt" },
+          "200": { "description": "Previously applied receipt or a conflict that requires an explicit merge/keep decision" },
           "201": { "description": "Portfolio created or migrated and receipt persisted" },
           "422": { "description": "Invalid idempotency key" }
         }
@@ -162,6 +176,7 @@
     "/api/projects/{projectId}/canvas-session": {
       "get": {
         "summary": "Create a short-lived, project-scoped collaborative canvas session",
+        "security": [{ "projectBearer": [] }],
         "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
         "responses": {
           "200": {
@@ -173,14 +188,136 @@
         }
       }
     },
+    "/api/projects/{projectId}/access-grants": {
+      "get": {
+        "summary": "List revocable project access grants without returning token material",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Access grant collection" }, "401": { "description": "Project access required" }, "403": { "description": "access:manage capability required" } }
+      },
+      "post": {
+        "summary": "Create a revocable project access link; the plaintext token is returned once",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateProjectAccessGrant" } } } },
+        "responses": { "201": { "description": "Access grant and one-time token" }, "403": { "description": "access:manage capability required" } }
+      }
+    },
+    "/api/projects/{projectId}/access-grants/{grantId}": {
+      "delete": {
+        "summary": "Revoke a project access grant while preserving its audit record",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "grantId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Revoked grant" }, "403": { "description": "access:manage capability required" }, "404": { "description": "Grant not found" } }
+      }
+    },
+    "/api/projects/{projectId}/canvas-context": {
+      "get": {
+        "summary": "Get client-safe project objects, canvas bindings, change proposals, and caller capabilities",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Canvas project context" }, "403": { "description": "Project scope rejected" } }
+      }
+    },
+    "/api/projects/{projectId}/canvas-bindings": {
+      "post": {
+        "summary": "Bind a Phase or Task reference to the shared project canvas",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateCanvasBinding" } } } },
+        "responses": { "201": { "description": "Idempotent canvas binding" }, "403": { "description": "canvas:bind capability required" } }
+      }
+    },
+    "/api/projects/{projectId}/canvas-change-proposals": {
+      "post": {
+        "summary": "Propose a formal task-board move from the canvas without silently changing schedule state",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateCanvasChangeProposal" } } } },
+        "responses": { "201": { "description": "Pending change proposal" }, "403": { "description": "canvas-change:create capability required" } }
+      }
+    },
+    "/api/projects/{projectId}/canvas-change-proposals/{proposalId}": {
+      "patch": {
+        "summary": "Accept or dismiss a canvas change proposal; acceptance uses schedule-version concurrency control",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "proposalId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Reviewed proposal" }, "409": { "description": "Schedule version changed" }, "403": { "description": "canvas-change:review capability required" } }
+      }
+    },
     "/api/projects/{projectId}/test-map": {
       "get": {
         "summary": "Get the generated test catalog and scenario routes for one project",
+        "security": [{ "projectBearer": [] }],
         "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
         "responses": {
           "200": { "description": "Configured test map, or an explicit configured=false response for projects without an adapter" },
           "404": { "description": "Project not found" }
         }
+      }
+    },
+    "/api/projects/{projectId}/test-scenario-proposals": {
+      "get": {
+        "summary": "List source-backed coverage gaps and Red-Green workflow state",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Scenario proposal collection without model or confidence metadata" } }
+      },
+      "post": {
+        "summary": "Submit a source-backed semantic or deterministic scenario proposal without writing code or creating a Task",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [{ "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } }],
+        "responses": { "201": { "description": "Deduplicated scenario proposal" }, "422": { "description": "Source evidence missing or invalid" } }
+      }
+    },
+    "/api/projects/{projectId}/test-scenario-proposals/{proposalId}": {
+      "patch": {
+        "summary": "Review, accept, dismiss, suppress, or reopen a test scenario proposal",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "proposalId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Updated workflow state" }, "422": { "description": "Invalid workflow transition" } }
+      }
+    },
+    "/api/projects/{projectId}/test-scenario-proposals/{proposalId}/draft": {
+      "post": {
+        "summary": "Generate a minimal reviewed Node, pytest, or JUnit test skeleton without writing the repository",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "proposalId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "201": { "description": "Test draft" }, "422": { "description": "Scenario is not accepted" } }
+      }
+    },
+    "/api/projects/{projectId}/test-scenario-proposals/{proposalId}/runs": {
+      "post": {
+        "summary": "Record baseline or implementation evidence; only matching RED evidence creates one implementation Task",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "proposalId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "201": { "description": "Scenario run evidence and resulting workflow state" }, "422": { "description": "Run or workflow state invalid" } }
+      }
+    },
+    "/api/projects/{projectId}/test-scenario-proposals/{proposalId}/verify": {
+      "post": {
+        "summary": "Verify a GREEN scenario with deterministic evidence, independent review, or owner approval",
+        "security": [{ "projectBearer": [] }],
+        "parameters": [
+          { "in": "path", "name": "projectId", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "proposalId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Verified scenario" }, "422": { "description": "Scenario is not GREEN" } }
       }
     },
     "/api/work-items": {
@@ -312,6 +449,11 @@
         "scheme": "bearer",
         "description": "LAN Agent token scoped to the requested mutation"
       },
+      "projectBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Revocable token scoped to one project and one VIEWER, EDITOR, MANAGER, or OWNER role"
+      },
       "collectorBearer": {
         "type": "http",
         "scheme": "bearer",
@@ -402,7 +544,41 @@
               "canClear": { "type": "boolean" }
             }
           },
-          "accessModel": { "type": "string", "enum": ["project-link"] }
+          "accessModel": { "type": "string", "enum": ["project-rbac"] }
+        }
+      },
+      "CreateProjectAccessGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["displayName", "role"],
+        "properties": {
+          "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "organizationId": { "type": ["string", "null"], "maxLength": 160 },
+          "subjectId": { "type": ["string", "null"], "maxLength": 160 },
+          "role": { "type": "string", "enum": ["VIEWER", "EDITOR", "MANAGER", "OWNER"] },
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateCanvasBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entityType", "entityId"],
+        "properties": {
+          "entityType": { "type": "string", "enum": ["PHASE", "TASK"] },
+          "entityId": { "type": "string" },
+          "boardId": { "type": ["string", "null"] },
+          "canvasObjectId": { "type": ["string", "null"] }
+        }
+      },
+      "CreateCanvasChangeProposal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["workItemId", "targetPhaseId", "statusId", "reason"],
+        "properties": {
+          "workItemId": { "type": "string" },
+          "targetPhaseId": { "type": "string" },
+          "statusId": { "type": "string", "enum": ["pending", "scheduled", "running", "review"] },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 1000 }
         }
       }
     }

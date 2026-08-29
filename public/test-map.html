@@ -64,6 +64,15 @@
 
         <dl class="catalog-summary" id="catalogSummary" aria-label="测试目录摘要"></dl>
 
+        <section class="map-filter-section quality-filter-section" aria-labelledby="qualityFilterTitle">
+          <header>
+            <h2 id="qualityFilterTitle">覆盖大类</h2>
+            <button class="text-button active" id="showAllQualityCategories" type="button">全部</button>
+          </header>
+          <div class="quality-category-filters" id="qualityCategoryFilters"></div>
+          <p class="scenario-gap-summary" id="scenarioGapSummary"></p>
+        </section>
+
         <section class="map-filter-section" aria-labelledby="domainFilterTitle">
           <header>
             <h2 id="domainFilterTitle">领域</h2>
@@ -144,6 +153,7 @@
             <span><i class="station-key"></i>真实测试</span>
             <span><i class="transfer-key"></i>换乘测试</span>
             <span><i class="unobserved-key"></i>未采集结果</span>
+            <span><i class="gap-key"></i>待补场景</span>
           </div>
 
           <button class="test-minimap" id="testMinimapButton" type="button" aria-label="鸟瞰图，点击定位附近测试" hidden>

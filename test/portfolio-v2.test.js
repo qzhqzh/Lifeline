@@ -82,13 +82,26 @@ test('legacy data migrates without fake runs and records modified-template confl
   }));
 
   const service = await createService(file, 'user-a');
-  const result = await service.bootstrapPortfolioV2();
+  const blocked = await service.bootstrapPortfolioV2();
+  const blockedState = JSON.parse(await readFile(file));
+  assert.equal(blocked.created, false);
+  assert.equal(blocked.requiresResolution, true);
+  assert.equal(blocked.receipt, null);
+  assert.equal(blockedState.bootstrapReceipts.length, 0);
+  assert.equal(blockedState.projects.some((project) => project.name === 'Lifeline'), false);
+
+  const result = await service.bootstrapPortfolioV2({ conflictResolution: 'MERGE_EXISTING' });
   const state = JSON.parse(await readFile(file));
   assert.equal(result.conflicts.some((entry) => entry.reason === 'USER_MODIFIED_LEGACY_TEMPLATE'), true);
-  assert.equal(state.projects.find((project) => project.id === legacyProject.id).name, 'Lifeline Demo');
+  assert.equal(state.projects.find((project) => project.id === legacyProject.id).name, 'Lifeline');
+  assert.equal(state.projects.filter((project) => project.repositoryUrl === legacyProject.repositoryUrl).length, 1);
   assert.equal(state.runs.some((run) => run.id === 'run_existing'), true);
   assert.equal(state.completionRecords.every((record) => record.completionMethod === 'IMPORTED_HISTORY'), true);
   assert.equal(state.completionRecords.some((record) => record.taskId === 'work_legacy'), false);
+  assert.equal(state.bootstrapReceipts.length, 1);
+  assert.equal(state.migrationConflicts[0].resolution, 'MERGE_EXISTING');
+  assert.ok(state.migrationConflicts[0].resolvedAt);
+  assert.equal(state.events.some((event) => event.type === 'portfolio.bootstrap_conflict_resolved'), true);
   assert.equal(state.schemaVersion, CURRENT_SCHEMA_VERSION);
 });
 
@@ -131,7 +144,15 @@ test('modified legacy portfolio reports conflicts without losing MCP tasks', asy
     planning: { phaseId: mcpPhase.id, phaseOrder: 4, taskOrder: 10, kind: 'feature', priority: 'P1' },
     source: { kind: 'codex-plan', planId: 'test:mcp-before-bootstrap' }
   }, { actor: 'local-owner', idempotencyKey: 'test:mcp-before-bootstrap:task' });
-  const first = await service.bootstrapPortfolioV2({ idempotencyKey: 'current-fixture' });
+  const blocked = await service.bootstrapPortfolioV2({ idempotencyKey: 'current-fixture' });
+  assert.equal(blocked.created, false);
+  assert.equal(blocked.conflicts.length, 3);
+  assert.equal(JSON.parse(await readFile(file)).bootstrapReceipts.length, 0);
+
+  const first = await service.bootstrapPortfolioV2({
+    idempotencyKey: 'current-fixture',
+    conflictResolution: 'MERGE_EXISTING'
+  });
   const repeated = await service.bootstrapPortfolioV2({ idempotencyKey: 'current-fixture' });
   const state = JSON.parse(await readFile(file));
   const activeProjects = state.projects.filter((project) => project.status !== 'ARCHIVED');
@@ -146,7 +167,8 @@ test('modified legacy portfolio reports conflicts without losing MCP tasks', asy
   assert.equal(first.conflicts.length, 3);
   assert.deepEqual(managedProjects.map((project) => project.name), ['Lifeline', 'EchoMe', 'Totemora']);
   assert.equal(state.workItems.find((item) => item.id === mcpTask.id)?.projectId, sourceLifeline.id);
-  assert.equal(state.projects.find((project) => project.id === sourceLifeline.id).name, 'Lifeline Demo');
+  assert.equal(state.projects.find((project) => project.id === sourceLifeline.id).name, 'Lifeline');
+  assert.equal(activeProjects.filter((project) => project.repositoryUrl === sourceLifeline.repositoryUrl).length, 1);
   assert.equal(
     state.workItems.filter((item) => item.projectId === activeProjects.find((project) => project.name === 'EchoMe').id).length,
     expectedCounts.EchoMe
@@ -155,6 +177,49 @@ test('modified legacy portfolio reports conflicts without losing MCP tasks', asy
     state.workItems.filter((item) => item.projectId === activeProjects.find((project) => project.name === 'Totemora').id).length,
     expectedCounts.Totemora
   );
+});
+
+test('keeping a modified legacy portfolio records the decision without consuming the receipt', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-pv2-keep-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const file = join(directory, 'state.json');
+  const timestamp = '2026-08-01T00:00:00.000Z';
+  const existing = legacyProject(
+    'project_lifeline_demo',
+    'Lifeline Demo',
+    'https://github.com/qzhqzh/Lifeline',
+    10,
+    timestamp
+  );
+  existing.description = 'Keep my edited project';
+  await writeFile(file, JSON.stringify({
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    projects: [existing],
+    phases: [],
+    workItems: [],
+    runs: [],
+    evidence: [],
+    completionRecords: [],
+    bootstrapReceipts: [],
+    migrationConflicts: [],
+    migrationSnapshots: [],
+    scanProposals: [],
+    events: []
+  }));
+
+  const service = await createService(file, 'local-owner');
+  const kept = await service.bootstrapPortfolioV2({ conflictResolution: 'KEEP_EXISTING' });
+  const state = JSON.parse(await readFile(file));
+
+  assert.equal(kept.created, false);
+  assert.equal(kept.keptExisting, true);
+  assert.equal(kept.requiresResolution, true);
+  assert.equal(state.bootstrapReceipts.length, 0);
+  assert.equal(state.projects.length, 1);
+  assert.equal(state.projects[0].name, 'Lifeline Demo');
+  assert.equal(state.migrationConflicts.length, 1);
+  assert.equal(state.migrationConflicts[0].lastDecision, 'KEEP_EXISTING');
+  assert.equal(state.events.at(-1).type, 'portfolio.bootstrap_conflict_kept');
 });
 
 function legacyProject(id, name, repositoryUrl, strategicValue, timestamp) {

@@ -43,7 +43,9 @@ export const ROUTING_POLICY_VERSION = 'risk-tier-v1';
 // Version 5 isolates legacy Mock Runs from formal task progress and trajectories.
 // Version 6 adds the local-only subscription balance hub collections.
 // Version 7 adds autonomous dispatch decisions and bounded Agent claim leases.
-export const CURRENT_SCHEMA_VERSION = 7;
+// Version 8 adds project collaboration access, canvas bindings/change proposals,
+// and governed test-scenario workflow records.
+export const CURRENT_SCHEMA_VERSION = 8;
 export const DEFAULT_LOCAL_USER_ID = 'local-owner';
 export const SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
 

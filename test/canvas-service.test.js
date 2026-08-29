@@ -7,7 +7,9 @@ import {
   CanvasConfigurationError,
   buildWboProxyUrl,
   canvasBoardId,
-  createWboCanvasSession
+  createWboCanvasSession,
+  verifyWboCanvasToken,
+  wboTokenAllowsPath
 } from '../src/canvas.js';
 
 const SECRET = 'test-secret-that-is-at-least-thirty-two-characters-long';
@@ -34,7 +36,7 @@ test('canvas sessions are scoped to one project board and never grant clear capa
   assert.equal(payload.exp - payload.iat, 3600);
   assert.equal(signature, expectedSignature);
   assert.deepEqual(session.permissions, { canOpen: true, canEdit: true, canClear: false });
-  assert.equal(session.accessModel, 'project-link');
+  assert.equal(session.accessModel, 'project-rbac');
 });
 
 test('canvas board ids are stable, opaque project identifiers and isolated by project', () => {
@@ -57,6 +59,38 @@ test('canvas session creation fails closed when the signing secret is missing or
   }
 });
 
+test('canvas session verification rejects tampering and preserves the revocable grant claim', () => {
+  const session = createWboCanvasSession({
+    projectId: 'project_aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+    subjectId: 'customer-editor',
+    grantId: 'access_example',
+    secret: SECRET,
+    now: new Date('2026-08-26T20:00:00Z'),
+    ttlSeconds: 600
+  });
+  const token = new URL(session.iframeUrl, 'http://localhost').searchParams.get('token');
+  const payload = verifyWboCanvasToken({ token, secret: SECRET, now: new Date('2026-08-26T20:05:00Z') });
+
+  assert.equal(payload.grant, 'access_example');
+  assert.equal(payload.sub, 'lifeline:project_aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee:customer-editor');
+  assert.equal(verifyWboCanvasToken({ token: `${token}x`, secret: SECRET, now: new Date('2026-08-26T20:05:00Z') }), null);
+  assert.equal(verifyWboCanvasToken({ token, secret: SECRET, now: new Date('2026-08-26T20:11:00Z') }), null);
+});
+
+test('canvas proxy authorization binds a session role to the exact board path', () => {
+  const session = createWboCanvasSession({
+    projectId: 'project_aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+    secret: SECRET,
+    now: new Date('2026-08-26T20:00:00Z')
+  });
+  const token = new URL(session.iframeUrl, 'http://localhost').searchParams.get('token');
+  const payload = verifyWboCanvasToken({ token, secret: SECRET, now: new Date('2026-08-26T20:05:00Z') });
+
+  assert.equal(wboTokenAllowsPath(payload, `/whiteboard/boards/${session.boardId}`), true);
+  assert.equal(wboTokenAllowsPath(payload, '/whiteboard/boards/lf-other-project'), false);
+  assert.equal(wboTokenAllowsPath(payload, '/whiteboard/socket.io/'), true);
+});
+
 test('WBO proxy routing strips the public prefix and preserves socket query parameters', () => {
   const target = buildWboProxyUrl(
     new URL('http://lifeline.local/whiteboard/socket.io/?EIO=4&transport=websocket&token=secret'),
@@ -74,10 +108,12 @@ test('WBO proxy routing rejects non-http upstream schemes', () => {
 });
 
 test('canvas deployment pins WBO, persists board history, and publishes its session contract', async () => {
-  const [compose, documentation, openApiSource] = await Promise.all([
+  const [compose, documentation, openApiSource, html, source] = await Promise.all([
     readFile(new URL('../compose.yaml', import.meta.url), 'utf8'),
     readFile(new URL('../docs/COLLABORATIVE_CANVAS.md', import.meta.url), 'utf8'),
-    readFile(new URL('../openapi.json', import.meta.url), 'utf8')
+    readFile(new URL('../openapi.json', import.meta.url), 'utf8'),
+    readFile(new URL('../public/canvas.html', import.meta.url), 'utf8'),
+    readFile(new URL('../public/canvas.js', import.meta.url), 'utf8')
   ]);
   const openApi = JSON.parse(openApiSource);
 
@@ -85,11 +121,20 @@ test('canvas deployment pins WBO, persists board history, and publishes its sess
   assert.match(compose, /AUTH_SECRET_KEY: "\$\{WBO_AUTH_SECRET_KEY:/);
   assert.match(compose, /lifeline-whiteboard-data:\/opt\/app\/server-data/);
   assert.match(compose, /require\('net'\)\.connect\(80,'127\.0\.0\.1'\)/);
-  assert.match(documentation, /project-link/);
+  assert.match(documentation, /project-rbac/);
   assert.match(documentation, /lifeline-whiteboard-data.*lifeline-data/s);
   assert.equal(
     openApi.paths['/api/projects/{projectId}/canvas-session'].get.responses['200'].content['application/json'].schema.$ref,
     '#/components/schemas/CanvasSession'
   );
-  assert.deepEqual(openApi.components.schemas.CanvasSession.properties.accessModel.enum, ['project-link']);
+  assert.deepEqual(openApi.components.schemas.CanvasSession.properties.accessModel.enum, ['project-rbac']);
+  assert.ok(openApi.paths['/api/projects/{projectId}/access-grants']);
+  assert.ok(openApi.paths['/api/projects/{projectId}/canvas-context']);
+  assert.ok(openApi.paths['/api/projects/{projectId}/canvas-bindings']);
+  assert.ok(openApi.paths['/api/projects/{projectId}/canvas-change-proposals']);
+  assert.match(html, /id="canvasContextPanel"/);
+  assert.match(html, /id="canvasShareForm"/);
+  assert.match(source, /projectAccessHeaders/);
+  assert.match(source, /renderCanvasContext/);
+  assert.match(source, /canvas-change-proposals/);
 });

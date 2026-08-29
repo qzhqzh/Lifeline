@@ -121,6 +121,17 @@
       </section>
     </main>
 
+    <dialog class="decision-dialog" id="bootstrapConflictDialog" aria-labelledby="bootstrapConflictTitle">
+      <div class="decision-dialog-shell">
+        <h2 id="bootstrapConflictTitle">已有项目包含您的修改</h2>
+        <p id="bootstrapConflictSummary">载入已暂停，现有项目和一次性载入机会都没有改变。</p>
+        <div class="decision-dialog-actions">
+          <button class="button quiet" id="keepBootstrapExisting" type="button">保留现状</button>
+          <button class="button primary" id="mergeBootstrapExisting" type="button">合并并载入</button>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="side-drawer" id="creationDrawer" aria-labelledby="creationDrawerTitle">
       <div class="drawer-shell">
         <header class="drawer-header">

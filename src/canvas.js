@@ -1,7 +1,7 @@
-import { createHmac } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const DEFAULT_CANVAS_BASE_PATH = '/whiteboard';
-export const DEFAULT_CANVAS_SESSION_TTL_SECONDS = 8 * 60 * 60;
+export const DEFAULT_CANVAS_SESSION_TTL_SECONDS = 60 * 60;
 
 export class CanvasConfigurationError extends Error {
   constructor(message, code = 'CANVAS_NOT_CONFIGURED') {
@@ -21,6 +21,8 @@ export function canvasBoardId(projectId) {
 export function createWboCanvasSession({
   projectId,
   secret,
+  subjectId = 'local-owner',
+  grantId = null,
   now = new Date(),
   ttlSeconds = DEFAULT_CANVAS_SESSION_TTL_SECONDS,
   publicBasePath = DEFAULT_CANVAS_BASE_PATH
@@ -37,9 +39,10 @@ export function createWboCanvasSession({
   const expiresAt = issuedAt + lifetime;
   const boardId = canvasBoardId(projectId);
   const token = signJwt({
-    sub: `lifeline:${projectId}`,
+    sub: `lifeline:${projectId}:${String(subjectId).slice(0, 120)}`,
     iat: issuedAt,
     exp: expiresAt,
+    ...(grantId ? { grant: String(grantId).slice(0, 180) } : {}),
     roles: [`editor:${boardId}`]
   }, signingSecret);
   const basePath = normalizeCanvasBasePath(publicBasePath);
@@ -55,7 +58,7 @@ export function createWboCanvasSession({
       canEdit: true,
       canClear: false
     },
-    accessModel: 'project-link'
+    accessModel: 'project-rbac'
   };
 }
 
@@ -82,6 +85,39 @@ export function buildWboProxyUrl(requestUrl, upstreamUrl, publicBasePath = DEFAU
   return target;
 }
 
+export function verifyWboCanvasToken({ token, secret, now = new Date() }) {
+  const parts = String(token ?? '').split('.');
+  const signingSecret = String(secret ?? '').trim();
+  if (parts.length !== 3 || signingSecret.length < 32) return null;
+  const unsigned = `${parts[0]}.${parts[1]}`;
+  const expected = Buffer.from(createHmac('sha256', signingSecret).update(unsigned).digest('base64url'));
+  const received = Buffer.from(parts[2]);
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    const nowSeconds = Math.floor(new Date(now).getTime() / 1000);
+    if (!Number.isFinite(nowSeconds) || !Number.isFinite(payload.exp) || payload.exp <= nowSeconds) return null;
+    if (!Array.isArray(payload.roles) || !payload.roles.some((role) => String(role).startsWith('editor:lf-'))) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export function wboTokenAllowsPath(payload, pathname, publicBasePath = DEFAULT_CANVAS_BASE_PATH) {
+  const basePath = normalizeCanvasBasePath(publicBasePath);
+  const suffix = String(pathname ?? '').slice(basePath.length);
+  const boardMatch = /^\/boards\/([^/]+)/.exec(suffix);
+  if (!boardMatch) return true;
+  let boardId;
+  try {
+    boardId = decodeURIComponent(boardMatch[1]);
+  } catch {
+    return false;
+  }
+  return Array.isArray(payload?.roles) && payload.roles.includes(`editor:${boardId}`);
+}
+
 export function normalizeCanvasBasePath(value) {
   const path = String(value ?? DEFAULT_CANVAS_BASE_PATH).trim();
   if (!/^\/[a-zA-Z0-9/_-]*$/.test(path)) {
@@ -93,7 +129,7 @@ export function normalizeCanvasBasePath(value) {
 function clampSessionTtl(value) {
   const seconds = Number(value);
   if (!Number.isFinite(seconds)) return DEFAULT_CANVAS_SESSION_TTL_SECONDS;
-  return Math.min(12 * 60 * 60, Math.max(5 * 60, Math.round(seconds)));
+  return Math.min(2 * 60 * 60, Math.max(5 * 60, Math.round(seconds)));
 }
 
 function signJwt(payload, secret) {

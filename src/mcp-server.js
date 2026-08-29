@@ -5,6 +5,7 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 import { LifelineService } from './service.js';
 import { JsonStore } from './store.js';
+import { TestGovernanceWorkflowService } from './test-governance-workflow.js';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const SERVER_NAME = 'lifeline';
@@ -19,6 +20,7 @@ export const LIFELINE_MCP_INSTRUCTIONS = [
   'Decompose requested functionality into Project → Phase → Task only; use lifeline_sync_plan with a stable planId and complete objectives, acceptance criteria, and test commands.',
   'Reuse existing phases and tasks when they already cover the work; never create duplicates to make progress look larger.',
   'Repository scanners must call lifeline_propose_scan_finding with a stable fingerprint, then use lifeline_review_scan_proposal before a finding becomes a scheduled Task.',
+  'Test-gap analyzers must submit source-backed proposals through lifeline_propose_test_scenario. A development Task may be created only after review, a test draft, and matching RED evidence.',
   'Before editing, reordering, or cancelling tasks, read the current scheduleVersion and pass it as expectedScheduleVersion.',
   'Use dependsOnTaskIds only for hard same-project predecessors and parallelPolicy for execution intent; dependencies must stay acyclic and before the dependent task.',
   'For autonomous execution, call lifeline_get_dispatch_board then lifeline_claim_next_task. Claiming is the only required start handshake and creates a bounded lease; do not send heartbeat or internal reasoning updates.',
@@ -105,8 +107,38 @@ const scanProposalDraftSchema = z.object({
   riskTier: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   weight: z.number().positive().max(100).default(1)
 });
+const scenarioSourceEvidenceSchema = z.object({
+  type: z.string().trim().min(1).max(80),
+  uri: z.string().trim().min(1).max(1000),
+  line: z.number().int().positive().optional(),
+  pointer: z.string().max(1000).optional(),
+  symbol: z.string().max(500).optional()
+});
+const testScenarioDraftSchema = z.object({
+  scenarioId: z.string().trim().min(1).max(240).optional(),
+  fingerprint: z.string().trim().min(1).max(240),
+  title: z.string().trim().min(3).max(300),
+  categoryIds: z.array(z.string().trim().min(1).max(500)).max(20),
+  preconditions: z.array(z.unknown()).max(100).default([]),
+  action: z.record(z.string(), z.unknown()),
+  expected: z.record(z.string(), z.unknown()),
+  riskIds: z.array(z.string().trim().min(1).max(500)).max(30),
+  sourceEvidence: z.array(scenarioSourceEvidenceSchema).min(1).max(100),
+  matchedTestIds: z.array(z.string().trim().min(1).max(500)).max(100).default([]),
+  coverageState: z.enum(['covered', 'partial', 'missing', 'unobserved', 'obsolete']).default('missing'),
+  analyzer: z.string().trim().max(160).optional(),
+  analyzerVersion: z.string().trim().max(160).optional(),
+  model: z.string().trim().max(240).optional(),
+  rationale: z.string().trim().max(4000).optional()
+});
 
-export function createLifelineMcpServer({ service, actor = 'local-owner', clientName = 'codex', scopes = null }) {
+export function createLifelineMcpServer({
+  service,
+  testGovernanceWorkflow = null,
+  actor = 'local-owner',
+  clientName = 'codex',
+  scopes = null
+}) {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
@@ -123,8 +155,8 @@ export function createLifelineMcpServer({ service, actor = 'local-owner', client
 
   const identity = { actor, clientName, scopes };
   registerResources(server, service, identity);
-  registerReadTools(server, service, identity);
-  registerWriteTools(server, service, identity);
+  registerReadTools(server, service, identity, testGovernanceWorkflow);
+  registerWriteTools(server, service, identity, testGovernanceWorkflow);
   return server;
 }
 
@@ -233,7 +265,7 @@ function registerResources(server, service, identity) {
   );
 }
 
-function registerReadTools(server, service, identity) {
+function registerReadTools(server, service, identity, testGovernanceWorkflow = null) {
   server.registerTool(
     'lifeline_get_dispatch_board',
     {
@@ -327,9 +359,31 @@ function registerReadTools(server, service, identity) {
       return toolResult(details);
     }
   );
+
+  if (testGovernanceWorkflow) {
+    server.registerTool(
+      'lifeline_list_test_scenario_proposals',
+      {
+        title: 'List test scenario proposals',
+        description: 'List source-backed test gaps and their review or Red-Green workflow state. Internal model metadata is never returned.',
+        inputSchema: z.object({
+          projectId: z.string().trim().min(3).max(160),
+          status: z.string().trim().max(40).optional(),
+          categoryId: z.string().trim().max(500).optional(),
+          ...paginationSchema
+        }),
+        outputSchema,
+        annotations: readOnlyAnnotations()
+      },
+      async (input) => {
+        requireAgentScope(identity, 'portfolio:read');
+        return toolResult(paginate(await testGovernanceWorkflow.listScenarioProposals(input.projectId, input), input));
+      }
+    );
+  }
 }
 
-function registerWriteTools(server, service, identity) {
+function registerWriteTools(server, service, identity, testGovernanceWorkflow = null) {
   server.registerTool(
     'lifeline_claim_next_task',
     {
@@ -759,6 +813,116 @@ function registerWriteTools(server, service, identity) {
       ));
     }
   );
+
+  if (testGovernanceWorkflow) registerTestGovernanceWriteTools(server, testGovernanceWorkflow, identity);
+}
+
+function registerTestGovernanceWriteTools(server, workflow, identity) {
+  server.registerTool(
+    'lifeline_propose_test_scenario',
+    {
+      title: 'Propose a test scenario',
+      description: 'Store one source-backed deterministic or semantic test gap without writing tests or creating implementation Tasks.',
+      inputSchema: testScenarioDraftSchema.extend({
+        projectId: z.string().trim().min(3).max(160),
+        idempotencyKey: idempotencyKeySchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'schedule:write');
+      return toolResult(await workflow.proposeScenario(input.projectId, input, { actor: identity.actor, provenance: 'SEMANTIC' }));
+    }
+  );
+  server.registerTool(
+    'lifeline_review_test_scenario',
+    {
+      title: 'Review a test scenario',
+      description: 'Move a source-backed scenario through review, acceptance, dismissal, suppression, or reopen without creating an implementation Task.',
+      inputSchema: z.object({
+        projectId: z.string().trim().min(3).max(160),
+        proposalId: z.string().trim().min(3).max(240),
+        action: z.enum(['START_REVIEW', 'ACCEPT', 'DISMISS', 'SUPPRESS', 'REOPEN']),
+        reason: z.string().trim().max(1000).optional(),
+        idempotencyKey: idempotencyKeySchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'schedule:write');
+      return toolResult(await workflow.reviewScenarioProposal(input.projectId, input.proposalId, input, { actor: identity.actor }));
+    }
+  );
+  server.registerTool(
+    'lifeline_create_test_draft',
+    {
+      title: 'Create a reviewed test draft',
+      description: 'Generate a minimal candidate test skeleton after acceptance. The tool returns content but does not write the target repository.',
+      inputSchema: z.object({
+        projectId: z.string().trim().min(3).max(160),
+        proposalId: z.string().trim().min(3).max(240),
+        framework: z.enum(['NODE_TEST', 'PYTEST', 'JUNIT']),
+        suggestedPath: z.string().trim().min(1).max(500),
+        command: z.array(z.string().trim().min(1).max(1000)).min(1).max(64),
+        expectedFailure: z.string().trim().min(1).max(2000),
+        idempotencyKey: idempotencyKeySchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'schedule:write');
+      return toolResult(await workflow.createTestDraft(input.projectId, input.proposalId, input, { actor: identity.actor }));
+    }
+  );
+  server.registerTool(
+    'lifeline_record_test_scenario_run',
+    {
+      title: 'Record Red-Green test evidence',
+      description: 'Record an isolated baseline or implementation run. Only matching RED evidence can create one idempotent implementation Task.',
+      inputSchema: z.object({
+        projectId: z.string().trim().min(3).max(160),
+        proposalId: z.string().trim().min(3).max(240),
+        stage: z.enum(['BASELINE', 'IMPLEMENTATION']),
+        outcome: z.enum(['PASSED', 'FAILED']),
+        command: z.array(z.string().trim().min(1).max(1000)).min(1).max(64).optional(),
+        observedFailure: z.string().max(8000).nullable().optional(),
+        sourceUri: z.string().trim().min(1).max(1000),
+        phaseId: z.string().trim().min(3).max(180).optional(),
+        commitSha: z.string().trim().max(200).optional(),
+        observedAt: z.string().datetime().optional(),
+        idempotencyKey: idempotencyKeySchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'schedule:write');
+      return toolResult(await workflow.recordScenarioRun(input.projectId, input.proposalId, input, { actor: identity.actor }));
+    }
+  );
+  server.registerTool(
+    'lifeline_verify_test_scenario',
+    {
+      title: 'Verify a green test scenario',
+      description: 'Promote a GREEN scenario only with deterministic evidence, independent review, or explicit owner approval.',
+      inputSchema: z.object({
+        projectId: z.string().trim().min(3).max(160),
+        proposalId: z.string().trim().min(3).max(240),
+        method: z.enum(['DETERMINISTIC_TEST', 'INDEPENDENT_REVIEW', 'OWNER_APPROVAL']),
+        summary: z.string().trim().min(1).max(2000),
+        idempotencyKey: idempotencyKeySchema
+      }),
+      outputSchema,
+      annotations: writeAnnotations(true)
+    },
+    async (input) => {
+      requireAgentScope(identity, 'verification:write');
+      return toolResult(await workflow.verifyScenario(input.projectId, input.proposalId, input, { actor: identity.actor }));
+    }
+  );
 }
 
 async function createTaskFromMcp(service, input, options) {
@@ -1038,8 +1202,10 @@ async function main() {
     localUserId: actor,
     logger: { error: (...args) => console.error(...args) }
   });
+  const testGovernanceWorkflow = new TestGovernanceWorkflowService({ store, lifelineService: service });
+  await testGovernanceWorkflow.start();
   const handle = serveStdio(
-    () => createLifelineMcpServer({ service, actor, clientName }),
+    () => createLifelineMcpServer({ service, testGovernanceWorkflow, actor, clientName }),
     { onerror: (error) => console.error('Lifeline MCP error', error) }
   );
   console.error(`Lifeline MCP ready on stdio · data=${dataFile}`);

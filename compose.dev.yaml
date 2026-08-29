@@ -1,8 +1,13 @@
 services:
   lifeline:
     command: ["npm", "run", "dev"]
-    volumes:
+    environment:
+      LIFELINE_SEED_DEMO: "0"
+    volumes: !override
       - ./src:/app/src:ro
       - ./public:/app/public:ro
       - ./openapi.json:/app/openapi.json:ro
-      - lifeline-data:/app/data
+      - lifeline-dev-data:/app/data
+
+volumes:
+  lifeline-dev-data:

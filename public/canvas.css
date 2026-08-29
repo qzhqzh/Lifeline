@@ -16,11 +16,123 @@ body.canvas-shell {
 }
 
 .canvas-stage {
+  position: relative;
   min-height: 0;
   padding: 12px;
   flex: 1 1 auto;
   background: #071019;
 }
+
+.canvas-context-toggle,
+.canvas-panel-close,
+.canvas-context-section button {
+  border: 1px solid #2d4351;
+  background: #0f202c;
+  color: #dce7ed;
+  font: inherit;
+  cursor: pointer;
+}
+
+.canvas-context-toggle {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.canvas-context-toggle:hover,
+.canvas-context-toggle[aria-expanded="true"] { border-color: #49cfa0; color: #effff9; }
+.canvas-context-toggle:focus-visible,
+.canvas-panel-close:focus-visible,
+.canvas-context-section :is(button, input, select, a):focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.canvas-context-toggle span:not(:empty)::before { content: " · "; color: #69808d; }
+
+.canvas-context-panel {
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  width: min(360px, calc(100% - 24px));
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid #2d4351;
+  border-radius: var(--radius-lg);
+  background: #0a1620;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .42);
+  color: #dfe9ee;
+  transform: translateX(calc(100% + 28px));
+  transition: transform 220ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.canvas-context-panel[aria-hidden="false"] { transform: translateX(0); }
+
+.canvas-context-head {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid #203440;
+}
+
+.canvas-context-head > div { display: grid; gap: 2px; }
+.canvas-context-head strong { font-size: 14px; }
+.canvas-context-head span { color: #78909d; font-size: 10px; }
+.canvas-panel-close { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 7px; }
+.canvas-panel-close svg { width: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.canvas-context-scroll { min-height: 0; overflow: auto; scrollbar-color: #31505f #0a1620; }
+
+.canvas-context-section { padding: 16px; border-bottom: 1px solid #1d303b; }
+.canvas-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.canvas-section-head h2 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+.canvas-section-head span { color: #718793; font-size: 10px; font-variant-numeric: tabular-nums; }
+.canvas-object-group + .canvas-object-group { margin-top: 13px; }
+.canvas-object-group > strong { display: block; margin: 0 0 5px; color: #8298a4; font-size: 10px; font-weight: 650; }
+.canvas-object-row,
+.canvas-proposal-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; }
+.canvas-object-row + .canvas-object-row,
+.canvas-proposal-row + .canvas-proposal-row { border-top: 1px solid #182a34; }
+.canvas-object-copy { min-width: 0; overflow: hidden; color: #dbe6eb; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-object-copy span { display: block; margin-top: 2px; color: #6f8591; font-size: 9px; }
+.canvas-object-row button,
+.canvas-proposal-actions button,
+.canvas-context-section form button { min-height: 30px; padding: 0 9px; border-radius: 6px; font-size: 10px; font-weight: 650; }
+.canvas-object-row button:hover,
+.canvas-proposal-actions button:hover,
+.canvas-context-section form button:hover { border-color: #49cfa0; }
+.canvas-object-row button[data-bound="true"] { border-color: #2d6f5b; color: #6bddb4; }
+
+.canvas-change-form,
+.canvas-share-form { display: grid; gap: 9px; margin: 0 0 13px; }
+.canvas-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.canvas-context-section label { display: grid; gap: 4px; color: #7f949f; font-size: 9px; }
+.canvas-context-section :is(input, select) {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #293e4a;
+  border-radius: 6px;
+  background: #0e1c26;
+  color: #e1ebef;
+  font: inherit;
+  font-size: 11px;
+}
+.canvas-context-section input { padding: 0 9px; }
+.canvas-context-section select { padding: 0 7px; }
+.canvas-context-section form button { justify-self: start; border-color: #2b8064; background: #14392e; color: #80e2bd; }
+.canvas-proposal-copy { min-width: 0; }
+.canvas-proposal-copy strong { display: block; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-proposal-copy span { color: #728995; font-size: 9px; }
+.canvas-proposal-actions { display: flex; gap: 5px; }
+.canvas-proposal-actions .dismiss { border-color: #523943; color: #db9ca5; }
+.canvas-proposal-state { display: inline-block; margin-top: 3px; color: #62d5aa; font-size: 9px; }
+.canvas-empty { margin: 0; color: #728995; font-size: 10px; line-height: 1.5; }
+.canvas-share-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+.canvas-share-result[hidden] { display: none; }
+.canvas-share-result button { min-height: 34px; }
+.canvas-toast { z-index: 8; }
 
 .canvas-surface {
   position: relative;
@@ -120,8 +232,19 @@ body.canvas-shell {
   .canvas-topbar .client-topbar-actions { display: none; }
   .canvas-status { padding: 22px; }
   .canvas-status strong { font-size: 17px; }
+  .canvas-context-panel {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+    max-height: min(74vh, 650px);
+    transform: translateY(calc(100% + 18px));
+  }
+  .canvas-context-panel[aria-hidden="false"] { transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .canvas-status-mark { animation-duration: 1.6s; }
+  .canvas-context-panel { transition-duration: 1ms; }
 }

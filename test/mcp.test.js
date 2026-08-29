@@ -8,6 +8,7 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { createLifelineMcpServer } from '../src/mcp-server.js';
 import { LifelineService } from '../src/service.js';
 import { JsonStore } from '../src/store.js';
+import { TestGovernanceWorkflowService } from '../src/test-governance-workflow.js';
 
 test('MCP syncs a plan idempotently and enforces completion verification', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-'));
@@ -451,6 +452,64 @@ test('STDIO serving entry exposes the Lifeline tools', async (t) => {
 
   const listed = await client.listTools();
   assert.equal(listed.tools.length, 21);
+});
+
+test('MCP exposes source-backed test scenario review and draft tools only when the workflow is configured', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'lifeline-mcp-test-governance-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const store = new JsonStore(join(directory, 'state.json'));
+  const service = new LifelineService({ store, localUserId: 'local-owner' });
+  await service.start();
+  const project = await service.createProject({ name: 'Test governance MCP' });
+  const workflow = new TestGovernanceWorkflowService({ store, lifelineService: service });
+  await workflow.start();
+  const server = createLifelineMcpServer({
+    service,
+    testGovernanceWorkflow: workflow,
+    actor: 'test-governance-agent',
+    clientName: 'node-test'
+  });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client({ name: 'lifeline-test-governance-client', version: '1.0.0' });
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  t.after(async () => {
+    await client.close();
+    await server.close();
+  });
+
+  const listed = await client.listTools();
+  const names = new Set(listed.tools.map((tool) => tool.name));
+  for (const name of [
+    'lifeline_list_test_scenario_proposals',
+    'lifeline_propose_test_scenario',
+    'lifeline_review_test_scenario',
+    'lifeline_create_test_draft',
+    'lifeline_record_test_scenario_run',
+    'lifeline_verify_test_scenario'
+  ]) assert.equal(names.has(name), true, `${name} was not registered`);
+
+  const proposal = await callTool(client, 'lifeline_propose_test_scenario', {
+    projectId: project.id,
+    fingerprint: 'mcp:auth:denied',
+    title: '未授权用户不得读取项目数据',
+    categoryIds: ['security-abuse'],
+    preconditions: [],
+    action: { kind: 'read-project' },
+    expected: { status: 403 },
+    riskIds: ['auth'],
+    sourceEvidence: [{ type: 'openapi', uri: 'openapi.json', pointer: '/paths/~1api~1projects' }],
+    matchedTestIds: [],
+    coverageState: 'missing',
+    analyzer: 'fixture',
+    model: 'must-not-leak',
+    idempotencyKey: 'mcp-test-scenario-propose'
+  });
+  assert.equal(proposal.status, 'PROPOSED');
+  assert.equal('analysis' in proposal, false);
+  assert.doesNotMatch(JSON.stringify(proposal), /must-not-leak/);
+  const proposals = await callTool(client, 'lifeline_list_test_scenario_proposals', { projectId: project.id });
+  assert.equal(proposals.items.length, 1);
 });
 
 test('MCP Agent scopes allow portfolio reads and reject unauthorized schedule writes', async (t) => {

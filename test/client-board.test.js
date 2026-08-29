@@ -226,6 +226,7 @@ test('customer board ships as an isolated, capacity-safe surface with an owner e
   assert.match(html, /type="module" src="\/client\.js"/);
   assert.match(css, /--lane-height:\s*252px/);
   assert.match(css, /--lane-collapsed-height:\s*54px/);
+  assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important/);
   assert.match(css, /grid-template-columns:\s*132px repeat\(4, minmax\(218px, 1fr\)\)/);
   assert.match(css, /\.lane-cell\.has-overflow/);
   assert.match(css, /\.lane-cell\.is-collapsed/);
